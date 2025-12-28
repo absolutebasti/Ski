@@ -565,6 +565,11 @@ html, body {
     color: var(--red);
 }
 
+.btn-pause.paused {
+    background: var(--green);
+    color: var(--bg);
+}
+
 .hidden { display: none !important; }
 
 /* Panels */

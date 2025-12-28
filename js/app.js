@@ -221,16 +221,20 @@ const App = {
      * Toggle pause/resume
      */
     togglePause() {
+        const pauseBtnText = document.getElementById('pauseBtnText');
+        
         if (this.state === 'tracking') {
             this.state = 'paused';
             GPSTracker.pause();
             Stats.pauseTimer();
-            this.elements.pauseBtn.querySelector('span').textContent = 'Resume';
+            if (pauseBtnText) pauseBtnText.textContent = 'Resume';
+            this.elements.pauseBtn?.classList.add('paused');
         } else if (this.state === 'paused') {
             this.state = 'tracking';
             GPSTracker.resume();
             Stats.resumeTimer();
-            this.elements.pauseBtn.querySelector('span').textContent = 'Pause';
+            if (pauseBtnText) pauseBtnText.textContent = 'Pause';
+            this.elements.pauseBtn?.classList.remove('paused');
         }
         
         Utils.vibrate(50);
@@ -307,16 +311,20 @@ const App = {
      */
     updateControlButtons() {
         const { startBtn, pauseBtn, stopBtn } = this.elements;
+        const pauseBtnText = document.getElementById('pauseBtnText');
         
         if (this.state === 'idle') {
             startBtn?.classList.remove('hidden');
             pauseBtn?.classList.add('hidden');
             stopBtn?.classList.add('hidden');
+            if (pauseBtnText) pauseBtnText.textContent = 'Pause';
         } else {
             startBtn?.classList.add('hidden');
             pauseBtn?.classList.remove('hidden');
             stopBtn?.classList.remove('hidden');
         }
+        
+        console.log('Button state updated:', this.state);
     },
 
     /**
