@@ -415,6 +415,20 @@ html, body {
     border-radius: 16px;
 }
 
+.stat-card.stat-highlight {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.5);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+}
+
+.stat-highlight .stat-value {
+    color: #D4AF37;
+}
+
+.stat-highlight .stat-icon {
+    color: #D4AF37;
+}
+
 .stat-small {
     padding: 16px 8px;
     display: flex;
