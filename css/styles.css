@@ -283,6 +283,35 @@ html, body {
 .difficulty-intermediate { background: #0a84ff; }
 .difficulty-advanced { background: #ff453a; }
 
+/* Resort Details Button */
+.resort-details-btn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: none;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.resort-details-btn:active {
+    background: rgba(0,0,0,0.85);
+}
+
+.resort-details-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
 /* Map */
 .map-container {
     height: 28vh;
@@ -851,6 +880,221 @@ html, body {
 @keyframes pulse {
     0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
     100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* Details Panel */
+.details-section {
+    margin-bottom: 20px;
+}
+
+.details-section h3 {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.sectors-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.sector-card {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.sector-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.sector-stats {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.sector-altitude {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+}
+
+/* Details Tabs */
+.details-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--card);
+    padding: 4px;
+    border-radius: 10px;
+}
+
+.details-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.details-tab.active {
+    background: var(--card-elevated);
+    color: var(--text);
+}
+
+.details-tab-content {
+    display: none;
+}
+
+.details-tab-content.active {
+    display: block;
+}
+
+/* Filters */
+.slope-filters,
+.lift-filters {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 100px;
+    background: var(--card);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.filter-btn.active {
+    background: var(--text);
+    color: var(--bg);
+}
+
+/* Slopes List */
+.slopes-list,
+.lifts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.slope-item,
+.lift-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: var(--card);
+    border-radius: 10px;
+}
+
+.slope-difficulty {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.slope-difficulty.easy { background: #30d158; }
+.slope-difficulty.intermediate { background: #0a84ff; }
+.slope-difficulty.advanced { background: #ff453a; }
+.slope-difficulty.expert { background: #1c1c1e; border: 2px solid #48484a; }
+
+.slope-info,
+.lift-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.slope-name,
+.lift-name {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.slope-name.famous {
+    color: #ffd60a;
+}
+
+.slope-meta,
+.lift-meta {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.slope-stats,
+.lift-stats {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.slope-length,
+.lift-length {
+    font-size: 14px;
+    font-weight: 600;
+    font-feature-settings: 'tnum';
+}
+
+.slope-drop,
+.lift-rise {
+    font-size: 10px;
+    color: var(--text-tertiary);
+}
+
+.lift-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+/* Facilities Grid */
+.facilities-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.facility-card {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+}
+
+.facility-icon {
+    font-size: 24px;
+    margin-bottom: 6px;
+}
+
+.facility-value {
+    font-size: 18px;
+    font-weight: 600;
+    font-feature-settings: 'tnum';
+}
+
+.facility-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
 }
 
 /* Mapbox Overrides */

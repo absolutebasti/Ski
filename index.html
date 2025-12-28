@@ -105,6 +105,15 @@
                         <span class="resort-info-label">m peak</span>
                     </div>
                 </div>
+                <!-- View Details Button -->
+                <button class="resort-details-btn" id="resortDetailsBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12" y2="8"/>
+                    </svg>
+                    <span>View Slopes & Lifts</span>
+                </button>
             </div>
 
             <!-- Stats Dashboard -->
@@ -229,6 +238,61 @@
                             <span class="record-value" id="recordVertical">-- m</span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resort Details Panel -->
+        <div class="panel panel-resort-details hidden" id="resortDetailsPanel">
+            <div class="panel-header">
+                <h2 id="detailsPanelTitle">Kitzbühel</h2>
+                <button class="btn-close" id="closeDetailsBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="panel-content">
+                <!-- Sectors Overview -->
+                <div class="details-section">
+                    <h3>Sectors</h3>
+                    <div class="sectors-grid" id="sectorsGrid"></div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="details-tabs">
+                    <button class="details-tab active" data-tab="slopes">Slopes</button>
+                    <button class="details-tab" data-tab="lifts">Lifts</button>
+                    <button class="details-tab" data-tab="facilities">Facilities</button>
+                </div>
+
+                <!-- Slopes Tab -->
+                <div class="details-tab-content active" id="slopesTab">
+                    <div class="slope-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="easy">🟢 Easy</button>
+                        <button class="filter-btn" data-filter="intermediate">🔵 Medium</button>
+                        <button class="filter-btn" data-filter="advanced">🔴 Hard</button>
+                        <button class="filter-btn" data-filter="expert">⚫ Expert</button>
+                    </div>
+                    <div class="slopes-list" id="slopesList"></div>
+                </div>
+
+                <!-- Lifts Tab -->
+                <div class="details-tab-content" id="liftsTab">
+                    <div class="lift-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="gondola">🚡 Gondola</button>
+                        <button class="filter-btn" data-filter="chairlift">🪑 Chairlift</button>
+                        <button class="filter-btn" data-filter="dragLift">⬆️ Drag</button>
+                    </div>
+                    <div class="lifts-list" id="liftsList"></div>
+                </div>
+
+                <!-- Facilities Tab -->
+                <div class="details-tab-content" id="facilitiesTab">
+                    <div class="facilities-grid" id="facilitiesGrid"></div>
                 </div>
             </div>
         </div>

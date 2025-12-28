@@ -72,9 +72,23 @@ const App = {
             resortAltitude: document.getElementById('resortAltitude'),
             resortsPanel: document.getElementById('resortsPanel'),
             closeResortsBtn: document.getElementById('closeResortsBtn'),
-            resortList: document.getElementById('resortList')
+            resortList: document.getElementById('resortList'),
+            // Resort details elements
+            resortDetailsBtn: document.getElementById('resortDetailsBtn'),
+            resortDetailsPanel: document.getElementById('resortDetailsPanel'),
+            closeDetailsBtn: document.getElementById('closeDetailsBtn'),
+            detailsPanelTitle: document.getElementById('detailsPanelTitle'),
+            sectorsGrid: document.getElementById('sectorsGrid'),
+            slopesList: document.getElementById('slopesList'),
+            liftsList: document.getElementById('liftsList'),
+            facilitiesGrid: document.getElementById('facilitiesGrid')
         };
     },
+
+    // Resort details data
+    resortDetails: null,
+    currentSlopeFilter: 'all',
+    currentLiftFilter: 'all',
 
     /**
      * Initialize all modules
@@ -130,6 +144,25 @@ const App = {
         // Resort selection
         this.elements.resortCurrentBtn?.addEventListener('click', () => this.showPanel('resorts'));
         this.elements.closeResortsBtn?.addEventListener('click', () => this.hidePanel('resorts'));
+        
+        // Resort details
+        this.elements.resortDetailsBtn?.addEventListener('click', () => this.showResortDetails());
+        this.elements.closeDetailsBtn?.addEventListener('click', () => this.hidePanel('details'));
+        
+        // Details tabs
+        document.querySelectorAll('.details-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => this.switchDetailsTab(e.target.dataset.tab));
+        });
+        
+        // Slope filters
+        document.querySelectorAll('.slope-filters .filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.filterSlopes(e.target.dataset.filter));
+        });
+        
+        // Lift filters
+        document.querySelectorAll('.lift-filters .filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.filterLifts(e.target.dataset.filter));
+        });
         
         // Online/offline
         window.addEventListener('online', () => this.updateOnlineStatus());
@@ -308,6 +341,8 @@ const App = {
             this.elements.settingsPanel?.classList.remove('hidden');
         } else if (panel === 'resorts') {
             this.elements.resortsPanel?.classList.remove('hidden');
+        } else if (panel === 'details') {
+            this.elements.resortDetailsPanel?.classList.remove('hidden');
         }
     },
 
@@ -322,6 +357,8 @@ const App = {
             this.elements.settingsPanel?.classList.add('hidden');
         } else if (panel === 'resorts') {
             this.elements.resortsPanel?.classList.add('hidden');
+        } else if (panel === 'details') {
+            this.elements.resortDetailsPanel?.classList.add('hidden');
         }
     },
 
@@ -413,6 +450,177 @@ const App = {
         }
         
         this.hidePanel('resorts');
+    },
+
+    /**
+     * Show resort details
+     */
+    async showResortDetails() {
+        const resort = Resorts.getCurrent();
+        if (!resort) return;
+        
+        this.elements.detailsPanelTitle.textContent = resort.name;
+        
+        // Load detailed data
+        try {
+            const response = await fetch(`/assets/trails/${resort.id}-details.json`);
+            if (response.ok) {
+                this.resortDetails = await response.json();
+                this.renderResortDetails();
+            } else {
+                this.renderNoDetails();
+            }
+        } catch (e) {
+            this.renderNoDetails();
+        }
+        
+        this.showPanel('details');
+    },
+
+    /**
+     * Render resort details
+     */
+    renderResortDetails() {
+        const data = this.resortDetails;
+        if (!data) return;
+        
+        // Render sectors
+        this.elements.sectorsGrid.innerHTML = data.sectors.map(sector => `
+            <div class="sector-card">
+                <div class="sector-name">${sector.name}</div>
+                <div class="sector-stats">${sector.slopes} slopes · ${sector.lifts} lifts</div>
+                <div class="sector-altitude">${sector.altitude.min}m - ${sector.altitude.max}m</div>
+            </div>
+        `).join('');
+        
+        // Render slopes
+        this.renderSlopes(data.slopes);
+        
+        // Render lifts
+        this.renderLifts(data.lifts);
+        
+        // Render facilities
+        this.renderFacilities(data.facilities);
+    },
+
+    /**
+     * Render slopes list
+     */
+    renderSlopes(slopes) {
+        const filtered = this.currentSlopeFilter === 'all' 
+            ? slopes 
+            : slopes.filter(s => s.difficulty === this.currentSlopeFilter);
+        
+        this.elements.slopesList.innerHTML = filtered.map(slope => `
+            <div class="slope-item">
+                <div class="slope-difficulty ${slope.difficulty}"></div>
+                <div class="slope-info">
+                    <div class="slope-name ${slope.famous ? 'famous' : ''}">${slope.name}</div>
+                    <div class="slope-meta">${slope.sector}</div>
+                </div>
+                <div class="slope-stats">
+                    <div class="slope-length">${slope.length} km</div>
+                    <div class="slope-drop">↓ ${slope.verticalDrop}m</div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    /**
+     * Render lifts list
+     */
+    renderLifts(lifts) {
+        const filtered = this.currentLiftFilter === 'all' 
+            ? lifts 
+            : lifts.filter(l => l.type === this.currentLiftFilter);
+        
+        const liftIcons = {
+            gondola: '🚡',
+            chairlift: '🪑',
+            dragLift: '⬆️'
+        };
+        
+        this.elements.liftsList.innerHTML = filtered.map(lift => `
+            <div class="lift-item">
+                <span class="lift-icon">${liftIcons[lift.type] || '🚡'}</span>
+                <div class="lift-info">
+                    <div class="lift-name">${lift.name}</div>
+                    <div class="lift-meta">${lift.sector} · ${lift.capacity} pers.</div>
+                </div>
+                <div class="lift-stats">
+                    <div class="lift-length">${(lift.length/1000).toFixed(1)} km</div>
+                    <div class="lift-rise">↑ ${lift.verticalRise}m</div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    /**
+     * Render facilities
+     */
+    renderFacilities(facilities) {
+        const items = [
+            { icon: '🍽️', value: facilities.restaurants, label: 'Restaurants' },
+            { icon: '🎿', value: facilities.skiSchools, label: 'Ski Schools' },
+            { icon: '🏪', value: facilities.skiRental, label: 'Rental Shops' },
+            { icon: '🅿️', value: facilities.parking.toLocaleString(), label: 'Parking Spots' },
+            { icon: '❄️', value: facilities.snowmaking, label: 'Snowmaking' }
+        ];
+        
+        this.elements.facilitiesGrid.innerHTML = items.map(item => `
+            <div class="facility-card">
+                <div class="facility-icon">${item.icon}</div>
+                <div class="facility-value">${item.value}</div>
+                <div class="facility-label">${item.label}</div>
+            </div>
+        `).join('');
+    },
+
+    /**
+     * Render no details available
+     */
+    renderNoDetails() {
+        this.elements.sectorsGrid.innerHTML = '<p style="color: var(--text-tertiary); font-size: 13px;">Detailed data coming soon</p>';
+        this.elements.slopesList.innerHTML = '';
+        this.elements.liftsList.innerHTML = '';
+        this.elements.facilitiesGrid.innerHTML = '';
+    },
+
+    /**
+     * Switch details tab
+     */
+    switchDetailsTab(tab) {
+        document.querySelectorAll('.details-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.details-tab-content').forEach(c => c.classList.remove('active'));
+        
+        document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
+        document.getElementById(`${tab}Tab`)?.classList.add('active');
+    },
+
+    /**
+     * Filter slopes
+     */
+    filterSlopes(filter) {
+        this.currentSlopeFilter = filter;
+        document.querySelectorAll('.slope-filters .filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        if (this.resortDetails) {
+            this.renderSlopes(this.resortDetails.slopes);
+        }
+    },
+
+    /**
+     * Filter lifts
+     */
+    filterLifts(filter) {
+        this.currentLiftFilter = filter;
+        document.querySelectorAll('.lift-filters .filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        if (this.resortDetails) {
+            this.renderLifts(this.resortDetails.lifts);
+        }
     },
 
     /**
