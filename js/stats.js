@@ -140,8 +140,8 @@ const Stats = {
             this.currentRun.maxSpeed = this.currentRun.currentSpeed;
         }
         
-        // Update distance
-        if (distanceFromPrevious && distanceFromPrevious > 2) { // Minimum 2m movement
+        // Update distance (only if actually moving, not GPS noise)
+        if (distanceFromPrevious && distanceFromPrevious > 3 && this.currentRun.currentSpeed > 0) {
             this.currentRun.distance += distanceFromPrevious / 1000; // Convert to km
         }
         

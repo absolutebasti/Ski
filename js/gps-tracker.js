@@ -31,8 +31,9 @@ const GPSTracker = {
     },
     
     // Filtering settings
-    minAccuracy: 50, // meters - reject readings with worse accuracy (increased for indoor)
-    minDistance: 1, // meters - minimum distance to register movement
+    minAccuracy: 50, // meters - reject readings with worse accuracy
+    minDistance: 3, // meters - minimum distance to register movement
+    minSpeedThreshold: 3, // km/h - speeds below this show as 0 (GPS noise filter)
     speedSmoothingFactor: 0.4,
     
     // Speed calculation
@@ -240,6 +241,12 @@ const GPSTracker = {
         this.lastPosition = { latitude: coords.latitude, longitude: coords.longitude };
         this.lastPositionTime = timestamp;
 
+        // Apply minimum speed threshold (filter GPS noise when stationary)
+        // Speeds below threshold are likely GPS drift, not real movement
+        if (speedKmh < this.minSpeedThreshold) {
+            speedKmh = 0;
+        }
+
         return {
             latitude: coords.latitude,
             longitude: coords.longitude,
@@ -247,7 +254,7 @@ const GPSTracker = {
             accuracy: coords.accuracy,
             altitudeAccuracy: coords.altitudeAccuracy,
             heading: coords.heading,
-            speed: speedKmh, // km/h
+            speed: speedKmh, // km/h (filtered)
             speedRaw: coords.speed, // m/s (original)
             timestamp: timestamp
         };
