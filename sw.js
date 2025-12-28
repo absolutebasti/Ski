@@ -12,7 +12,8 @@ const STATIC_ASSETS = [
     '/js/stats.js',
     '/js/storage.js',
     '/js/utils.js',
-    '/assets/kitzbuehel-trails.geojson'
+    '/assets/trails/kitzbuehel.geojson',
+    '/assets/trails/kitzbuehel-details.json'
 ];
 
 // Install event - cache static assets

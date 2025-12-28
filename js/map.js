@@ -189,7 +189,9 @@ const SkiMap = {
      */
     async loadSkiTrails() {
         try {
-            const response = await fetch('/assets/kitzbuehel-trails.geojson');
+            const resort = window.Resorts?.getCurrent();
+            const trailsFile = resort?.trailsFile || '/assets/trails/kitzbuehel.geojson';
+            const response = await fetch(trailsFile);
             
             if (!response.ok) {
                 console.log('No ski trails data available');
