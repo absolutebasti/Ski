@@ -129,11 +129,165 @@ html, body {
     flex-direction: column;
 }
 
+/* Resort Selector */
+.resort-selector {
+    padding: 8px 16px;
+    background: var(--bg);
+}
+
+.resort-current {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--card);
+    border: none;
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+}
+
+.resort-current:active {
+    background: var(--card-elevated);
+}
+
+.resort-current svg {
+    margin-left: auto;
+    color: var(--text-tertiary);
+}
+
+.resort-flag {
+    font-size: 18px;
+}
+
+.resort-name {
+    flex: 1;
+}
+
+/* Resort Info Overlay */
+.resort-info {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    gap: 12px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 8px 12px;
+    border-radius: 10px;
+}
+
+.resort-info-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.resort-info-value {
+    font-size: 15px;
+    font-weight: 600;
+    font-feature-settings: 'tnum';
+}
+
+.resort-info-label {
+    font-size: 9px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Resort List */
+.resort-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.resort-item {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.resort-item:active {
+    background: var(--card-elevated);
+}
+
+.resort-item.selected {
+    border-color: var(--accent);
+}
+
+.resort-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.resort-item-flag {
+    font-size: 24px;
+}
+
+.resort-item-name {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.resort-item-region {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.resort-item-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.resort-item-stat {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.resort-item-stat strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.resort-item-famous {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+.resort-item-difficulty {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.difficulty-bar {
+    height: 4px;
+    border-radius: 2px;
+}
+
+.difficulty-easy { background: #30d158; }
+.difficulty-intermediate { background: #0a84ff; }
+.difficulty-advanced { background: #ff453a; }
+
 /* Map */
 .map-container {
-    height: 32vh;
-    min-height: 200px;
-    max-height: 280px;
+    height: 28vh;
+    min-height: 180px;
+    max-height: 240px;
     position: relative;
     background: var(--card);
 }

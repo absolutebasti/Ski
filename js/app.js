@@ -62,7 +62,17 @@ const App = {
             exportDataBtn: document.getElementById('exportDataBtn'),
             clearDataBtn: document.getElementById('clearDataBtn'),
             autoPause: document.getElementById('autoPause'),
-            highAccuracy: document.getElementById('highAccuracy')
+            highAccuracy: document.getElementById('highAccuracy'),
+            // Resort elements
+            resortCurrentBtn: document.getElementById('resortCurrentBtn'),
+            resortFlag: document.getElementById('resortFlag'),
+            resortName: document.getElementById('resortName'),
+            resortKm: document.getElementById('resortKm'),
+            resortLifts: document.getElementById('resortLifts'),
+            resortAltitude: document.getElementById('resortAltitude'),
+            resortsPanel: document.getElementById('resortsPanel'),
+            closeResortsBtn: document.getElementById('closeResortsBtn'),
+            resortList: document.getElementById('resortList')
         };
     },
 
@@ -76,8 +86,18 @@ const App = {
         // Initialize stats
         Stats.init();
         
-        // Initialize map (with fallback for missing token)
+        // Load saved resort
+        await Resorts.loadSaved();
+        this.updateResortUI();
+        this.renderResortList();
+        
+        // Initialize map with current resort
         try {
+            const resort = Resorts.getCurrent();
+            if (resort) {
+                SkiMap.KITZBUEHEL_CENTER = resort.center;
+                SkiMap.DEFAULT_ZOOM = resort.zoom;
+            }
             await SkiMap.init('map');
         } catch (error) {
             console.log('Map initialization skipped:', error.message);
@@ -106,6 +126,10 @@ const App = {
         // Settings
         this.elements.exportDataBtn?.addEventListener('click', () => this.exportData());
         this.elements.clearDataBtn?.addEventListener('click', () => this.clearData());
+        
+        // Resort selection
+        this.elements.resortCurrentBtn?.addEventListener('click', () => this.showPanel('resorts'));
+        this.elements.closeResortsBtn?.addEventListener('click', () => this.hidePanel('resorts'));
         
         // Online/offline
         window.addEventListener('online', () => this.updateOnlineStatus());
@@ -274,7 +298,7 @@ const App = {
 
     /**
      * Show panel
-     * @param {string} panel - Panel name (history or settings)
+     * @param {string} panel - Panel name (history, settings, or resorts)
      */
     async showPanel(panel) {
         if (panel === 'history') {
@@ -282,6 +306,8 @@ const App = {
             this.elements.historyPanel?.classList.remove('hidden');
         } else if (panel === 'settings') {
             this.elements.settingsPanel?.classList.remove('hidden');
+        } else if (panel === 'resorts') {
+            this.elements.resortsPanel?.classList.remove('hidden');
         }
     },
 
@@ -294,7 +320,99 @@ const App = {
             this.elements.historyPanel?.classList.add('hidden');
         } else if (panel === 'settings') {
             this.elements.settingsPanel?.classList.add('hidden');
+        } else if (panel === 'resorts') {
+            this.elements.resortsPanel?.classList.add('hidden');
         }
+    },
+
+    /**
+     * Update resort UI elements
+     */
+    updateResortUI() {
+        const resort = Resorts.getCurrent();
+        if (!resort) return;
+        
+        if (this.elements.resortFlag) {
+            this.elements.resortFlag.textContent = Resorts.getFlag(resort.country);
+        }
+        if (this.elements.resortName) {
+            this.elements.resortName.textContent = resort.name;
+        }
+        if (this.elements.resortKm) {
+            this.elements.resortKm.textContent = resort.stats.kmPiste;
+        }
+        if (this.elements.resortLifts) {
+            this.elements.resortLifts.textContent = resort.stats.lifts;
+        }
+        if (this.elements.resortAltitude) {
+            this.elements.resortAltitude.textContent = resort.altitude.max;
+        }
+    },
+
+    /**
+     * Render resort list
+     */
+    renderResortList() {
+        if (!this.elements.resortList) return;
+        
+        const current = Resorts.getCurrent();
+        const html = Resorts.getAll().map(resort => {
+            const total = resort.difficulty.easy + resort.difficulty.intermediate + resort.difficulty.advanced;
+            const easyPct = (resort.difficulty.easy / total) * 100;
+            const intPct = (resort.difficulty.intermediate / total) * 100;
+            const advPct = (resort.difficulty.advanced / total) * 100;
+            
+            return `
+                <div class="resort-item ${resort.id === current?.id ? 'selected' : ''}" data-resort="${resort.id}">
+                    <div class="resort-item-header">
+                        <span class="resort-item-flag">${Resorts.getFlag(resort.country)}</span>
+                        <div>
+                            <div class="resort-item-name">${resort.name}</div>
+                            <div class="resort-item-region">${resort.region}</div>
+                        </div>
+                    </div>
+                    <div class="resort-item-stats">
+                        <span class="resort-item-stat"><strong>${resort.stats.kmPiste}</strong> km</span>
+                        <span class="resort-item-stat"><strong>${resort.stats.lifts}</strong> lifts</span>
+                        <span class="resort-item-stat"><strong>${resort.altitude.max}</strong>m peak</span>
+                    </div>
+                    <div class="resort-item-famous">"${resort.famous}"</div>
+                    <div class="resort-item-difficulty">
+                        <div class="difficulty-bar difficulty-easy" style="width: ${easyPct}%"></div>
+                        <div class="difficulty-bar difficulty-intermediate" style="width: ${intPct}%"></div>
+                        <div class="difficulty-bar difficulty-advanced" style="width: ${advPct}%"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        this.elements.resortList.innerHTML = html;
+        
+        // Add click handlers
+        this.elements.resortList.querySelectorAll('.resort-item').forEach(item => {
+            item.addEventListener('click', () => this.selectResort(item.dataset.resort));
+        });
+    },
+
+    /**
+     * Select a resort
+     */
+    selectResort(resortId) {
+        Resorts.setCurrent(resortId);
+        this.updateResortUI();
+        this.renderResortList();
+        
+        // Update map center
+        const resort = Resorts.getCurrent();
+        if (resort && SkiMap.isInitialized) {
+            SkiMap.map.flyTo({
+                center: resort.center,
+                zoom: resort.zoom,
+                duration: 2000
+            });
+        }
+        
+        this.hidePanel('resorts');
     },
 
     /**

@@ -65,6 +65,17 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Resort Selector -->
+            <div class="resort-selector" id="resortSelector">
+                <button class="resort-current" id="resortCurrentBtn">
+                    <span class="resort-flag" id="resortFlag">🇦🇹</span>
+                    <span class="resort-name" id="resortName">Kitzbühel</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+            </div>
+
             <!-- Map Container -->
             <div class="map-container">
                 <div id="map"></div>
@@ -78,6 +89,21 @@
                             <line x1="18" y1="12" x2="22" y2="12"/>
                         </svg>
                     </button>
+                </div>
+                <!-- Resort Info Overlay -->
+                <div class="resort-info" id="resortInfo">
+                    <div class="resort-info-stat">
+                        <span class="resort-info-value" id="resortKm">170</span>
+                        <span class="resort-info-label">km pistes</span>
+                    </div>
+                    <div class="resort-info-stat">
+                        <span class="resort-info-value" id="resortLifts">57</span>
+                        <span class="resort-info-label">lifts</span>
+                    </div>
+                    <div class="resort-info-stat">
+                        <span class="resort-info-value" id="resortAltitude">2000</span>
+                        <span class="resort-info-label">m peak</span>
+                    </div>
                 </div>
             </div>
 
@@ -207,6 +233,24 @@
             </div>
         </div>
 
+        <!-- Resort Selection Panel -->
+        <div class="panel panel-resorts hidden" id="resortsPanel">
+            <div class="panel-header">
+                <h2>Select Resort</h2>
+                <button class="btn-close" id="closeResortsBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="panel-content">
+                <div class="resort-list" id="resortList">
+                    <!-- Resort items will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+
         <!-- Settings Panel -->
         <div class="panel panel-settings hidden" id="settingsPanel">
             <div class="panel-header">
@@ -284,6 +328,7 @@
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/storage.js"></script>
+    <script src="js/resorts.js"></script>
     <script src="js/gps-tracker.js"></script>
     <script src="js/stats.js"></script>
     <script src="js/map.js"></script>

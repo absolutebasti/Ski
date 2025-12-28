@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kitzski-v1';
+const CACHE_NAME = 'skitracker-v2';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -6,6 +6,7 @@ const STATIC_ASSETS = [
     '/css/styles.css',
     '/js/config.js',
     '/js/app.js',
+    '/js/resorts.js',
     '/js/gps-tracker.js',
     '/js/map.js',
     '/js/stats.js',
