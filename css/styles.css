@@ -326,6 +326,22 @@ html, body {
     color: var(--text);
 }
 
+.live-refresh {
+    opacity: 0.5;
+    font-size: 12px;
+    margin-left: 2px;
+    transition: transform 0.3s, opacity 0.3s;
+}
+
+.live-status:hover .live-refresh,
+.live-status:active .live-refresh {
+    opacity: 1;
+}
+
+.live-status:active .live-refresh {
+    transform: rotate(180deg);
+}
+
 /* Resort Details Button */
 .resort-details-btn {
     position: absolute;
@@ -1077,6 +1093,30 @@ html, body {
 .slope-difficulty.intermediate { background: #0a84ff; }
 .slope-difficulty.advanced { background: #ff453a; }
 .slope-difficulty.expert { background: #1c1c1e; border: 2px solid #48484a; }
+
+/* Live status indicators */
+.slope-item.status-open {
+    border-left: 3px solid var(--green);
+}
+
+.slope-item.status-closed {
+    border-left: 3px solid var(--red);
+    opacity: 0.6;
+}
+
+.slope-status {
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.status-open .slope-status {
+    color: var(--green);
+}
+
+.status-closed .slope-status {
+    color: var(--red);
+}
 
 .slope-info,
 .lift-info {

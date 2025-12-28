@@ -515,26 +515,40 @@ const App = {
     },
 
     /**
-     * Render slopes list
+     * Render slopes list with live status
      */
     renderSlopes(slopes) {
         const filtered = this.currentSlopeFilter === 'all' 
             ? slopes 
             : slopes.filter(s => s.difficulty === this.currentSlopeFilter);
         
-        this.elements.slopesList.innerHTML = filtered.map(slope => `
-            <div class="slope-item">
-                <div class="slope-difficulty ${slope.difficulty}"></div>
-                <div class="slope-info">
-                    <div class="slope-name ${slope.famous ? 'famous' : ''}">${slope.name}</div>
-                    <div class="slope-meta">${slope.sector}</div>
+        // Get live status data if available
+        const liveSlopes = this.liveStatus?.slopes || [];
+        
+        this.elements.slopesList.innerHTML = filtered.map(slope => {
+            // Check if this slope has live status
+            const liveData = liveSlopes.find(ls => 
+                ls.name.toLowerCase().includes(slope.name.toLowerCase()) ||
+                slope.name.toLowerCase().includes(ls.name.toLowerCase())
+            );
+            const statusClass = liveData ? (liveData.status === 'open' ? 'status-open' : 'status-closed') : '';
+            const statusIcon = liveData ? (liveData.status === 'open' ? '✓' : '✕') : '';
+            
+            return `
+                <div class="slope-item ${statusClass}">
+                    <div class="slope-difficulty ${slope.difficulty}"></div>
+                    <div class="slope-info">
+                        <div class="slope-name ${slope.famous ? 'famous' : ''}">${slope.name}</div>
+                        <div class="slope-meta">${slope.sector}</div>
+                    </div>
+                    <div class="slope-stats">
+                        ${statusIcon ? `<div class="slope-status">${statusIcon}</div>` : ''}
+                        <div class="slope-length">${slope.length} km</div>
+                        <div class="slope-drop">↓ ${slope.verticalDrop}m</div>
+                    </div>
                 </div>
-                <div class="slope-stats">
-                    <div class="slope-length">${slope.length} km</div>
-                    <div class="slope-drop">↓ ${slope.verticalDrop}m</div>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     },
 
     /**
@@ -758,41 +772,78 @@ const App = {
     },
 
     /**
-     * Load live slope status from API
+     * Load live slope status from Supabase
      */
     async loadLiveStatus() {
         const liveStatus = document.getElementById('liveStatus');
         const liveText = liveStatus?.querySelector('.live-text');
         
         try {
-            const response = await fetch('/api/status');
-            if (response.ok) {
-                const data = await response.json();
+            // Initialize Supabase if not already
+            if (!Supabase.client) {
+                await Supabase.init();
+            }
+            
+            // Get status from Supabase
+            const resort = Resorts.getCurrent();
+            const data = await Supabase.getSlopeStatus(resort?.id || 'kitzbuehel');
+            
+            if (data && data.slopes_total > 0) {
+                const openPct = Math.round((data.slopes_open / data.slopes_total) * 100);
+                liveText.textContent = `${data.slopes_open}/${data.slopes_total} open`;
                 
-                if (data.summary && data.summary.slopesTotal > 0) {
-                    const openPct = Math.round((data.summary.slopesOpen / data.summary.slopesTotal) * 100);
-                    liveText.textContent = `${data.summary.slopesOpen}/${data.summary.slopesTotal} open`;
-                    
-                    liveStatus.classList.remove('closed', 'partial');
-                    if (openPct === 0) {
-                        liveStatus.classList.add('closed');
-                    } else if (openPct < 80) {
-                        liveStatus.classList.add('partial');
-                    }
-                } else if (data.lastUpdated) {
-                    liveText.textContent = 'Status available';
-                } else {
-                    liveText.textContent = 'Check kitzski.at';
+                liveStatus.classList.remove('closed', 'partial');
+                if (openPct === 0) {
+                    liveStatus.classList.add('closed');
+                } else if (openPct < 80) {
+                    liveStatus.classList.add('partial');
                 }
                 
                 // Store for details panel
+                this.liveStatus = data;
+            } else if (data) {
+                liveText.textContent = 'Status available';
                 this.liveStatus = data;
             } else {
                 liveText.textContent = 'Live';
             }
         } catch (e) {
-            // API not available (static hosting)
+            console.log('Live status not available:', e.message);
             if (liveText) liveText.textContent = 'Live';
+        }
+    },
+
+    /**
+     * Manually refresh slope status (calls the Edge Function)
+     */
+    async refreshSlopeStatus() {
+        const liveStatus = document.getElementById('liveStatus');
+        const liveText = liveStatus?.querySelector('.live-text');
+        
+        if (liveText) liveText.textContent = 'Updating...';
+        
+        try {
+            const config = {
+                url: Config.SUPABASE_URL,
+                anonKey: Config.SUPABASE_ANON_KEY
+            };
+            
+            const response = await fetch(`${config.url}/functions/v1/scrape-slopes`, {
+                headers: {
+                    'Authorization': `Bearer ${config.anonKey}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Scraper response:', data);
+                
+                // Reload status from database
+                setTimeout(() => this.loadLiveStatus(), 1000);
+            }
+        } catch (e) {
+            console.error('Failed to refresh status:', e);
+            this.loadLiveStatus();
         }
     },
 
