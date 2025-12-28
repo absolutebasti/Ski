@@ -10,8 +10,8 @@ const Config = {
     
     // Supabase - Get these from: Supabase Dashboard > Settings > API
     // The anon key is safe to expose publicly (security is via Row Level Security)
-    SUPABASE_URL: 'YOUR_SUPABASE_URL',           // e.g., https://xxxxx.supabase.co
-    SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY', // The "anon public" key
+    SUPABASE_URL: 'https://aknbxzkewrbwsaxfhalz.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrbmJ4emtld3Jid3NheGZoYWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5NDQ0MzYsImV4cCI6MjA4MjUyMDQzNn0.e_4D6FTQ_YKAMjaob3gP6lYFQPLUXxJe5Np73jl-DHU'
     
     // App Settings
     APP_NAME: 'Ski Tracker',
