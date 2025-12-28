@@ -6,17 +6,21 @@ const Supabase = {
     client: null,
     user: null,
 
-    // Configuration - UPDATE THESE WITH YOUR SUPABASE CREDENTIALS
-    CONFIG: {
-        url: 'YOUR_SUPABASE_URL',        // e.g., https://xxxxx.supabase.co
-        anonKey: 'YOUR_SUPABASE_ANON_KEY' // Found in Project Settings > API
+    // Uses values from js/config.js
+    getConfig() {
+        return {
+            url: window.Config?.SUPABASE_URL || 'YOUR_SUPABASE_URL',
+            anonKey: window.Config?.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'
+        };
     },
 
     /**
      * Initialize Supabase client
      */
     async init() {
-        if (this.CONFIG.url === 'YOUR_SUPABASE_URL') {
+        const config = this.getConfig();
+        
+        if (config.url === 'YOUR_SUPABASE_URL') {
             console.log('Supabase not configured - using local storage only');
             return false;
         }
@@ -28,8 +32,8 @@ const Supabase = {
             }
 
             this.client = window.supabase.createClient(
-                this.CONFIG.url,
-                this.CONFIG.anonKey
+                config.url,
+                config.anonKey
             );
 
             // Check for existing session

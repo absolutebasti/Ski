@@ -1,14 +1,20 @@
 /**
- * KitzSki Tracker - Configuration
+ * Ski Tracker - Configuration
+ * 
+ * ⚠️  UPDATE THESE VALUES WITH YOUR CREDENTIALS  ⚠️
  */
 
 const Config = {
-    // Mapbox API Token - Set your token here for production
-    // Get your free token at: https://mapbox.com
+    // Mapbox API Token - Get yours at: https://mapbox.com
     MAPBOX_TOKEN: 'pk.eyJ1IjoiYWJzb2x1dGViYXN0aSIsImEiOiJjbWpxMm15enkxb3JkM2VxeXdydmlwMnB6In0.q8VWl_-0LW2B3MTUDhf8hA',
     
+    // Supabase - Get these from: Supabase Dashboard > Settings > API
+    // The anon key is safe to expose publicly (security is via Row Level Security)
+    SUPABASE_URL: 'YOUR_SUPABASE_URL',           // e.g., https://xxxxx.supabase.co
+    SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY', // The "anon public" key
+    
     // App Settings
-    APP_NAME: 'KitzSki',
+    APP_NAME: 'Ski Tracker',
     VERSION: '1.0.0',
     
     // Default map center (Kitzbühel)
