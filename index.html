@@ -80,48 +80,11 @@
                     </svg>
                 </button>
                 
-                <!-- Unified Resort Card (Bottom of map) -->
-                <div class="resort-card" id="resortCard">
-                    <!-- Resort Header (tappable to change resort) -->
-                    <button class="resort-card-header" id="resortCurrentBtn">
-                        <span class="resort-flag" id="resortFlag">🇦🇹</span>
-                        <span class="resort-name" id="resortName">Kitzbühel</span>
-                        <svg class="resort-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- Live Status -->
-                    <div class="resort-card-status" id="liveStatus" onclick="App.refreshSlopeStatus()">
-                        <span class="live-dot"></span>
-                        <span class="live-text">Loading...</span>
-                    </div>
-                    
-                    <!-- Stats Row -->
-                    <div class="resort-card-stats">
-                        <div class="resort-stat">
-                            <span class="resort-stat-value" id="resortKm">170</span>
-                            <span class="resort-stat-label">km</span>
-                        </div>
-                        <div class="resort-stat-divider"></div>
-                        <div class="resort-stat">
-                            <span class="resort-stat-value" id="resortLifts">57</span>
-                            <span class="resort-stat-label">lifts</span>
-                        </div>
-                        <div class="resort-stat-divider"></div>
-                        <div class="resort-stat">
-                            <span class="resort-stat-value" id="resortAltitude">2000</span>
-                            <span class="resort-stat-label">m</span>
-                        </div>
-                    </div>
-                    
-                    <!-- View Details Button -->
-                    <button class="resort-card-action" id="resortDetailsBtn">
-                        <span>Slopes & Lifts</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <polyline points="9 18 15 12 9 6"/>
-                        </svg>
-                    </button>
+                <!-- Simple Resort Info -->
+                <div class="resort-badge">
+                    <span class="resort-badge-flag">🇦🇹</span>
+                    <span class="resort-badge-name">Kitzbühel</span>
+                    <span class="resort-badge-stats">170 km · 2000m</span>
                 </div>
             </div>
 
