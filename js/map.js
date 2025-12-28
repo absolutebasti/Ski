@@ -49,13 +49,13 @@ const SkiMap = {
         mapboxgl.accessToken = token;
         
         try {
-            // Create map instance
+            // Create map instance with dark style
             this.map = new mapboxgl.Map({
                 container: containerId,
-                style: 'mapbox://styles/mapbox/outdoors-v12',
+                style: 'mapbox://styles/mapbox/dark-v11',
                 center: this.KITZBUEHEL_CENTER,
                 zoom: this.DEFAULT_ZOOM,
-                pitch: 45, // 3D perspective
+                pitch: 40,
                 bearing: 0,
                 antialias: true
             });

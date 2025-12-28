@@ -74,78 +74,78 @@
                             <span id="currentSpeed">0</span>
                             <span class="stat-unit">km/h</span>
                         </div>
-                        <div class="stat-label">Current Speed</div>
+                        <div class="stat-label">Speed</div>
                     </div>
                 </div>
 
                 <!-- Secondary Stats Grid -->
                 <div class="stats-grid">
                     <div class="stat-card stat-small">
-                        <div class="stat-icon">🚀</div>
+                        <div class="stat-icon">↑</div>
                         <div class="stat-info">
-                            <div class="stat-value"><span id="maxSpeed">0</span> <span class="stat-unit">km/h</span></div>
-                            <div class="stat-label">Max Speed</div>
+                            <div class="stat-value"><span id="maxSpeed">0</span><span class="stat-unit">km/h</span></div>
+                            <div class="stat-label">Max</div>
                         </div>
                     </div>
                     <div class="stat-card stat-small">
-                        <div class="stat-icon">📏</div>
+                        <div class="stat-icon">→</div>
                         <div class="stat-info">
-                            <div class="stat-value"><span id="distance">0.0</span> <span class="stat-unit">km</span></div>
+                            <div class="stat-value"><span id="distance">0.0</span><span class="stat-unit">km</span></div>
                             <div class="stat-label">Distance</div>
                         </div>
                     </div>
                     <div class="stat-card stat-small">
-                        <div class="stat-icon">⬇️</div>
+                        <div class="stat-icon">↓</div>
                         <div class="stat-info">
-                            <div class="stat-value"><span id="verticalDrop">0</span> <span class="stat-unit">m</span></div>
+                            <div class="stat-value"><span id="verticalDrop">0</span><span class="stat-unit">m</span></div>
                             <div class="stat-label">Vertical</div>
                         </div>
                     </div>
                     <div class="stat-card stat-small">
-                        <div class="stat-icon">🏔️</div>
+                        <div class="stat-icon">▲</div>
                         <div class="stat-info">
-                            <div class="stat-value"><span id="altitude">--</span> <span class="stat-unit">m</span></div>
+                            <div class="stat-value"><span id="altitude">--</span><span class="stat-unit">m</span></div>
                             <div class="stat-label">Altitude</div>
                         </div>
                     </div>
                     <div class="stat-card stat-small">
-                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-icon">◷</div>
                         <div class="stat-info">
                             <div class="stat-value"><span id="duration">00:00</span></div>
-                            <div class="stat-label">Duration</div>
+                            <div class="stat-label">Time</div>
                         </div>
                     </div>
                     <div class="stat-card stat-small">
-                        <div class="stat-icon">🎿</div>
+                        <div class="stat-icon">#</div>
                         <div class="stat-info">
                             <div class="stat-value"><span id="runs">0</span></div>
                             <div class="stat-label">Runs</div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Control Buttons -->
-                <div class="controls">
-                    <button class="btn btn-primary btn-start" id="startBtn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <polygon points="5 3 19 12 5 21 5 3"/>
-                        </svg>
-                        <span>Start Tracking</span>
-                    </button>
-                    <button class="btn btn-secondary btn-pause hidden" id="pauseBtn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="6" y="4" width="4" height="16"/>
-                            <rect x="14" y="4" width="4" height="16"/>
-                        </svg>
-                        <span>Pause</span>
-                    </button>
-                    <button class="btn btn-danger btn-stop hidden" id="stopBtn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="4" y="4" width="16" height="16" rx="2"/>
-                        </svg>
-                        <span>Stop & Save</span>
-                    </button>
-                </div>
+            <!-- Control Buttons - Fixed at bottom -->
+            <div class="controls">
+                <button class="btn btn-primary btn-start" id="startBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    <span>Start</span>
+                </button>
+                <button class="btn btn-secondary btn-pause hidden" id="pauseBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="4" width="4" height="16"/>
+                        <rect x="14" y="4" width="4" height="16"/>
+                    </svg>
+                    <span>Pause</span>
+                </button>
+                <button class="btn btn-danger btn-stop hidden" id="stopBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="4" y="4" width="16" height="16" rx="2"/>
+                    </svg>
+                    <span>Stop</span>
+                </button>
             </div>
         </main>
 

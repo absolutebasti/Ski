@@ -1,18 +1,14 @@
 /**
  * KitzSki Tracker - Configuration
- * 
- * This file loads environment variables for the app.
- * In production (Vercel/Netlify), these are injected at build time.
- * For local development, edit the values below or use .env file.
  */
 
 const Config = {
-    // Mapbox API Token
+    // Mapbox API Token - Set your token here for production
     // Get your free token at: https://mapbox.com
-    MAPBOX_TOKEN: '',
+    MAPBOX_TOKEN: 'pk.eyJ1IjoiYWJzb2x1dGViYXN0aSIsImEiOiJjbWpxMm15enkxb3JkM2VxeXdydmlwMnB6In0.q8VWl_-0LW2B3MTUDhf8hA',
     
     // App Settings
-    APP_NAME: 'KitzSki Tracker',
+    APP_NAME: 'KitzSki',
     VERSION: '1.0.0',
     
     // Default map center (Kitzbühel)
@@ -26,59 +22,39 @@ const Config = {
     MIN_ACCURACY_METERS: 30,
     
     /**
-     * Initialize config from environment
-     * Attempts to load from .env file for local development
+     * Initialize config
      */
     async init() {
+        // Try to load from .env for local dev (won't work on Vercel, that's ok)
         try {
-            // Try to load .env file (local development)
             const response = await fetch('/.env');
             if (response.ok) {
                 const text = await response.text();
                 this.parseEnv(text);
             }
         } catch (e) {
-            // .env not available, use defaults or injected values
-            console.log('Using default configuration');
+            // Using bundled config
         }
-        
-        // Check for window-level config (for build-time injection)
-        if (window.__ENV__) {
-            Object.assign(this, window.__ENV__);
-        }
-        
         return this;
     },
     
-    /**
-     * Parse .env file content
-     */
     parseEnv(content) {
-        const lines = content.split('\n');
-        for (const line of lines) {
+        content.split('\n').forEach(line => {
             const trimmed = line.trim();
-            // Skip comments and empty lines
-            if (!trimmed || trimmed.startsWith('#')) continue;
-            
-            const [key, ...valueParts] = trimmed.split('=');
-            const value = valueParts.join('=').trim();
-            
-            if (key && value) {
-                this[key.trim()] = value;
+            if (!trimmed || trimmed.startsWith('#')) return;
+            const [key, ...val] = trimmed.split('=');
+            if (key && val.length) {
+                this[key.trim()] = val.join('=').trim();
             }
-        }
+        });
     },
     
-    /**
-     * Check if Mapbox is configured
-     */
     hasMapbox() {
         return this.MAPBOX_TOKEN && 
-               this.MAPBOX_TOKEN.length > 10 && 
+               this.MAPBOX_TOKEN.length > 20 && 
                !this.MAPBOX_TOKEN.includes('your_');
     }
 };
 
-// Make Config available globally
 window.Config = Config;
 
