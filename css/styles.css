@@ -175,22 +175,23 @@ html, body {
     display: flex;
     align-items: baseline;
     justify-content: center;
-    gap: 4px;
+    gap: 8px;
 }
 
 .stat-speed .stat-value span:first-child {
     font-size: 96px;
     font-weight: 200;
-    letter-spacing: -6px;
+    letter-spacing: -4px;
     line-height: 0.85;
     font-feature-settings: 'tnum';
 }
 
 .stat-speed .stat-unit {
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 400;
     color: var(--text-secondary);
-    letter-spacing: -0.5px;
+    letter-spacing: 0.5px;
+    padding-bottom: 8px;
 }
 
 .stat-speed .stat-label {
