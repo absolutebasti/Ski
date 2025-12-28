@@ -37,7 +37,10 @@ const App = {
         // Load saved data
         await this.loadSavedData();
         
-        console.log('🎿 KitzSki Tracker ready!');
+        // Load live slope status
+        this.loadLiveStatus();
+        
+        console.log('🎿 Ski Tracker ready!');
     },
 
     /**
@@ -744,6 +747,45 @@ const App = {
         await Stats.updateRunCount();
         const records = await Storage.getRecords();
         Stats.updateRecords(records);
+    },
+
+    /**
+     * Load live slope status from API
+     */
+    async loadLiveStatus() {
+        const liveStatus = document.getElementById('liveStatus');
+        const liveText = liveStatus?.querySelector('.live-text');
+        
+        try {
+            const response = await fetch('/api/status');
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.summary && data.summary.slopesTotal > 0) {
+                    const openPct = Math.round((data.summary.slopesOpen / data.summary.slopesTotal) * 100);
+                    liveText.textContent = `${data.summary.slopesOpen}/${data.summary.slopesTotal} open`;
+                    
+                    liveStatus.classList.remove('closed', 'partial');
+                    if (openPct === 0) {
+                        liveStatus.classList.add('closed');
+                    } else if (openPct < 80) {
+                        liveStatus.classList.add('partial');
+                    }
+                } else if (data.lastUpdated) {
+                    liveText.textContent = 'Status available';
+                } else {
+                    liveText.textContent = 'Check kitzski.at';
+                }
+                
+                // Store for details panel
+                this.liveStatus = data;
+            } else {
+                liveText.textContent = 'Live';
+            }
+        } catch (e) {
+            // API not available (static hosting)
+            if (liveText) liveText.textContent = 'Live';
+        }
     },
 
     /**

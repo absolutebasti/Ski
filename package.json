@@ -1,13 +1,23 @@
 {
-  "name": "kitzski-tracker",
+  "name": "ski-tracker",
   "version": "1.0.0",
-  "description": "Ski tracking PWA for Kitzbühel",
+  "description": "Ski tracking PWA with live slope status",
+  "main": "server.js",
   "scripts": {
-    "start": "npx serve . -l $PORT",
-    "dev": "npx serve . -l 3000"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "static": "npx serve . -l 3000"
   },
-  "keywords": ["ski", "tracking", "pwa", "gps"],
-  "author": "absolutebasti",
-  "license": "MIT"
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "keywords": ["ski", "tracking", "pwa", "gps", "kitzbuehel"],
+  "author": "Sebastian",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
 
