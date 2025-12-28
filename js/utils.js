@@ -167,7 +167,7 @@ const Utils = {
      * @returns {number} Smoothed value
      */
     smoothValue(current, target, factor = 0.3) {
-        return current + (target - factor) * factor;
+        return current + (target - current) * factor;
     },
 
     /**

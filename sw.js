@@ -1,4 +1,4 @@
-const CACHE_NAME = 'skitracker-v2';
+const CACHE_NAME = 'skitracker-v3';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -12,8 +12,11 @@ const STATIC_ASSETS = [
     '/js/stats.js',
     '/js/storage.js',
     '/js/utils.js',
+    '/js/supabase.js',
     '/assets/trails/kitzbuehel.geojson',
-    '/assets/trails/kitzbuehel-details.json'
+    '/assets/trails/kitzbuehel-details.json',
+    '/assets/icons/icon-192.svg',
+    '/assets/icons/icon-512.svg'
 ];
 
 // Install event - cache static assets

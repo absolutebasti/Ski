@@ -6,6 +6,11 @@ const App = {
     state: 'idle', // idle, tracking, paused
     wakeLock: null,
     
+    // Auto-pause settings
+    autoPauseEnabled: true,
+    zeroSpeedStartTime: null,
+    autoPauseThreshold: 30000, // 30 seconds of zero speed
+    
     // DOM elements
     elements: {},
 
@@ -36,6 +41,9 @@ const App = {
         
         // Load saved data
         await this.loadSavedData();
+        
+        // Check for emergency saved run (crash recovery)
+        await this.checkEmergencyRun();
         
         // Load live slope status
         this.loadLiveStatus();
@@ -173,6 +181,81 @@ const App = {
         
         // Visibility change (for wake lock)
         document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+        
+        // Auto-save when page closes (prevent data loss)
+        window.addEventListener('beforeunload', (e) => this.handleBeforeUnload(e));
+        window.addEventListener('pagehide', () => this.emergencySave());
+    },
+
+    /**
+     * Handle before unload - warn if tracking
+     */
+    handleBeforeUnload(e) {
+        if (this.state === 'tracking' || this.state === 'paused') {
+            // Emergency save
+            this.emergencySave();
+            
+            // Show confirmation dialog
+            e.preventDefault();
+            e.returnValue = 'You have an active run. Are you sure you want to leave?';
+            return e.returnValue;
+        }
+    },
+
+    /**
+     * Emergency save current run data
+     */
+    async emergencySave() {
+        if (this.state === 'idle') return;
+        
+        try {
+            const runData = Stats.getRunData();
+            if (runData.distance > 0.01 || runData.duration > 10000) {
+                // Save to localStorage as backup (faster than IndexedDB)
+                localStorage.setItem('emergencyRun', JSON.stringify({
+                    ...runData,
+                    savedAt: Date.now(),
+                    wasTracking: this.state === 'tracking'
+                }));
+                console.log('Emergency save completed');
+            }
+        } catch (e) {
+            console.error('Emergency save failed:', e);
+        }
+    },
+
+    /**
+     * Check for emergency saved run on startup
+     */
+    async checkEmergencyRun() {
+        const saved = localStorage.getItem('emergencyRun');
+        if (saved) {
+            try {
+                const runData = JSON.parse(saved);
+                const age = Date.now() - runData.savedAt;
+                
+                // Only recover if less than 1 hour old
+                if (age < 3600000) {
+                    const recover = confirm(
+                        `Found unsaved run from ${Math.round(age / 60000)} minutes ago.\n` +
+                        `Distance: ${runData.distance.toFixed(2)} km\n` +
+                        `Max Speed: ${Math.round(runData.maxSpeed)} km/h\n\n` +
+                        `Would you like to save it?`
+                    );
+                    
+                    if (recover) {
+                        await Storage.saveRun(runData);
+                        await Storage.updateRecords(runData);
+                        await Stats.updateRunCount();
+                        alert('Run recovered and saved!');
+                    }
+                }
+                
+                localStorage.removeItem('emergencyRun');
+            } catch (e) {
+                localStorage.removeItem('emergencyRun');
+            }
+        }
     },
 
     /**
@@ -292,6 +375,59 @@ const App = {
             SkiMap.updateUserPosition(position.longitude, position.latitude, false);
             SkiMap.addToTrack(position.longitude, position.latitude);
         }
+        
+        // Auto-pause logic (for lift rides)
+        this.checkAutoPause(position.smoothedSpeed || position.speed);
+    },
+
+    /**
+     * Check if should auto-pause (e.g., on ski lift)
+     * @param {number} speed - Current speed in km/h
+     */
+    checkAutoPause(speed) {
+        if (!this.autoPauseEnabled || this.state !== 'tracking') return;
+        
+        const isStationary = speed < 2; // Less than 2 km/h
+        
+        if (isStationary) {
+            if (!this.zeroSpeedStartTime) {
+                this.zeroSpeedStartTime = Date.now();
+            } else if (Date.now() - this.zeroSpeedStartTime > this.autoPauseThreshold) {
+                // Auto-pause
+                this.togglePause();
+                this.zeroSpeedStartTime = null;
+                this.showAutoPauseIndicator();
+            }
+        } else {
+            // Moving again - reset timer
+            this.zeroSpeedStartTime = null;
+            
+            // Auto-resume if was auto-paused
+            if (this.state === 'paused' && this.wasAutoPaused) {
+                this.togglePause();
+                this.wasAutoPaused = false;
+            }
+        }
+    },
+
+    /**
+     * Show auto-pause indicator
+     */
+    showAutoPauseIndicator() {
+        this.wasAutoPaused = true;
+        
+        const indicator = document.createElement('div');
+        indicator.className = 'auto-pause-indicator';
+        indicator.innerHTML = `
+            <div class="icon">⏸️</div>
+            <div class="text">Auto-paused (on lift?)</div>
+        `;
+        document.body.appendChild(indicator);
+        
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+            setTimeout(() => indicator.remove(), 300);
+        }, 2000);
     },
 
     /**
@@ -303,7 +439,39 @@ const App = {
         
         if (error.code === 1) { // Permission denied
             this.showGPSModal();
+        } else {
+            // Show toast for other errors
+            this.showToast(error.message || 'GPS error occurred', 'error');
         }
+    },
+
+    /**
+     * Show a toast notification
+     * @param {string} message - Message to show
+     * @param {string} type - Toast type (info, error, success)
+     */
+    showToast(message, type = 'info') {
+        // Remove existing toast
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <span class="toast-icon">${type === 'error' ? '⚠️' : type === 'success' ? '✓' : 'ℹ️'}</span>
+            <span class="toast-message">${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Animate in
+        requestAnimationFrame(() => toast.classList.add('show'));
+        
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
     },
 
     /**

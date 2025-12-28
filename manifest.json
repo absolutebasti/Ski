@@ -1,7 +1,7 @@
 {
-    "name": "KitzSki Tracker",
-    "short_name": "KitzSki",
-    "description": "Track your skiing at Kitzbühel - Speed, Distance, Altitude & More",
+    "name": "Ski Tracker",
+    "short_name": "Ski Tracker",
+    "description": "Track your skiing - Speed, Distance, Altitude & More",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0a0a1a",
