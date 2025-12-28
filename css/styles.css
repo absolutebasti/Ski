@@ -267,10 +267,11 @@ body {
     display: flex;
     gap: 0.5rem;
     padding: 1rem;
-    padding-bottom: max(1rem, var(--safe-bottom));
+    padding-bottom: calc(1.5rem + var(--safe-bottom, 20px));
     background: var(--bg-primary);
     border-top: 1px solid var(--border);
     margin-top: auto;
+    margin-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .btn {

@@ -31,13 +31,15 @@ const GPSTracker = {
     },
     
     // Filtering settings
-    minAccuracy: 30, // meters - reject readings with worse accuracy
-    minDistance: 2, // meters - minimum distance to register movement
+    minAccuracy: 50, // meters - reject readings with worse accuracy (increased for indoor)
+    minDistance: 1, // meters - minimum distance to register movement
     speedSmoothingFactor: 0.4,
     
     // Speed calculation
     lastSpeeds: [],
     maxSpeedSamples: 5,
+    lastPositionTime: null,
+    lastPosition: null,
 
     /**
      * Check if GPS is available
@@ -209,9 +211,34 @@ const GPSTracker = {
         
         // Convert speed from m/s to km/h
         let speedKmh = 0;
+        
+        // Try to use GPS-reported speed first
         if (coords.speed !== null && coords.speed >= 0) {
             speedKmh = Utils.mpsToKmh(coords.speed);
         }
+        
+        // Fallback: Calculate speed from position change if GPS speed unavailable
+        if (speedKmh === 0 && this.lastPosition && this.lastPositionTime) {
+            const timeDiff = (timestamp - this.lastPositionTime) / 1000; // seconds
+            if (timeDiff > 0 && timeDiff < 10) { // Only if reasonable time gap
+                const distance = Utils.calculateDistance(
+                    this.lastPosition.latitude,
+                    this.lastPosition.longitude,
+                    coords.latitude,
+                    coords.longitude
+                );
+                // Calculate speed in km/h (distance in m, time in s)
+                const calculatedSpeed = (distance / timeDiff) * 3.6;
+                // Only use if movement detected and reasonable speed
+                if (calculatedSpeed > 0.5 && calculatedSpeed < 200) {
+                    speedKmh = calculatedSpeed;
+                }
+            }
+        }
+        
+        // Store for next calculation
+        this.lastPosition = { latitude: coords.latitude, longitude: coords.longitude };
+        this.lastPositionTime = timestamp;
 
         return {
             latitude: coords.latitude,
