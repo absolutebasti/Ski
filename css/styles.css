@@ -67,15 +67,18 @@ html, body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
-.logo-icon { font-size: 20px; }
+.logo-icon {
+    color: var(--text);
+    flex-shrink: 0;
+}
 
 .logo-text {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 600;
-    letter-spacing: -0.4px;
+    letter-spacing: -0.5px;
 }
 
 .header-actions {
