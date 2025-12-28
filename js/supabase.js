@@ -15,7 +15,7 @@ const Supabase = {
     },
 
     /**
-     * Initialize Supabase client
+     * Initialize Supabase client with automatic anonymous auth
      */
     async init() {
         const config = this.getConfig();
@@ -38,9 +38,13 @@ const Supabase = {
 
             // Check for existing session
             const { data: { session } } = await this.client.auth.getSession();
+            
             if (session) {
                 this.user = session.user;
-                console.log('Supabase: Logged in as', this.user.email);
+                console.log('Supabase: Session restored', this.user.is_anonymous ? '(anonymous)' : this.user.email);
+            } else {
+                // No session - sign in anonymously
+                await this.signInAnonymously();
             }
 
             console.log('Supabase initialized');
@@ -48,6 +52,24 @@ const Supabase = {
         } catch (e) {
             console.error('Supabase init failed:', e);
             return false;
+        }
+    },
+
+    /**
+     * Sign in anonymously - creates a unique user ID for this device
+     * No email/password needed, runs are still tied to this device
+     */
+    async signInAnonymously() {
+        try {
+            const { data, error } = await this.client.auth.signInAnonymously();
+            if (error) throw error;
+            
+            this.user = data.user;
+            console.log('Supabase: Signed in anonymously, ID:', this.user.id.slice(0, 8) + '...');
+            return data;
+        } catch (e) {
+            console.error('Anonymous sign-in failed:', e);
+            return null;
         }
     },
 
