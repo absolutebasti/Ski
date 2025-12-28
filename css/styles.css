@@ -75,10 +75,24 @@ html, body {
     flex-shrink: 0;
 }
 
+.logo-text-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
 .logo-text {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
+    line-height: 1.1;
+}
+
+.logo-credit {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    letter-spacing: 0;
 }
 
 .header-actions {
