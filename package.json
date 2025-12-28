@@ -1,0 +1,13 @@
+{
+  "name": "kitzski-tracker",
+  "version": "1.0.0",
+  "description": "Ski tracking PWA for Kitzbühel",
+  "scripts": {
+    "start": "npx serve . -l $PORT",
+    "dev": "npx serve . -l 3000"
+  },
+  "keywords": ["ski", "tracking", "pwa", "gps"],
+  "author": "absolutebasti",
+  "license": "MIT"
+}
+
