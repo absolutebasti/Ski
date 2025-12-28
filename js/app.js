@@ -699,33 +699,36 @@ const App = {
                 ls.name.toLowerCase().includes(slope.name.toLowerCase()) ||
                 slope.name.toLowerCase().includes(ls.name.toLowerCase())
             );
-            const statusClass = liveData ? (liveData.status === 'open' ? 'status-open' : 'status-closed') : '';
-            const statusIcon = liveData ? (liveData.status === 'open' ? '✓' : '✕') : '';
+            const isOpen = liveData?.status === 'open';
+            const hasStatus = !!liveData;
             
             return `
-                <div class="slope-item ${statusClass}">
+                <div class="slope-item">
                     <div class="slope-difficulty ${slope.difficulty}"></div>
                     <div class="slope-info">
                         <div class="slope-name ${slope.famous ? 'famous' : ''}">${slope.name}</div>
                         <div class="slope-meta">${slope.sector}</div>
                     </div>
                     <div class="slope-stats">
-                        ${statusIcon ? `<div class="slope-status">${statusIcon}</div>` : ''}
                         <div class="slope-length">${slope.length} km</div>
                         <div class="slope-drop">↓ ${slope.verticalDrop}m</div>
                     </div>
+                    ${hasStatus ? `<div class="status-dot ${isOpen ? 'open' : 'closed'}"></div>` : ''}
                 </div>
             `;
         }).join('');
     },
 
     /**
-     * Render lifts list
+     * Render lifts list with live status
      */
     renderLifts(lifts) {
         const filtered = this.currentLiftFilter === 'all' 
             ? lifts 
             : lifts.filter(l => l.type === this.currentLiftFilter);
+        
+        // Get live status data if available
+        const liveLifts = this.liveStatus?.lifts || [];
         
         const liftIcons = {
             gondola: '🚡',
@@ -733,19 +736,30 @@ const App = {
             dragLift: '⬆️'
         };
         
-        this.elements.liftsList.innerHTML = filtered.map(lift => `
-            <div class="lift-item">
-                <span class="lift-icon">${liftIcons[lift.type] || '🚡'}</span>
-                <div class="lift-info">
-                    <div class="lift-name">${lift.name}</div>
-                    <div class="lift-meta">${lift.sector} · ${lift.capacity} pers.</div>
+        this.elements.liftsList.innerHTML = filtered.map(lift => {
+            // Check if this lift has live status
+            const liveData = liveLifts.find(ll => 
+                ll.name.toLowerCase().includes(lift.name.toLowerCase()) ||
+                lift.name.toLowerCase().includes(ll.name.toLowerCase())
+            );
+            const isOpen = liveData?.status === 'open';
+            const hasStatus = !!liveData;
+            
+            return `
+                <div class="lift-item">
+                    <span class="lift-icon">${liftIcons[lift.type] || '🚡'}</span>
+                    <div class="lift-info">
+                        <div class="lift-name">${lift.name}</div>
+                        <div class="lift-meta">${lift.sector} · ${lift.capacity} pers.</div>
+                    </div>
+                    <div class="lift-stats">
+                        <div class="lift-length">${(lift.length/1000).toFixed(1)} km</div>
+                        <div class="lift-rise">↑ ${lift.verticalRise}m</div>
+                    </div>
+                    ${hasStatus ? `<div class="status-dot ${isOpen ? 'open' : 'closed'}"></div>` : ''}
                 </div>
-                <div class="lift-stats">
-                    <div class="lift-length">${(lift.length/1000).toFixed(1)} km</div>
-                    <div class="lift-rise">↑ ${lift.verticalRise}m</div>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     },
 
     /**

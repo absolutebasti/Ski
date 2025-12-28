@@ -65,62 +65,64 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Resort Selector -->
-            <div class="resort-selector" id="resortSelector">
-                <button class="resort-current" id="resortCurrentBtn">
-                    <span class="resort-flag" id="resortFlag">🇦🇹</span>
-                    <span class="resort-name" id="resortName">Kitzbühel</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                </button>
-            </div>
-
             <!-- Map Container -->
             <div class="map-container">
                 <div id="map"></div>
-                <div class="map-overlay">
-                    <button class="btn-locate" id="locateBtn" aria-label="Center on location">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="4"/>
-                            <line x1="12" y1="2" x2="12" y2="6"/>
-                            <line x1="12" y1="18" x2="12" y2="22"/>
-                            <line x1="2" y1="12" x2="6" y2="12"/>
-                            <line x1="18" y1="12" x2="22" y2="12"/>
+                
+                <!-- Locate Button -->
+                <button class="btn-locate" id="locateBtn" aria-label="Center on location">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="4"/>
+                        <line x1="12" y1="2" x2="12" y2="6"/>
+                        <line x1="12" y1="18" x2="12" y2="22"/>
+                        <line x1="2" y1="12" x2="6" y2="12"/>
+                        <line x1="18" y1="12" x2="22" y2="12"/>
+                    </svg>
+                </button>
+                
+                <!-- Unified Resort Card (Bottom of map) -->
+                <div class="resort-card" id="resortCard">
+                    <!-- Resort Header (tappable to change resort) -->
+                    <button class="resort-card-header" id="resortCurrentBtn">
+                        <span class="resort-flag" id="resortFlag">🇦🇹</span>
+                        <span class="resort-name" id="resortName">Kitzbühel</span>
+                        <svg class="resort-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Live Status -->
+                    <div class="resort-card-status" id="liveStatus" onclick="App.refreshSlopeStatus()">
+                        <span class="live-dot"></span>
+                        <span class="live-text">Loading...</span>
+                    </div>
+                    
+                    <!-- Stats Row -->
+                    <div class="resort-card-stats">
+                        <div class="resort-stat">
+                            <span class="resort-stat-value" id="resortKm">170</span>
+                            <span class="resort-stat-label">km</span>
+                        </div>
+                        <div class="resort-stat-divider"></div>
+                        <div class="resort-stat">
+                            <span class="resort-stat-value" id="resortLifts">57</span>
+                            <span class="resort-stat-label">lifts</span>
+                        </div>
+                        <div class="resort-stat-divider"></div>
+                        <div class="resort-stat">
+                            <span class="resort-stat-value" id="resortAltitude">2000</span>
+                            <span class="resort-stat-label">m</span>
+                        </div>
+                    </div>
+                    
+                    <!-- View Details Button -->
+                    <button class="resort-card-action" id="resortDetailsBtn">
+                        <span>Slopes & Lifts</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="9 18 15 12 9 6"/>
                         </svg>
                     </button>
                 </div>
-                <!-- Live Status Badge -->
-                <div class="live-status" id="liveStatus" onclick="App.refreshSlopeStatus()">
-                    <span class="live-dot"></span>
-                    <span class="live-text">Loading...</span>
-                    <span class="live-refresh">↻</span>
-                </div>
-                
-                <!-- Resort Info Overlay -->
-                <div class="resort-info" id="resortInfo">
-                    <div class="resort-info-stat">
-                        <span class="resort-info-value" id="resortKm">170</span>
-                        <span class="resort-info-label">km pistes</span>
-                    </div>
-                    <div class="resort-info-stat">
-                        <span class="resort-info-value" id="resortLifts">57</span>
-                        <span class="resort-info-label">lifts</span>
-                    </div>
-                    <div class="resort-info-stat">
-                        <span class="resort-info-value" id="resortAltitude">2000</span>
-                        <span class="resort-info-label">m peak</span>
-                    </div>
-                </div>
-                <!-- View Details Button -->
-                <button class="resort-details-btn" id="resortDetailsBtn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="16" x2="12" y2="12"/>
-                        <line x1="12" y1="8" x2="12" y2="8"/>
-                    </svg>
-                    <span>View Slopes & Lifts</span>
-                </button>
             </div>
 
             <!-- Stats Dashboard -->
