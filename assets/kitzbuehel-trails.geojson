@@ -1,0 +1,288 @@
+{
+  "type": "FeatureCollection",
+  "name": "Kitzbühel Ski Trails",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Streif",
+        "difficulty": "expert",
+        "type": "piste",
+        "length_km": 3.3,
+        "vertical_drop": 862
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3650, 47.4580],
+          [12.3660, 47.4560],
+          [12.3680, 47.4530],
+          [12.3710, 47.4500],
+          [12.3750, 47.4470],
+          [12.3800, 47.4440],
+          [12.3850, 47.4410],
+          [12.3913, 47.4390]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Familienabfahrt",
+        "difficulty": "easy",
+        "type": "piste",
+        "length_km": 2.5,
+        "vertical_drop": 450
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3750, 47.4650],
+          [12.3780, 47.4620],
+          [12.3820, 47.4580],
+          [12.3860, 47.4540],
+          [12.3900, 47.4500],
+          [12.3913, 47.4491]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Pengelstein I",
+        "difficulty": "intermediate",
+        "type": "piste",
+        "length_km": 4.2,
+        "vertical_drop": 680
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.4050, 47.4720],
+          [12.4020, 47.4680],
+          [12.3980, 47.4640],
+          [12.3950, 47.4600],
+          [12.3920, 47.4560],
+          [12.3900, 47.4520],
+          [12.3913, 47.4491]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Hahnenkamm",
+        "difficulty": "advanced",
+        "type": "piste",
+        "length_km": 3.8,
+        "vertical_drop": 750
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3600, 47.4620],
+          [12.3640, 47.4580],
+          [12.3700, 47.4540],
+          [12.3760, 47.4500],
+          [12.3820, 47.4460],
+          [12.3880, 47.4430],
+          [12.3913, 47.4410]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ganslern",
+        "difficulty": "advanced",
+        "type": "piste",
+        "length_km": 2.8,
+        "vertical_drop": 520
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3580, 47.4550],
+          [12.3620, 47.4520],
+          [12.3680, 47.4490],
+          [12.3740, 47.4460],
+          [12.3800, 47.4430],
+          [12.3860, 47.4410],
+          [12.3913, 47.4400]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Brunelle",
+        "difficulty": "easy",
+        "type": "piste",
+        "length_km": 1.8,
+        "vertical_drop": 280
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3850, 47.4580],
+          [12.3870, 47.4550],
+          [12.3890, 47.4520],
+          [12.3905, 47.4500],
+          [12.3913, 47.4491]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Steinbergkogel",
+        "difficulty": "intermediate",
+        "type": "piste",
+        "length_km": 3.5,
+        "vertical_drop": 600
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.4100, 47.4700],
+          [12.4060, 47.4660],
+          [12.4010, 47.4620],
+          [12.3970, 47.4580],
+          [12.3940, 47.4540],
+          [12.3920, 47.4510],
+          [12.3913, 47.4491]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ehrenbachhöhe",
+        "difficulty": "intermediate",
+        "type": "piste",
+        "length_km": 5.0,
+        "vertical_drop": 820
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.4200, 47.4780],
+          [12.4150, 47.4740],
+          [12.4100, 47.4700],
+          [12.4040, 47.4660],
+          [12.3980, 47.4610],
+          [12.3940, 47.4560],
+          [12.3913, 47.4510]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Jufenalm",
+        "difficulty": "easy",
+        "type": "piste",
+        "length_km": 2.2,
+        "vertical_drop": 350
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.4000, 47.4620],
+          [12.3980, 47.4590],
+          [12.3960, 47.4560],
+          [12.3940, 47.4530],
+          [12.3920, 47.4510],
+          [12.3913, 47.4491]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Trattalm",
+        "difficulty": "advanced",
+        "type": "piste",
+        "length_km": 2.6,
+        "vertical_drop": 480
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3700, 47.4600],
+          [12.3740, 47.4570],
+          [12.3780, 47.4540],
+          [12.3820, 47.4510],
+          [12.3860, 47.4480],
+          [12.3900, 47.4460],
+          [12.3913, 47.4440]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Hahnenkammbahn",
+        "type": "gondola",
+        "capacity": 8
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3913, 47.4420],
+          [12.3800, 47.4500],
+          [12.3650, 47.4600]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Fleckalmbahn",
+        "type": "gondola",
+        "capacity": 10
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3913, 47.4491],
+          [12.4000, 47.4560],
+          [12.4100, 47.4650]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "3S Bahn",
+        "type": "gondola",
+        "capacity": 24
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3913, 47.4491],
+          [12.4050, 47.4600],
+          [12.4200, 47.4720]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Hornbahn 2000",
+        "type": "gondola",
+        "capacity": 15
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [12.3913, 47.4491],
+          [12.3850, 47.4550],
+          [12.3750, 47.4650]
+        ]
+      }
+    }
+  ]
+}
+

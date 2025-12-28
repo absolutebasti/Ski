@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a"/>
+      <stop offset="100%" style="stop-color:#1a1a3a"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff"/>
+      <stop offset="100%" style="stop-color:#0099cc"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="192" height="192" rx="38" fill="url(#bgGrad)"/>
+  
+  <!-- Mountain shapes -->
+  <path d="M20 150 L60 80 L100 130 L140 60 L172 150 Z" fill="#1e2540" opacity="0.8"/>
+  <path d="M30 150 L70 95 L110 140 L150 75 L170 150 Z" fill="#2a3555" opacity="0.6"/>
+  
+  <!-- Snow caps -->
+  <path d="M55 90 L60 80 L65 90 Z" fill="white" opacity="0.9"/>
+  <path d="M135 70 L140 60 L145 70 Z" fill="white" opacity="0.9"/>
+  
+  <!-- Ski trail -->
+  <path d="M80 50 Q100 90 85 130" stroke="url(#accentGrad)" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Skier icon -->
+  <g transform="translate(70, 45)">
+    <!-- Head -->
+    <circle cx="12" cy="8" r="7" fill="url(#accentGrad)"/>
+    <!-- Body -->
+    <path d="M12 15 L12 35" stroke="url(#accentGrad)" stroke-width="4" stroke-linecap="round"/>
+    <!-- Arms with poles -->
+    <path d="M5 22 L12 28 L19 22" stroke="url(#accentGrad)" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M3 22 L3 45" stroke="url(#accentGrad)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M21 22 L21 45" stroke="url(#accentGrad)" stroke-width="2" stroke-linecap="round"/>
+    <!-- Skis -->
+    <path d="M6 40 L18 40" stroke="url(#accentGrad)" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Speed lines -->
+  <path d="M45 65 L35 70" stroke="#00d4ff" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+  <path d="M42 75 L30 78" stroke="#00d4ff" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <path d="M43 85 L33 86" stroke="#00d4ff" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+</svg>
+

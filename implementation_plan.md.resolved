@@ -1,0 +1,261 @@
+# Kitzbühel Ski Tracking App - Implementation Plan
+
+A Progressive Web App (PWA) for real-time ski tracking at the Kitzbühel ski area, optimized for iOS mobile usage with instant deployment and no App Store approval required.
+
+## Why PWA Instead of Native iOS?
+
+For your specific requirements (**immediate iOS testing without waiting for any approval**), a PWA is the optimal choice:
+
+| Approach | Approval Required | Cost | iOS Access | Time to Deploy |
+|----------|------------------|------|------------|----------------|
+| **PWA** ✅ | **None** | **$0** | GPS, Offline, Install to Home | **Immediate** |
+| TestFlight | Apple Review (24-48h) | $99/year | Full Native | 2-3 days |
+| Expo Go | None | $0 | Limited (no background) | 1 day |
+| Ad Hoc | Apple Developer Account | $99/year | Full Native | 1 day |
+
+> [!IMPORTANT]
+> A PWA can access GPS with **speed tracking (m/s)**, **heading/direction**, and **altitude** - everything needed for ski tracking. The app will work offline and feel native when installed to your iPhone home screen.
+
+---
+
+## Proposed Features
+
+### Core Tracking (MVP)
+- 🎿 **Real-time Speed** - Current speed in km/h with live updates
+- 🏔️ **Max Speed** - Track your highest speed of the run/day
+- 📏 **Distance Traveled** - Total km skied
+- ⬇️ **Altitude** - Current elevation + vertical meters descended
+- ⏱️ **Run Timer** - Active skiing time
+
+### Advanced Features
+- 🗺️ **Interactive Ski Map** - Kitzbühel trails with live position overlay
+- 📊 **Run History** - Save each run with stats (persists in browser)
+- 🏆 **Records Dashboard** - Personal bests for speed, distance, vertical
+- ❄️ **Slope Detection** - Identify which piste you're on
+- 📱 **Offline Mode** - Works without internet on the mountain
+- 🌙 **Dark Mode** - Easy on eyes, saves battery
+
+### Future Enhancements (Phase 2)
+- 🎫 **Lift Wait Times** - Integration with ski area APIs
+- 👥 **Social Features** - Share runs with friends
+- 📈 **Season Statistics** - Total runs, km, vertical over time
+- 🗣️ **Voice Announcements** - Speed callouts while skiing
+
+---
+
+## Technical Architecture
+
+### Technology Stack
+- **HTML5 + CSS3 + Vanilla JavaScript** - No framework overhead, fast loading
+- **Mapbox GL JS** - Beautiful vector maps with ski trail overlays
+- **Service Workers** - Offline caching for mountain use
+- **IndexedDB** - Persistent storage for run history (up to 500MB)
+- **Web Geolocation API** - GPS tracking with speed/heading
+
+### Project Structure
+
+```
+SKI_APP/
+├── index.html              # Main app shell
+├── manifest.json           # PWA manifest for iOS install
+├── sw.js                   # Service worker for offline
+├── css/
+│   └── styles.css          # Premium dark-mode styling
+├── js/
+│   ├── app.js              # Main application logic
+│   ├── gps-tracker.js      # GPS/speed tracking engine
+│   ├── map.js              # Map initialization & updates
+│   ├── stats.js            # Statistics calculation
+│   ├── storage.js          # IndexedDB wrapper
+│   └── utils.js            # Utility functions
+├── assets/
+│   ├── kitzbuehel-trails.geojson  # Ski trail data
+│   └── icons/              # App icons for iOS
+└── README.md               # Installation instructions
+```
+
+---
+
+## Proposed Changes
+
+### Core Application
+
+#### [NEW] [index.html](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/index.html)
+Main app shell with:
+- Responsive mobile-first layout
+- Dashboard with real-time stats (speed, distance, altitude)
+- Interactive map container
+- Run history panel
+- PWA meta tags for iOS installation
+
+#### [NEW] [manifest.json](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/manifest.json)
+PWA manifest enabling:
+- "Add to Home Screen" on iOS Safari
+- Full-screen app experience (no browser chrome)
+- App icons and splash screens
+- Offline capability declaration
+
+#### [NEW] [sw.js](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/sw.js)
+Service worker for:
+- Caching all app files for offline use
+- Caching Kitzbühel ski trail data
+- Background sync for run data
+
+---
+
+### Styling
+
+#### [NEW] [css/styles.css](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/css/styles.css)
+Premium dark-mode design:
+- Glassmorphism cards for stats
+- Smooth animations for live data
+- iOS-optimized touch targets
+- Safe area handling for iPhone notch
+- Gradient accents (alpine blue theme)
+
+---
+
+### JavaScript Modules
+
+#### [NEW] [js/app.js](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/js/app.js)
+Application orchestrator:
+- Initialize GPS tracking
+- Manage app state (idle/tracking/paused)
+- Coordinate UI updates
+- Handle run start/stop/save
+
+#### [NEW] [js/gps-tracker.js](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/js/gps-tracker.js)
+GPS tracking engine using `navigator.geolocation.watchPosition()`:
+- Real-time speed from GPS (converted to km/h)
+- Heading/direction calculation
+- Altitude tracking
+- Distance calculation using Haversine formula
+- Accuracy filtering to reject bad GPS readings
+
+#### [NEW] [js/map.js](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/js/map.js)
+Interactive map with:
+- Mapbox GL initialization centered on Kitzbühel
+- Ski trail overlay from GeoJSON
+- Live user position marker
+- Trail highlighting based on position
+- Zoom controls optimized for gloves
+
+#### [NEW] [js/stats.js](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/js/stats.js)
+Statistics engine:
+- Max speed tracking
+- Total distance accumulation
+- Vertical meters calculation
+- Run duration timing
+- Pace and average speed
+
+#### [NEW] [js/storage.js](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/js/storage.js)
+Data persistence:
+- IndexedDB wrapper for run history
+- Personal records storage
+- Export/import functionality
+- Data migration support
+
+---
+
+### Assets
+
+#### [NEW] [assets/kitzbuehel-trails.geojson](file:///Users/sebastianfackelmann/Documents/Projects/SKI_APP/assets/kitzbuehel-trails.geojson)
+Ski trail data extracted from OpenStreetMap:
+- All 170+ pistes with difficulty ratings
+- Lift lines and stations
+- Key POIs (restaurants, gondolas)
+
+---
+
+## Deployment Strategy
+
+### Option A: Vercel (Recommended) ⭐
+1. Push code to GitHub
+2. Connect Vercel to repo (free tier)
+3. Auto-deploys on push
+4. Get URL like `ski-tracker.vercel.app`
+5. Open on iPhone Safari → Add to Home Screen
+
+### Option B: Netlify
+1. Drag & drop folder to netlify.com
+2. Instant deployment
+3. Free HTTPS included
+
+### Option C: Local Testing
+1. Run `npx serve .` in project directory
+2. Access via local network IP on iPhone
+3. Full functionality for development
+
+> [!TIP]
+> **To install on your iPhone:**
+> 1. Open the deployed URL in Safari
+> 2. Tap the Share button (box with arrow)
+> 3. Scroll down and tap "Add to Home Screen"
+> 4. The app will now launch full-screen like a native app!
+
+---
+
+## Verification Plan
+
+### Automated Testing
+Since this is a PWA with hardware dependencies (GPS), most testing will be manual, but I'll verify:
+
+```bash
+# Run local server
+cd /Users/sebastianfackelmann/Documents/Projects/SKI_APP
+npx serve .
+```
+
+### Manual Verification (Browser Testing via Browser Tool)
+1. **Map Rendering** - Verify Kitzbühel ski area displays correctly
+2. **UI Responsiveness** - Test mobile layout at 375px width (iPhone)
+3. **Dark Mode Styling** - Confirm premium visual appearance
+4. **PWA Manifest** - Verify service worker registration
+
+### Manual Verification (Requires User)
+1. **GPS Tracking on iPhone**
+   - Open app in Safari on iPhone
+   - Grant location permission
+   - Walk/move and verify speed updates
+   - Verify altitude reading matches reality
+
+2. **Install to Home Screen**
+   - Safari → Share → Add to Home Screen
+   - Launch app from home screen
+   - Verify full-screen mode (no browser chrome)
+   - Verify app works offline (airplane mode)
+
+3. **Performance on Slope**
+   - Test at actual ski speed (30-80 km/h)
+   - Verify speed calculation accuracy
+   - Test with gloves (touch targets size)
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Map API Choice**: I plan to use **Mapbox GL JS** (free tier: 50,000 map loads/month). Alternatives:
+> - **Leaflet + OpenStreetMap** (completely free, slightly less polished)
+> - **Google Maps** (requires billing setup)
+> 
+> Would you prefer a different map provider?
+
+> [!IMPORTANT]
+> **Deployment**: I recommend **Vercel** for instant deployment. Do you have a:
+> - GitHub account for easy deployment?
+> - Preferred domain name for the app?
+
+---
+
+## Timeline Estimate
+
+| Phase | Tasks | Time |
+|-------|-------|------|
+| Setup | Project structure, PWA config | 30 min |
+| Core | GPS tracking, map, dashboard | 2 hours |
+| Polish | Styling, animations, offline | 1 hour |
+| Deploy | Vercel setup, testing | 30 min |
+| **Total** | | **~4 hours** |
+
+Ready to build when you approve! 🎿

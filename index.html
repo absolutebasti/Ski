@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KitzSki">
+    <meta name="theme-color" content="#0a0a1a">
+    <meta name="description" content="Track your skiing at Kitzbühel - Speed, Distance, Altitude & More">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
+    
+    <!-- Mapbox GL CSS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet">
+    
+    <!-- App Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <title>KitzSki Tracker</title>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🎿</span>
+                    <span class="logo-text">KitzSki</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-icon" id="historyBtn" aria-label="History">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </button>
+                    <button class="btn-icon" id="settingsBtn" aria-label="Settings">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="map-overlay">
+                    <button class="btn-locate" id="locateBtn" aria-label="Center on location">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="4"/>
+                            <line x1="12" y1="2" x2="12" y2="6"/>
+                            <line x1="12" y1="18" x2="12" y2="22"/>
+                            <line x1="2" y1="12" x2="6" y2="12"/>
+                            <line x1="18" y1="12" x2="22" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="dashboard">
+                <!-- Primary Stats -->
+                <div class="stats-primary">
+                    <div class="stat-card stat-speed">
+                        <div class="stat-value">
+                            <span id="currentSpeed">0</span>
+                            <span class="stat-unit">km/h</span>
+                        </div>
+                        <div class="stat-label">Current Speed</div>
+                    </div>
+                </div>
+
+                <!-- Secondary Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-small">
+                        <div class="stat-icon">🚀</div>
+                        <div class="stat-info">
+                            <div class="stat-value"><span id="maxSpeed">0</span> <span class="stat-unit">km/h</span></div>
+                            <div class="stat-label">Max Speed</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-small">
+                        <div class="stat-icon">📏</div>
+                        <div class="stat-info">
+                            <div class="stat-value"><span id="distance">0.0</span> <span class="stat-unit">km</span></div>
+                            <div class="stat-label">Distance</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-small">
+                        <div class="stat-icon">⬇️</div>
+                        <div class="stat-info">
+                            <div class="stat-value"><span id="verticalDrop">0</span> <span class="stat-unit">m</span></div>
+                            <div class="stat-label">Vertical</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-small">
+                        <div class="stat-icon">🏔️</div>
+                        <div class="stat-info">
+                            <div class="stat-value"><span id="altitude">--</span> <span class="stat-unit">m</span></div>
+                            <div class="stat-label">Altitude</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-small">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-info">
+                            <div class="stat-value"><span id="duration">00:00</span></div>
+                            <div class="stat-label">Duration</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-small">
+                        <div class="stat-icon">🎿</div>
+                        <div class="stat-info">
+                            <div class="stat-value"><span id="runs">0</span></div>
+                            <div class="stat-label">Runs</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="controls">
+                    <button class="btn btn-primary btn-start" id="startBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        <span>Start Tracking</span>
+                    </button>
+                    <button class="btn btn-secondary btn-pause hidden" id="pauseBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="4" width="4" height="16"/>
+                            <rect x="14" y="4" width="4" height="16"/>
+                        </svg>
+                        <span>Pause</span>
+                    </button>
+                    <button class="btn btn-danger btn-stop hidden" id="stopBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="4" y="4" width="16" height="16" rx="2"/>
+                        </svg>
+                        <span>Stop & Save</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- History Panel (Slide-up) -->
+        <div class="panel panel-history hidden" id="historyPanel">
+            <div class="panel-header">
+                <h2>Run History</h2>
+                <button class="btn-close" id="closeHistoryBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="panel-content">
+                <div class="history-list" id="historyList">
+                    <!-- History items will be dynamically inserted -->
+                    <div class="empty-state">
+                        <span class="empty-icon">🎿</span>
+                        <p>No runs recorded yet</p>
+                        <p class="empty-hint">Start tracking to record your first run!</p>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <div class="records-summary">
+                    <h3>Personal Records</h3>
+                    <div class="records-grid">
+                        <div class="record-item">
+                            <span class="record-label">Top Speed</span>
+                            <span class="record-value" id="recordSpeed">-- km/h</span>
+                        </div>
+                        <div class="record-item">
+                            <span class="record-label">Longest Run</span>
+                            <span class="record-value" id="recordDistance">-- km</span>
+                        </div>
+                        <div class="record-item">
+                            <span class="record-label">Most Vertical</span>
+                            <span class="record-value" id="recordVertical">-- m</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div class="panel panel-settings hidden" id="settingsPanel">
+            <div class="panel-header">
+                <h2>Settings</h2>
+                <button class="btn-close" id="closeSettingsBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="panel-content">
+                <div class="settings-group">
+                    <h3>Units</h3>
+                    <div class="setting-item">
+                        <span>Speed Unit</span>
+                        <select id="speedUnit">
+                            <option value="kmh">km/h</option>
+                            <option value="mph">mph</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span>Distance Unit</span>
+                        <select id="distanceUnit">
+                            <option value="km">Kilometers</option>
+                            <option value="mi">Miles</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h3>Tracking</h3>
+                    <div class="setting-item">
+                        <span>Auto-pause when stopped</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="autoPause" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span>High accuracy GPS</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="highAccuracy" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h3>Data</h3>
+                    <button class="btn btn-secondary" id="exportDataBtn">Export Data</button>
+                    <button class="btn btn-danger" id="clearDataBtn">Clear All Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GPS Permission Modal -->
+        <div class="modal hidden" id="gpsModal">
+            <div class="modal-content">
+                <div class="modal-icon">📍</div>
+                <h2>Location Access Required</h2>
+                <p>KitzSki needs access to your location to track your skiing speed, distance, and position on the map.</p>
+                <button class="btn btn-primary" id="grantLocationBtn">Enable Location</button>
+            </div>
+        </div>
+
+        <!-- Offline Indicator -->
+        <div class="offline-indicator hidden" id="offlineIndicator">
+            <span>📡 Offline Mode</span>
+        </div>
+    </div>
+
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/gps-tracker.js"></script>
+    <script src="js/stats.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
