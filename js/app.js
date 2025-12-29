@@ -6,10 +6,10 @@ const App = {
     state: 'idle', // idle, tracking, paused
     wakeLock: null,
     
-    // Auto-pause settings
-    autoPauseEnabled: true,
+    // Auto-pause settings (DISABLED - too aggressive for skiing)
+    autoPauseEnabled: false,
     zeroSpeedStartTime: null,
-    autoPauseThreshold: 30000, // 30 seconds of zero speed
+    autoPauseThreshold: 180000, // 3 minutes (if re-enabled)
     
     // DOM elements
     elements: {},
@@ -381,53 +381,13 @@ const App = {
     },
 
     /**
-     * Check if should auto-pause (e.g., on ski lift)
-     * @param {number} speed - Current speed in km/h
+     * Check if should auto-pause - DISABLED
+     * Skiing involves too many natural stops (lifts, queues, resting)
+     * Manual pause/resume is better for skiing
      */
     checkAutoPause(speed) {
-        if (!this.autoPauseEnabled || this.state !== 'tracking') return;
-        
-        const isStationary = speed < 2; // Less than 2 km/h
-        
-        if (isStationary) {
-            if (!this.zeroSpeedStartTime) {
-                this.zeroSpeedStartTime = Date.now();
-            } else if (Date.now() - this.zeroSpeedStartTime > this.autoPauseThreshold) {
-                // Auto-pause
-                this.togglePause();
-                this.zeroSpeedStartTime = null;
-                this.showAutoPauseIndicator();
-            }
-        } else {
-            // Moving again - reset timer
-            this.zeroSpeedStartTime = null;
-            
-            // Auto-resume if was auto-paused
-            if (this.state === 'paused' && this.wasAutoPaused) {
-                this.togglePause();
-                this.wasAutoPaused = false;
-            }
-        }
-    },
-
-    /**
-     * Show auto-pause indicator
-     */
-    showAutoPauseIndicator() {
-        this.wasAutoPaused = true;
-        
-        const indicator = document.createElement('div');
-        indicator.className = 'auto-pause-indicator';
-        indicator.innerHTML = `
-            <div class="icon">⏸️</div>
-            <div class="text">Auto-paused (on lift?)</div>
-        `;
-        document.body.appendChild(indicator);
-        
-        setTimeout(() => {
-            indicator.style.opacity = '0';
-            setTimeout(() => indicator.remove(), 300);
-        }, 2000);
+        // Disabled - continuous tracking is better for skiing
+        return;
     },
 
     /**
