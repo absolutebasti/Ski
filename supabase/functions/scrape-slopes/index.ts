@@ -10,6 +10,8 @@ interface SlopeStatus {
   name: string
   status: 'open' | 'closed' | 'unknown'
   difficulty?: string
+  length?: string
+  vertical?: string
 }
 
 interface LiftStatus {
@@ -37,10 +39,14 @@ Deno.serve(async (req) => {
       return new Response('ok', { headers: corsHeaders })
     }
 
+    console.log('Fetching KitzSki page...')
+
     // Fetch the KitzSki page
     const response = await fetch(KITZSKI_URL, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; SkiTracker/1.0)',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
       },
     })
 
@@ -49,60 +55,113 @@ Deno.serve(async (req) => {
     }
 
     const html = await response.text()
+    console.log('HTML length:', html.length)
     
-    // Parse the HTML (simple regex-based parsing for Edge Functions)
     const slopes: SlopeStatus[] = []
     const lifts: LiftStatus[] = []
     
-    // Match slope entries - look for common patterns
-    const slopePattern = /<tr[^>]*>.*?<td[^>]*>(.*?)<\/td>.*?<td[^>]*>.*?(geöffnet|geschlossen|offen|closed|open).*?<\/td>.*?<\/tr>/gis
-    let match
+    // Pattern to match table rows with slope data
+    // Looking for: Geöffnet/Geschlossen, Leicht/Mittel/Schwer, slope name, length, vertical
     
-    while ((match = slopePattern.exec(html)) !== null) {
-      const name = match[1].replace(/<[^>]+>/g, '').trim()
-      const statusText = match[2].toLowerCase()
+    // Match rows that contain status (Geöffnet or Geschlossen)
+    const rowPattern = /<tr[^>]*>[\s\S]*?<\/tr>/gi
+    const rows = html.match(rowPattern) || []
+    
+    console.log('Found rows:', rows.length)
+    
+    for (const row of rows) {
+      // Check if this row has status info
+      const hasStatus = /geöffnet|geschlossen/i.test(row)
+      if (!hasStatus) continue
       
-      if (name && name.length < 100) {
+      // Extract status
+      const isOpen = /geöffnet/i.test(row)
+      
+      // Extract difficulty (Leicht = easy/blue, Mittel = medium/red, Schwer = hard/black)
+      let difficulty = 'unknown'
+      if (/leicht/i.test(row)) difficulty = 'easy'
+      else if (/mittel/i.test(row)) difficulty = 'intermediate'
+      else if (/schwer/i.test(row)) difficulty = 'advanced'
+      
+      // Extract name from cells - usually the third td or one with the piste name
+      // Clean HTML tags and get text content
+      const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || []
+      
+      let name = ''
+      let length = ''
+      let vertical = ''
+      
+      // Parse each cell
+      cells.forEach((cell, index) => {
+        const text = cell.replace(/<[^>]+>/g, '').trim()
+        
+        // Skip empty cells or status/difficulty cells
+        if (!text || /geöffnet|geschlossen|leicht|mittel|schwer/i.test(text)) {
+          return
+        }
+        
+        // Check if it's a measurement (ends with 'm')
+        if (/^\d+\s*m$/.test(text)) {
+          if (!length) length = text
+          else vertical = text
+        } else if (text.length > 2 && !name) {
+          // This is likely the slope name
+          name = text
+        }
+      })
+      
+      if (name) {
         slopes.push({
           name,
-          status: statusText.includes('geöffnet') || statusText.includes('offen') || statusText.includes('open') 
-            ? 'open' 
-            : 'closed'
+          status: isOpen ? 'open' : 'closed',
+          difficulty,
+          length: length || undefined,
+          vertical: vertical || undefined
         })
       }
     }
-
-    // Match lift entries
-    const liftPattern = /<tr[^>]*>.*?<td[^>]*>(.*?(?:bahn|lift|gondel|sessellift).*?)<\/td>.*?<td[^>]*>.*?(geöffnet|geschlossen|offen|closed|open).*?<\/td>.*?<\/tr>/gis
     
-    while ((match = liftPattern.exec(html)) !== null) {
-      const name = match[1].replace(/<[^>]+>/g, '').trim()
-      const statusText = match[2].toLowerCase()
+    // Also try to find lift data (Bergbahnen/Lifte section)
+    const liftPattern = /([\w\s-]+(?:bahn|lift|gondel|sessellift|schlepplift)[\w\s-]*)/gi
+    const liftMatches = html.match(liftPattern) || []
+    
+    // Look for lifts in a similar table structure
+    for (const row of rows) {
+      const hasLiftKeyword = /bahn|lift|gondel|sessel|schlepp/i.test(row)
+      if (!hasLiftKeyword) continue
       
-      if (name && name.length < 100) {
-        lifts.push({
-          name,
-          status: statusText.includes('geöffnet') || statusText.includes('offen') || statusText.includes('open') 
-            ? 'open' 
-            : 'closed'
-        })
-      }
-    }
-
-    // If no structured data found, try alternative patterns
-    if (slopes.length === 0 && lifts.length === 0) {
-      // Look for status indicators in different formats
-      const generalPattern = /(?:class="[^"]*(?:open|closed|status)[^"]*"[^>]*>|<[^>]+>)\s*([^<]{3,50})\s*<.*?(?:geöffnet|geschlossen|open|closed)/gis
+      const isOpen = /geöffnet/i.test(row)
+      const isClosed = /geschlossen/i.test(row)
       
-      while ((match = generalPattern.exec(html)) !== null) {
-        const name = match[1].replace(/<[^>]+>/g, '').trim()
-        const fullMatch = match[0].toLowerCase()
-        
-        if (name && name.length < 50 && !name.includes('http')) {
-          const isOpen = fullMatch.includes('geöffnet') || fullMatch.includes('open')
-          slopes.push({ name, status: isOpen ? 'open' : 'closed' })
+      if (!isOpen && !isClosed) continue
+      
+      const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || []
+      
+      for (const cell of cells) {
+        const text = cell.replace(/<[^>]+>/g, '').trim()
+        if (/bahn|lift|gondel|sessel|schlepp/i.test(text) && text.length > 3 && text.length < 60) {
+          // Determine lift type
+          let liftType = 'lift'
+          if (/gondel/i.test(text)) liftType = 'gondola'
+          else if (/sessel/i.test(text)) liftType = 'chairlift'
+          else if (/schlepp/i.test(text)) liftType = 'dragLift'
+          
+          lifts.push({
+            name: text,
+            status: isOpen ? 'open' : 'closed',
+            type: liftType
+          })
+          break
         }
       }
+    }
+
+    console.log('Parsed slopes:', slopes.length)
+    console.log('Parsed lifts:', lifts.length)
+    
+    // Debug: log first few slopes
+    if (slopes.length > 0) {
+      console.log('Sample slopes:', JSON.stringify(slopes.slice(0, 3)))
     }
 
     const data: ScrapedData = {
@@ -123,8 +182,10 @@ Deno.serve(async (req) => {
       const slopesOpen = slopes.filter(s => s.status === 'open').length
       const liftsOpen = lifts.filter(l => l.status === 'open').length
       
+      console.log('Saving to database:', { slopesOpen, slopesTotal: slopes.length, liftsOpen, liftsTotal: lifts.length })
+      
       // Insert new status record
-      await supabase
+      const { error } = await supabase
         .from('slope_status')
         .insert({
           resort: 'kitzbuehel',
@@ -137,6 +198,12 @@ Deno.serve(async (req) => {
           source_url: KITZSKI_URL,
           updated_at: new Date().toISOString()
         })
+      
+      if (error) {
+        console.error('Database error:', error)
+      } else {
+        console.log('Successfully saved to database')
+      }
     }
 
     return new Response(
@@ -169,4 +236,3 @@ Deno.serve(async (req) => {
     )
   }
 })
-
