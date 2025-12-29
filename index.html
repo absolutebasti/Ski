@@ -269,6 +269,66 @@
             </div>
         </div>
 
+        <!-- Run Detail Panel (with route map) -->
+        <div class="panel panel-run-detail hidden" id="runDetailPanel">
+            <div class="panel-header">
+                <h2 id="runDetailTitle">Run Details</h2>
+                <button class="btn-close" id="closeRunDetailBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="panel-content">
+                <!-- Route Map -->
+                <div class="run-detail-map-container">
+                    <div id="runDetailMap"></div>
+                </div>
+                
+                <!-- Run Stats Summary -->
+                <div class="run-detail-stats">
+                    <div class="run-detail-stat">
+                        <div class="run-detail-stat-value" id="detailMaxSpeed">0</div>
+                        <div class="run-detail-stat-label">Max km/h</div>
+                    </div>
+                    <div class="run-detail-stat">
+                        <div class="run-detail-stat-value" id="detailDistance">0.0</div>
+                        <div class="run-detail-stat-label">km</div>
+                    </div>
+                    <div class="run-detail-stat">
+                        <div class="run-detail-stat-value" id="detailVertical">0</div>
+                        <div class="run-detail-stat-label">Vertical m</div>
+                    </div>
+                    <div class="run-detail-stat">
+                        <div class="run-detail-stat-value" id="detailDuration">00:00</div>
+                        <div class="run-detail-stat-label">Duration</div>
+                    </div>
+                </div>
+                
+                <!-- Speed Chart / Altitude Profile (simplified) -->
+                <div class="run-detail-profile">
+                    <h3>Altitude Profile</h3>
+                    <div class="altitude-profile" id="altitudeProfile">
+                        <canvas id="altitudeCanvas"></canvas>
+                    </div>
+                    <div class="profile-labels">
+                        <span id="profileStartAlt">--m</span>
+                        <span id="profileEndAlt">--m</span>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <button class="btn btn-danger" id="deleteRunBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    Delete Run
+                </button>
+            </div>
+        </div>
+
         <!-- Resort Selection Panel -->
         <div class="panel panel-resorts hidden" id="resortsPanel">
             <div class="panel-header">

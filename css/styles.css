@@ -1193,3 +1193,124 @@ html, body {
     from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
     to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
+
+/* Run Detail Panel */
+.panel-run-detail .panel-content {
+    padding: 0;
+}
+
+.run-detail-map-container {
+    height: 280px;
+    background: var(--card-bg);
+    position: relative;
+    overflow: hidden;
+}
+
+.run-detail-map-container #runDetailMap {
+    width: 100%;
+    height: 100%;
+}
+
+.run-detail-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border-color);
+    margin-top: 1px;
+}
+
+.run-detail-stat {
+    background: var(--card-bg);
+    padding: 16px 8px;
+    text-align: center;
+}
+
+.run-detail-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.run-detail-stat-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+.run-detail-profile {
+    padding: 20px;
+    background: var(--card-bg);
+    margin-top: 1px;
+}
+
+.run-detail-profile h3 {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+.altitude-profile {
+    height: 100px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.altitude-profile canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.profile-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 8px;
+}
+
+.panel-run-detail .panel-footer {
+    padding: 16px 20px;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+.panel-run-detail .btn-danger {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* History item clickable */
+.history-item {
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.history-item:active {
+    transform: scale(0.98);
+    background: var(--card-elevated);
+}
+
+.history-item::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--text-tertiary);
+    border-bottom: 2px solid var(--text-tertiary);
+    transform: translateY(-50%) rotate(-45deg);
+}
+
+.history-item {
+    position: relative;
+    padding-right: 40px;
+}

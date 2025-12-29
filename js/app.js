@@ -92,9 +92,26 @@ const App = {
             sectorsGrid: document.getElementById('sectorsGrid'),
             slopesList: document.getElementById('slopesList'),
             liftsList: document.getElementById('liftsList'),
-            facilitiesGrid: document.getElementById('facilitiesGrid')
+            facilitiesGrid: document.getElementById('facilitiesGrid'),
+            // Run detail elements
+            runDetailPanel: document.getElementById('runDetailPanel'),
+            closeRunDetailBtn: document.getElementById('closeRunDetailBtn'),
+            runDetailTitle: document.getElementById('runDetailTitle'),
+            runDetailMap: document.getElementById('runDetailMap'),
+            detailMaxSpeed: document.getElementById('detailMaxSpeed'),
+            detailDistance: document.getElementById('detailDistance'),
+            detailVertical: document.getElementById('detailVertical'),
+            detailDuration: document.getElementById('detailDuration'),
+            altitudeCanvas: document.getElementById('altitudeCanvas'),
+            profileStartAlt: document.getElementById('profileStartAlt'),
+            profileEndAlt: document.getElementById('profileEndAlt'),
+            deleteRunBtn: document.getElementById('deleteRunBtn')
         };
     },
+
+    // Run detail map instance
+    runDetailMapInstance: null,
+    currentDetailRunId: null,
 
     // Resort details data
     resortDetails: null,
@@ -159,6 +176,10 @@ const App = {
         // Resort details
         this.elements.resortDetailsBtn?.addEventListener('click', () => this.showResortDetails());
         this.elements.closeDetailsBtn?.addEventListener('click', () => this.hidePanel('details'));
+        
+        // Run details
+        this.elements.closeRunDetailBtn?.addEventListener('click', () => this.hidePanel('runDetail'));
+        this.elements.deleteRunBtn?.addEventListener('click', () => this.deleteCurrentDetailRun());
         
         // Details tabs
         document.querySelectorAll('.details-tab').forEach(tab => {
@@ -498,6 +519,13 @@ const App = {
             this.elements.resortsPanel?.classList.add('hidden');
         } else if (panel === 'details') {
             this.elements.resortDetailsPanel?.classList.add('hidden');
+        } else if (panel === 'runDetail') {
+            this.elements.runDetailPanel?.classList.add('hidden');
+            // Clean up the map
+            if (this.runDetailMapInstance) {
+                this.runDetailMapInstance.remove();
+                this.runDetailMapInstance = null;
+            }
         }
     },
 
@@ -804,6 +832,11 @@ const App = {
         const html = runs.map(run => this.renderHistoryItem(run)).join('');
         
         this.elements.historyList.innerHTML = html;
+        
+        // Add click handlers for each history item
+        this.elements.historyList.querySelectorAll('.history-item').forEach(item => {
+            item.addEventListener('click', () => this.showRunDetail(item.dataset.id));
+        });
     },
 
     /**
@@ -835,6 +868,219 @@ const App = {
                 </div>
             </div>
         `;
+    },
+
+    /**
+     * Show run detail with route map
+     * @param {string} runId - Run ID
+     */
+    async showRunDetail(runId) {
+        const run = await Storage.getRun(runId);
+        if (!run) {
+            this.showToast('Run not found', 'error');
+            return;
+        }
+        
+        this.currentDetailRunId = runId;
+        
+        // Update title
+        const date = new Date(run.startTime);
+        this.elements.runDetailTitle.textContent = `${Utils.formatDate(date)} at ${Utils.formatTime(date)}`;
+        
+        // Update stats
+        this.elements.detailMaxSpeed.textContent = Math.round(run.maxSpeed);
+        this.elements.detailDistance.textContent = run.distance.toFixed(2);
+        this.elements.detailVertical.textContent = Math.round(run.verticalDrop);
+        this.elements.detailDuration.textContent = Utils.formatDuration(run.duration);
+        
+        // Show panel first so map container has size
+        this.elements.runDetailPanel?.classList.remove('hidden');
+        
+        // Initialize map after a short delay for DOM to settle
+        setTimeout(() => {
+            this.initRunDetailMap(run);
+            this.drawAltitudeProfile(run);
+        }, 100);
+    },
+    
+    /**
+     * Initialize run detail map with route
+     * @param {Object} run - Run data
+     */
+    initRunDetailMap(run) {
+        // Clean up existing map
+        if (this.runDetailMapInstance) {
+            this.runDetailMapInstance.remove();
+        }
+        
+        const positions = run.positions || [];
+        if (positions.length === 0) {
+            this.elements.runDetailMap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-tertiary);font-size:13px;">No GPS data recorded</div>';
+            return;
+        }
+        
+        // Create map
+        mapboxgl.accessToken = Config.MAPBOX_TOKEN;
+        
+        this.runDetailMapInstance = new mapboxgl.Map({
+            container: 'runDetailMap',
+            style: 'mapbox://styles/mapbox/dark-v11',
+            center: [positions[0].lon, positions[0].lat],
+            zoom: 14,
+            attributionControl: false
+        });
+        
+        const map = this.runDetailMapInstance;
+        
+        map.on('load', () => {
+            // Create route coordinates
+            const coordinates = positions.map(p => [p.lon, p.lat]);
+            
+            // Add route line with gradient based on speed
+            map.addSource('route', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: coordinates
+                    }
+                }
+            });
+            
+            // Route glow (background)
+            map.addLayer({
+                id: 'route-glow',
+                type: 'line',
+                source: 'route',
+                paint: {
+                    'line-color': '#00ff88',
+                    'line-width': 8,
+                    'line-blur': 4,
+                    'line-opacity': 0.4
+                }
+            });
+            
+            // Route line
+            map.addLayer({
+                id: 'route-line',
+                type: 'line',
+                source: 'route',
+                paint: {
+                    'line-color': '#00ff88',
+                    'line-width': 3,
+                    'line-opacity': 0.9
+                }
+            });
+            
+            // Add start marker (green)
+            new mapboxgl.Marker({ color: '#22c55e' })
+                .setLngLat(coordinates[0])
+                .addTo(map);
+            
+            // Add end marker (red)
+            new mapboxgl.Marker({ color: '#ef4444' })
+                .setLngLat(coordinates[coordinates.length - 1])
+                .addTo(map);
+            
+            // Fit bounds to show entire route
+            const bounds = coordinates.reduce((bounds, coord) => {
+                return bounds.extend(coord);
+            }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+            
+            map.fitBounds(bounds, {
+                padding: 40,
+                maxZoom: 15,
+                duration: 0
+            });
+        });
+    },
+    
+    /**
+     * Draw altitude profile chart
+     * @param {Object} run - Run data
+     */
+    drawAltitudeProfile(run) {
+        const canvas = this.elements.altitudeCanvas;
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const positions = run.positions || [];
+        
+        // Set canvas size
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        
+        const width = rect.width;
+        const height = rect.height;
+        
+        // Get altitudes
+        const altitudes = positions.filter(p => p.alt !== null && p.alt !== undefined).map(p => p.alt);
+        
+        if (altitudes.length < 2) {
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.font = '12px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText('No altitude data', width / 2, height / 2);
+            return;
+        }
+        
+        const minAlt = Math.min(...altitudes);
+        const maxAlt = Math.max(...altitudes);
+        const range = maxAlt - minAlt || 1;
+        
+        // Update labels
+        this.elements.profileStartAlt.textContent = `${Math.round(altitudes[0])}m`;
+        this.elements.profileEndAlt.textContent = `${Math.round(altitudes[altitudes.length - 1])}m`;
+        
+        // Draw gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, 'rgba(0, 255, 136, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 255, 136, 0.05)');
+        
+        // Draw path
+        ctx.beginPath();
+        ctx.moveTo(0, height);
+        
+        altitudes.forEach((alt, i) => {
+            const x = (i / (altitudes.length - 1)) * width;
+            const y = height - ((alt - minAlt) / range) * (height - 10) - 5;
+            ctx.lineTo(x, y);
+        });
+        
+        ctx.lineTo(width, height);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // Draw line
+        ctx.beginPath();
+        altitudes.forEach((alt, i) => {
+            const x = (i / (altitudes.length - 1)) * width;
+            const y = height - ((alt - minAlt) / range) * (height - 10) - 5;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = '#00ff88';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    },
+    
+    /**
+     * Delete the current detail run
+     */
+    async deleteCurrentDetailRun() {
+        if (!this.currentDetailRunId) return;
+        
+        if (confirm('Are you sure you want to delete this run?')) {
+            await Storage.deleteRun(this.currentDetailRunId);
+            this.hidePanel('runDetail');
+            await this.loadHistory();
+            await Stats.updateRunCount();
+            this.showToast('Run deleted', 'success');
+        }
     },
 
     /**
