@@ -9,9 +9,10 @@ const Stats = {
         maxSpeed: 0,
         currentSpeed: 0,
         avgSpeed: 0,
-        verticalDrop: 0,
-        totalAscent: 0,
+        verticalDrop: 0,      // Cumulative descent (what skiers care about)
+        totalAscent: 0,       // Cumulative ascent (lifts)
         currentAltitude: null,
+        previousAltitude: null, // For tracking changes
         startAltitude: null,
         highestAltitude: null,
         lowestAltitude: null,
@@ -65,6 +66,7 @@ const Stats = {
             verticalDrop: 0,
             totalAscent: 0,
             currentAltitude: null,
+            previousAltitude: null,
             startAltitude: null,
             highestAltitude: null,
             lowestAltitude: null,
@@ -151,11 +153,12 @@ const Stats = {
             
             if (this.currentRun.startAltitude === null) {
                 this.currentRun.startAltitude = altitude;
+                this.currentRun.previousAltitude = altitude;
                 this.currentRun.highestAltitude = altitude;
                 this.currentRun.lowestAltitude = altitude;
             }
             
-            // Track highest and lowest
+            // Track highest and lowest (for reference)
             if (altitude > this.currentRun.highestAltitude) {
                 this.currentRun.highestAltitude = altitude;
             }
@@ -163,11 +166,22 @@ const Stats = {
                 this.currentRun.lowestAltitude = altitude;
             }
             
-            // Calculate vertical drop (descent)
-            // Vertical drop = highest point - current altitude (for skiing down)
-            this.currentRun.verticalDrop = Math.max(0, 
-                this.currentRun.highestAltitude - this.currentRun.lowestAltitude
-            );
+            // Calculate CUMULATIVE vertical (what skiers actually care about)
+            // Only count if we have a previous reading and the change is significant
+            // Using 5m threshold because GPS altitude accuracy is ~10-30m typically
+            if (this.currentRun.previousAltitude !== null) {
+                const altChange = this.currentRun.previousAltitude - altitude;
+                
+                if (altChange > 5) {
+                    // Descended - add to vertical drop
+                    this.currentRun.verticalDrop += altChange;
+                } else if (altChange < -5) {
+                    // Ascended (lift) - add to total ascent
+                    this.currentRun.totalAscent += Math.abs(altChange);
+                }
+            }
+            
+            this.currentRun.previousAltitude = altitude;
         }
         
         // Store position
