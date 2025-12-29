@@ -93,6 +93,19 @@ const App = {
             slopesList: document.getElementById('slopesList'),
             liftsList: document.getElementById('liftsList'),
             facilitiesGrid: document.getElementById('facilitiesGrid'),
+            // Live status elements
+            liveStatusBtn: document.getElementById('liveStatusBtn'),
+            liveDot: document.getElementById('liveDot'),
+            liveStatusPanel: document.getElementById('liveStatusPanel'),
+            closeLiveStatusBtn: document.getElementById('closeLiveStatusBtn'),
+            liveStatusTime: document.getElementById('liveStatusTime'),
+            slopesOpenCount: document.getElementById('slopesOpenCount'),
+            slopesTotalCount: document.getElementById('slopesTotalCount'),
+            liftsOpenCount: document.getElementById('liftsOpenCount'),
+            liftsTotalCount: document.getElementById('liftsTotalCount'),
+            liveSlopesList: document.getElementById('liveSlopesList'),
+            liveLiftsList: document.getElementById('liveLiftsList'),
+            refreshStatusBtn: document.getElementById('refreshStatusBtn'),
             // Run detail elements
             runDetailPanel: document.getElementById('runDetailPanel'),
             closeRunDetailBtn: document.getElementById('closeRunDetailBtn'),
@@ -180,6 +193,16 @@ const App = {
         // Run details
         this.elements.closeRunDetailBtn?.addEventListener('click', () => this.hidePanel('runDetail'));
         this.elements.deleteRunBtn?.addEventListener('click', () => this.deleteCurrentDetailRun());
+        
+        // Live status
+        this.elements.liveStatusBtn?.addEventListener('click', () => this.showLiveStatusPanel());
+        this.elements.closeLiveStatusBtn?.addEventListener('click', () => this.hidePanel('liveStatus'));
+        this.elements.refreshStatusBtn?.addEventListener('click', () => this.refreshAndShowStatus());
+        
+        // Live status tabs
+        document.querySelectorAll('.live-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => this.switchLiveTab(e.target.dataset.tab));
+        });
         
         // Details tabs
         document.querySelectorAll('.details-tab').forEach(tab => {
@@ -526,6 +549,8 @@ const App = {
                 this.runDetailMapInstance.remove();
                 this.runDetailMapInstance = null;
             }
+        } else if (panel === 'liveStatus') {
+            this.elements.liveStatusPanel?.classList.add('hidden');
         }
     },
 
@@ -1080,6 +1105,191 @@ const App = {
             await this.loadHistory();
             await Stats.updateRunCount();
             this.showToast('Run deleted', 'success');
+        }
+    },
+
+    /**
+     * Show live status panel
+     */
+    async showLiveStatusPanel() {
+        this.elements.liveStatusPanel?.classList.remove('hidden');
+        await this.fetchLiveStatus();
+    },
+    
+    /**
+     * Fetch live status from Supabase
+     */
+    async fetchLiveStatus() {
+        try {
+            // Show loading state
+            this.elements.liveSlopesList.innerHTML = `
+                <div class="status-loading">
+                    <div class="loading-spinner"></div>
+                    <span>Loading status...</span>
+                </div>
+            `;
+            this.elements.liveLiftsList.innerHTML = this.elements.liveSlopesList.innerHTML;
+            
+            // Try to get from Supabase
+            if (!Supabase.client) {
+                await Supabase.init();
+            }
+            
+            const data = await Supabase.getSlopeStatus('kitzbuehel');
+            
+            if (data) {
+                this.liveStatus = data;
+                this.renderLiveStatus(data);
+                this.updateLiveDot(data);
+            } else {
+                this.renderNoLiveData();
+            }
+        } catch (e) {
+            console.error('Failed to fetch live status:', e);
+            this.renderNoLiveData();
+        }
+    },
+    
+    /**
+     * Render live status data
+     */
+    renderLiveStatus(data) {
+        // Update summary counts
+        this.elements.slopesOpenCount.textContent = data.slopes_open || 0;
+        this.elements.slopesTotalCount.textContent = data.slopes_total || 0;
+        this.elements.liftsOpenCount.textContent = data.lifts_open || 0;
+        this.elements.liftsTotalCount.textContent = data.lifts_total || 0;
+        
+        // Update time
+        if (data.updated_at) {
+            const time = new Date(data.updated_at);
+            this.elements.liveStatusTime.textContent = `Updated ${Utils.formatDate(time)} at ${Utils.formatTime(time)}`;
+        }
+        
+        // Render slopes
+        const slopes = data.slopes || [];
+        if (slopes.length > 0) {
+            this.elements.liveSlopesList.innerHTML = slopes.map(slope => `
+                <div class="status-item">
+                    <div class="status-indicator ${slope.status}"></div>
+                    <span class="status-name">${slope.name}</span>
+                    ${slope.difficulty ? `<span class="status-type">${slope.difficulty}</span>` : ''}
+                </div>
+            `).join('');
+        } else {
+            this.elements.liveSlopesList.innerHTML = `
+                <div class="status-no-data">
+                    <div class="icon">🎿</div>
+                    <p>No slope data available</p>
+                </div>
+            `;
+        }
+        
+        // Render lifts
+        const lifts = data.lifts || [];
+        if (lifts.length > 0) {
+            this.elements.liveLiftsList.innerHTML = lifts.map(lift => `
+                <div class="status-item">
+                    <div class="status-indicator ${lift.status}"></div>
+                    <span class="status-name">${lift.name}</span>
+                    ${lift.type ? `<span class="status-type">${lift.type}</span>` : ''}
+                </div>
+            `).join('');
+        } else {
+            this.elements.liveLiftsList.innerHTML = `
+                <div class="status-no-data">
+                    <div class="icon">🚡</div>
+                    <p>No lift data available</p>
+                </div>
+            `;
+        }
+    },
+    
+    /**
+     * Render no live data state
+     */
+    renderNoLiveData() {
+        this.elements.slopesOpenCount.textContent = '--';
+        this.elements.slopesTotalCount.textContent = '--';
+        this.elements.liftsOpenCount.textContent = '--';
+        this.elements.liftsTotalCount.textContent = '--';
+        this.elements.liveStatusTime.textContent = 'No data available';
+        
+        const noDataHtml = `
+            <div class="status-no-data">
+                <div class="icon">📡</div>
+                <p>No live data available yet</p>
+                <p style="font-size: 12px; margin-top: 8px;">Tap "Refresh Status" to fetch latest data</p>
+            </div>
+        `;
+        
+        this.elements.liveSlopesList.innerHTML = noDataHtml;
+        this.elements.liveLiftsList.innerHTML = noDataHtml;
+    },
+    
+    /**
+     * Update live dot indicator
+     */
+    updateLiveDot(data) {
+        const dot = this.elements.liveDot;
+        if (!dot) return;
+        
+        dot.classList.remove('active', 'partial', 'closed');
+        
+        if (data && data.slopes_total > 0) {
+            const openPct = (data.slopes_open / data.slopes_total) * 100;
+            if (openPct > 80) {
+                dot.classList.add('active');
+            } else if (openPct > 0) {
+                dot.classList.add('partial');
+            } else {
+                dot.classList.add('closed');
+            }
+        }
+    },
+    
+    /**
+     * Switch live status tab
+     */
+    switchLiveTab(tab) {
+        document.querySelectorAll('.live-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.live-tab-content').forEach(c => c.classList.remove('active'));
+        
+        document.querySelector(`.live-tab[data-tab="${tab}"]`)?.classList.add('active');
+        document.getElementById(`live${tab.charAt(0).toUpperCase() + tab.slice(1)}Tab`)?.classList.add('active');
+    },
+    
+    /**
+     * Refresh and show status (calls the scraper)
+     */
+    async refreshAndShowStatus() {
+        const btn = this.elements.refreshStatusBtn;
+        const originalHtml = btn.innerHTML;
+        
+        btn.innerHTML = '<div class="loading-spinner" style="width:16px;height:16px;"></div> Refreshing...';
+        btn.disabled = true;
+        
+        try {
+            // Call the Edge Function to scrape fresh data
+            const response = await fetch(`${Config.SUPABASE_URL}/functions/v1/scrape-slopes`, {
+                headers: {
+                    'Authorization': `Bearer ${Config.SUPABASE_ANON_KEY}`
+                }
+            });
+            
+            if (response.ok) {
+                this.showToast('Status updated!', 'success');
+                // Wait a moment for DB to update, then fetch
+                setTimeout(() => this.fetchLiveStatus(), 1000);
+            } else {
+                throw new Error('Failed to refresh');
+            }
+        } catch (e) {
+            console.error('Refresh failed:', e);
+            this.showToast('Could not refresh status', 'error');
+        } finally {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
         }
     },
 

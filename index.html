@@ -47,6 +47,10 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <button class="btn-flag" id="liveStatusBtn" aria-label="Live Status">
+                        <span class="flag-emoji">🇦🇹</span>
+                        <span class="live-dot" id="liveDot"></span>
+                    </button>
                     <button class="btn-icon" id="historyBtn" aria-label="History">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
@@ -326,6 +330,85 @@
                     </svg>
                     Delete Run
                 </button>
+            </div>
+        </div>
+
+        <!-- Live Status Panel (Kitzbühel slopes & lifts) -->
+        <div class="panel panel-live-status hidden" id="liveStatusPanel">
+            <div class="panel-header">
+                <div class="panel-header-title">
+                    <span class="panel-flag">🇦🇹</span>
+                    <div>
+                        <h2>Kitzbühel</h2>
+                        <span class="panel-subtitle" id="liveStatusTime">Live Status</span>
+                    </div>
+                </div>
+                <button class="btn-close" id="closeLiveStatusBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Status Summary -->
+            <div class="live-status-summary" id="liveStatusSummary">
+                <div class="status-summary-card">
+                    <div class="status-summary-icon">🎿</div>
+                    <div class="status-summary-info">
+                        <div class="status-summary-value"><span id="slopesOpenCount">--</span>/<span id="slopesTotalCount">--</span></div>
+                        <div class="status-summary-label">Slopes Open</div>
+                    </div>
+                </div>
+                <div class="status-summary-card">
+                    <div class="status-summary-icon">🚡</div>
+                    <div class="status-summary-info">
+                        <div class="status-summary-value"><span id="liftsOpenCount">--</span>/<span id="liftsTotalCount">--</span></div>
+                        <div class="status-summary-label">Lifts Open</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-content">
+                <!-- Tabs -->
+                <div class="live-status-tabs">
+                    <button class="live-tab active" data-tab="slopes">Slopes</button>
+                    <button class="live-tab" data-tab="lifts">Lifts</button>
+                </div>
+                
+                <!-- Slopes List -->
+                <div class="live-tab-content active" id="liveSlopesTab">
+                    <div class="live-status-list" id="liveSlopesList">
+                        <div class="status-loading">
+                            <div class="loading-spinner"></div>
+                            <span>Loading status...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lifts List -->
+                <div class="live-tab-content" id="liveLiftsTab">
+                    <div class="live-status-list" id="liveLiftsList">
+                        <div class="status-loading">
+                            <div class="loading-spinner"></div>
+                            <span>Loading status...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-footer">
+                <button class="btn btn-secondary" id="refreshStatusBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6"/>
+                        <path d="M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                    Refresh Status
+                </button>
+                <div class="status-source">
+                    Data from <a href="https://www.kitzski.at" target="_blank">kitzski.at</a>
+                </div>
             </div>
         </div>
 
