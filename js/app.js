@@ -93,6 +93,15 @@ const App = {
             slopesList: document.getElementById('slopesList'),
             liftsList: document.getElementById('liftsList'),
             facilitiesGrid: document.getElementById('facilitiesGrid'),
+            // Achievements elements
+            achievementsBtn: document.getElementById('achievementsBtn'),
+            achievementsPanel: document.getElementById('achievementsPanel'),
+            closeAchievementsBtn: document.getElementById('closeAchievementsBtn'),
+            achievementsList: document.getElementById('achievementsList'),
+            achievementProgress: document.getElementById('achievementProgress'),
+            progressFill: document.getElementById('progressFill'),
+            unlockedCount: document.getElementById('unlockedCount'),
+            totalCount: document.getElementById('totalCount'),
             // Live status elements
             liveStatusBtn: document.getElementById('liveStatusBtn'),
             liveDot: document.getElementById('liveDot'),
@@ -137,6 +146,9 @@ const App = {
     async initModules() {
         // Initialize storage
         await Storage.init();
+        
+        // Initialize achievements
+        await Achievements.init();
         
         // Initialize stats
         Stats.init();
@@ -193,6 +205,15 @@ const App = {
         // Run details
         this.elements.closeRunDetailBtn?.addEventListener('click', () => this.hidePanel('runDetail'));
         this.elements.deleteRunBtn?.addEventListener('click', () => this.deleteCurrentDetailRun());
+        
+        // Achievements
+        this.elements.achievementsBtn?.addEventListener('click', () => this.showAchievementsPanel());
+        this.elements.closeAchievementsBtn?.addEventListener('click', () => this.hidePanel('achievements'));
+        
+        // Achievement category tabs
+        document.querySelectorAll('.achievement-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => this.filterAchievements(e.target.dataset.category));
+        });
         
         // Live status
         this.elements.liveStatusBtn?.addEventListener('click', () => this.showLiveStatusPanel());
@@ -393,6 +414,17 @@ const App = {
             await Storage.saveRun(runData);
             await Storage.updateRecords(runData);
             await Stats.updateRunCount();
+            
+            // Check for new achievements
+            const newAchievements = await Achievements.checkAfterRun(runData);
+            if (newAchievements.length > 0) {
+                this.showAchievementUnlock(newAchievements[0]);
+                // Queue additional achievements
+                for (let i = 1; i < newAchievements.length; i++) {
+                    setTimeout(() => this.showAchievementUnlock(newAchievements[i]), i * 3000);
+                }
+            }
+            
             Utils.vibrate([50, 50, 100]);
         }
         
@@ -551,6 +583,8 @@ const App = {
             }
         } else if (panel === 'liveStatus') {
             this.elements.liveStatusPanel?.classList.add('hidden');
+        } else if (panel === 'achievements') {
+            this.elements.achievementsPanel?.classList.add('hidden');
         }
     },
 
@@ -1106,6 +1140,99 @@ const App = {
             await Stats.updateRunCount();
             this.showToast('Run deleted', 'success');
         }
+    },
+
+    /**
+     * Show achievements panel
+     */
+    showAchievementsPanel() {
+        this.elements.achievementsPanel?.classList.remove('hidden');
+        this.renderAchievements('all');
+        this.updateAchievementProgress();
+    },
+    
+    /**
+     * Render achievements list
+     */
+    renderAchievements(category = 'all') {
+        const achievements = category === 'all' 
+            ? Achievements.getAll()
+            : Achievements.getByCategory(category);
+        
+        // Sort: unlocked first, then by tier
+        const tierOrder = { legendary: 0, platinum: 1, gold: 2, silver: 3, bronze: 4 };
+        achievements.sort((a, b) => {
+            if (a.isUnlocked && !b.isUnlocked) return -1;
+            if (!a.isUnlocked && b.isUnlocked) return 1;
+            return tierOrder[a.tier] - tierOrder[b.tier];
+        });
+        
+        this.elements.achievementsList.innerHTML = achievements.map(a => `
+            <div class="achievement-card ${a.isUnlocked ? 'unlocked' : 'locked'}" data-tier="${a.tier}">
+                <div class="achievement-icon">${a.icon}</div>
+                <div class="achievement-info">
+                    <div class="achievement-name">${a.name}</div>
+                    <div class="achievement-description">${a.description}</div>
+                </div>
+                <div class="achievement-badge">${a.tier}</div>
+            </div>
+        `).join('');
+    },
+    
+    /**
+     * Update achievement progress display
+     */
+    updateAchievementProgress() {
+        const progress = Achievements.getProgress();
+        
+        this.elements.unlockedCount.textContent = progress.unlocked;
+        this.elements.totalCount.textContent = progress.total;
+        this.elements.progressFill.setAttribute('stroke-dasharray', `${progress.percentage}, 100`);
+    },
+    
+    /**
+     * Filter achievements by category
+     */
+    filterAchievements(category) {
+        document.querySelectorAll('.achievement-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.category === category);
+        });
+        this.renderAchievements(category);
+    },
+    
+    /**
+     * Show achievement unlock toast
+     */
+    showAchievementUnlock(achievement) {
+        // Remove existing toast
+        const existing = document.querySelector('.achievement-toast');
+        if (existing) existing.remove();
+        
+        const toast = document.createElement('div');
+        toast.className = 'achievement-toast';
+        toast.innerHTML = `
+            <div class="achievement-toast-header">🎉 Achievement Unlocked!</div>
+            <div class="achievement-toast-icon">${achievement.icon}</div>
+            <div class="achievement-toast-name">${achievement.name}</div>
+            <div class="achievement-toast-description">${achievement.description}</div>
+            <div class="achievement-toast-tier">${achievement.tier}</div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Trigger animation
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
+        
+        // Vibrate
+        Utils.vibrate([100, 50, 100, 50, 200]);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
     },
 
     /**

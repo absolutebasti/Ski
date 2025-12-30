@@ -51,6 +51,9 @@
                         <span class="flag-emoji">🇦🇹</span>
                         <span class="live-dot" id="liveDot"></span>
                     </button>
+                    <button class="btn-icon" id="achievementsBtn" aria-label="Achievements">
+                        <span style="font-size: 20px;">🏆</span>
+                    </button>
                     <button class="btn-icon" id="historyBtn" aria-label="History">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
@@ -430,6 +433,49 @@
             </div>
         </div>
 
+        <!-- Achievements Panel -->
+        <div class="panel panel-achievements hidden" id="achievementsPanel">
+            <div class="panel-header">
+                <h2>🏆 Achievements</h2>
+                <button class="btn-close" id="closeAchievementsBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Progress Summary -->
+            <div class="achievements-progress">
+                <div class="progress-circle" id="achievementProgress">
+                    <svg viewBox="0 0 36 36">
+                        <path class="progress-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <path class="progress-fill" id="progressFill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    </svg>
+                    <div class="progress-text">
+                        <span id="unlockedCount">0</span>/<span id="totalCount">0</span>
+                    </div>
+                </div>
+                <div class="progress-label">Achievements Unlocked</div>
+            </div>
+            
+            <div class="panel-content">
+                <!-- Category Tabs -->
+                <div class="achievement-tabs">
+                    <button class="achievement-tab active" data-category="all">All</button>
+                    <button class="achievement-tab" data-category="speed">⚡ Speed</button>
+                    <button class="achievement-tab" data-category="distance">🗺️ Distance</button>
+                    <button class="achievement-tab" data-category="vertical">🏔️ Vertical</button>
+                    <button class="achievement-tab" data-category="runs">🎿 Runs</button>
+                </div>
+                
+                <!-- Achievements List -->
+                <div class="achievements-list" id="achievementsList">
+                    <!-- Achievements will be rendered here -->
+                </div>
+            </div>
+        </div>
+
         <!-- Settings Panel -->
         <div class="panel panel-settings hidden" id="settingsPanel">
             <div class="panel-header">
@@ -509,6 +555,7 @@
     <script src="js/storage.js"></script>
     <script src="js/supabase.js"></script>
     <script src="js/resorts.js"></script>
+    <script src="js/achievements.js"></script>
     <script src="js/gps-tracker.js"></script>
     <script src="js/stats.js"></script>
     <script src="js/map.js"></script>
