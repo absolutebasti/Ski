@@ -467,7 +467,22 @@ Document in `/research/gps-research.md`
 
 ## ✅ Completed
 
-*None yet*
+### [SECURITY-001] Remove Exposed API Keys from config.js
+**Type:** Security Fix  
+**Completed:** 2026-02-01  
+**Commit:** 3250935  
+**Evaluated By:** Evaluator Agent
+
+**Changes:**
+- Removed hardcoded Mapbox token from `js/config.js`
+- Removed hardcoded Supabase credentials from `js/config.js`
+- Replaced with placeholder values (`YOUR_XXX_HERE`)
+- Updated `.env.example` with proper template
+- Verified `.gitignore` excludes `.env`
+
+**Security Improvement:** 5/10 → 9/10
+
+---
 
 ---
 

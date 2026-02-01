@@ -1,5 +1,7 @@
-last_check=1769977744
-reviewer_alerts=0
-evaluator_alerts=0
-developer_alerts=0
-system_alerts=0
+last_check=1769979763
+reviewer_alerts=3
+evaluator_alerts=4
+developer_alerts=4
+system_alerts=3
+manager_replaced=2026-02-01T21:02:43
+recovery_mode=ACTIVE
