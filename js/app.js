@@ -415,6 +415,9 @@ const App = {
             await Storage.updateRecords(runData);
             await Stats.updateRunCount();
             
+            // Queue for cloud sync (will sync when online)
+            this.queueRunForSync(runData.id);
+            
             // Check for new achievements
             const newAchievements = await Achievements.checkAfterRun(runData);
             if (newAchievements.length > 0) {
@@ -1573,17 +1576,167 @@ const App = {
     },
 
     /**
-     * Register service worker
+     * Register service worker with background sync
      */
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
                 const registration = await navigator.serviceWorker.register('/sw.js');
                 console.log('Service Worker registered:', registration.scope);
+                
+                // Store registration for background sync
+                this.swRegistration = registration;
+                
+                // Listen for service worker messages
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    this.handleServiceWorkerMessage(event.data);
+                });
+                
+                // Request background sync permission if available
+                if ('sync' in registration) {
+                    console.log('Background Sync API available');
+                    this.registerBackgroundSync('sync-runs');
+                }
             } catch (error) {
                 console.log('Service Worker registration failed:', error);
             }
         }
+    },
+
+    /**
+     * Handle messages from service worker
+     */
+    handleServiceWorkerMessage(data) {
+        console.log('Message from SW:', data);
+        
+        switch (data.type) {
+            case 'QUEUE_REQUEST':
+                // Store failed API request for later retry
+                this.queueFailedRequest(data.request);
+                break;
+            case 'SYNC_RUNS':
+                // Trigger sync of pending runs to Supabase
+                this.syncPendingRuns();
+                break;
+            case 'SYNC_API_REQUESTS':
+                // Retry failed API requests
+                this.retryFailedRequests();
+                break;
+        }
+    },
+
+    /**
+     * Register background sync tag
+     */
+    async registerBackgroundSync(tag) {
+        if (!this.swRegistration) return;
+        
+        try {
+            await this.swRegistration.sync.register(tag);
+            console.log('Background sync registered:', tag);
+        } catch (error) {
+            console.error('Background sync registration failed:', error);
+        }
+    },
+
+    /**
+     * Queue a failed request for retry
+     */
+    async queueFailedRequest(requestData) {
+        const queue = await Storage.getSetting('pendingRequests', []);
+        queue.push(requestData);
+        await Storage.saveSetting('pendingRequests', queue);
+        console.log('Request queued for retry:', requestData.url);
+    },
+
+    /**
+     * Retry failed API requests
+     */
+    async retryFailedRequests() {
+        if (!navigator.onLine) return;
+        
+        const queue = await Storage.getSetting('pendingRequests', []);
+        if (queue.length === 0) return;
+        
+        console.log('Retrying', queue.length, 'failed requests...');
+        const remaining = [];
+        
+        for (const requestData of queue) {
+            try {
+                const response = await fetch(requestData.url, {
+                    method: requestData.method,
+                    headers: new Headers(requestData.headers),
+                    body: requestData.body
+                });
+                
+                if (response.ok) {
+                    console.log('Request retry successful:', requestData.url);
+                } else {
+                    remaining.push(requestData);
+                }
+            } catch (error) {
+                remaining.push(requestData);
+            }
+        }
+        
+        await Storage.saveSetting('pendingRequests', remaining);
+        
+        if (remaining.length === 0) {
+            console.log('All queued requests completed');
+            this.showToast('Offline data synced successfully', 'success');
+        } else {
+            console.log(remaining.length, 'requests still pending');
+        }
+    },
+
+    /**
+     * Sync pending runs to Supabase
+     */
+    async syncPendingRuns() {
+        if (!Supabase.client || !navigator.onLine) return;
+        
+        const pendingRuns = await Storage.getSetting('pendingSupabaseSync', []);
+        if (pendingRuns.length === 0) return;
+        
+        console.log('Syncing', pendingRuns.length, 'pending runs to Supabase...');
+        const synced = [];
+        
+        for (const runId of pendingRuns) {
+            const run = await Storage.getRun(runId);
+            if (run) {
+                try {
+                    await Supabase.saveRun(run);
+                    synced.push(runId);
+                } catch (error) {
+                    console.error('Failed to sync run:', runId, error);
+                }
+            } else {
+                synced.push(runId); // Run doesn't exist anymore, remove from queue
+            }
+        }
+        
+        // Update pending list
+        const remaining = pendingRuns.filter(id => !synced.includes(id));
+        await Storage.saveSetting('pendingSupabaseSync', remaining);
+        
+        if (remaining.length === 0) {
+            console.log('All runs synced to Supabase');
+            this.showToast('Runs synced to cloud', 'success');
+        }
+    },
+
+    /**
+     * Queue a run for Supabase sync
+     */
+    async queueRunForSync(runId) {
+        const pending = await Storage.getSetting('pendingSupabaseSync', []);
+        if (!pending.includes(runId)) {
+            pending.push(runId);
+            await Storage.saveSetting('pendingSupabaseSync', pending);
+        }
+        
+        // Register background sync
+        this.registerBackgroundSync('sync-runs');
     }
 };
 
