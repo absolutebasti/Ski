@@ -8,7 +8,7 @@
 
 ## 🔴 CRITICAL - Immediate Action Required
 
-### [CRITICAL-001] GPS Kalman Filtering Implementation
+### [CRITICAL-001] GPS Kalman Filtering Implementation 🟡 IN PROGRESS - Ski Developer v3
 **Type:** Core Algorithm  
 **Impact:** Data Quality  
 **From:** Code Review - gps-tracker.js
@@ -35,6 +35,9 @@ Implement Kalman filter or complementary filter for:
 - [ ] Speed fluctuations reduced by >60% when stationary
 - [ ] Altitude readings stable within 5m when on lift
 - [ ] Position jitter eliminated at low speeds
+
+**Assigned to:** Ski Developer v3  
+**Started:** 2026-02-01
 
 ---
 

@@ -1,7 +1,253 @@
 /**
- * KitzSki Tracker - GPS Tracking Engine
+ * KitzSki Tracker - GPS Tracking Engine with Kalman Filtering
+ * 
+ * Implements Kalman filtering for improved GPS accuracy in alpine environments
+ * where multipath errors (reflections from snow/mountains) are common.
  */
 
+/**
+ * 1D Kalman Filter for smoothing sensor data
+ * Optimized for GPS measurements with adaptive noise filtering
+ */
+class KalmanFilter {
+    constructor(options = {}) {
+        // Process noise (how much the system can change between measurements)
+        this.Q = options.processNoise || 0.01;
+        
+        // Measurement noise (how noisy the sensor is)
+        this.R = options.measurementNoise || 1;
+        
+        // Estimation error covariance
+        this.P = options.initialError || 1;
+        
+        // State estimate
+        this.X = options.initialValue || 0;
+        
+        // Adaptive filtering: adjust noise based on measurement quality
+        this.adaptive = options.adaptive !== false;
+        this.minR = options.minMeasurementNoise || 0.1;
+        this.maxR = options.maxMeasurementNoise || 10;
+    }
+
+    /**
+     * Filter a measurement
+     * @param {number} measurement - Raw measurement value
+     * @param {number} accuracy - Optional accuracy indicator (lower is better)
+     * @returns {number} Filtered value
+     */
+    filter(measurement, accuracy = null) {
+        // Adaptive noise adjustment based on accuracy
+        if (this.adaptive && accuracy !== null) {
+            // Scale measurement noise based on accuracy
+            // Higher accuracy value = more noise = less trust in measurement
+            this.R = Math.max(this.minR, Math.min(this.maxR, accuracy / 10));
+        }
+
+        // Prediction step
+        // X = X (state doesn't change in our model)
+        this.P = this.P + this.Q;
+
+        // Update step
+        const K = this.P / (this.P + this.R); // Kalman gain
+        this.X = this.X + K * (measurement - this.X);
+        this.P = (1 - K) * this.P;
+
+        return this.X;
+    }
+
+    /**
+     * Reset the filter
+     * @param {number} initialValue - New initial value
+     */
+    reset(initialValue = 0) {
+        this.X = initialValue;
+        this.P = 1;
+    }
+
+    /**
+     * Get current filtered value without updating
+     * @returns {number} Current estimate
+     */
+    getValue() {
+        return this.X;
+    }
+}
+
+/**
+ * 2D Kalman Filter for position (latitude/longitude)
+ * Tracks position with velocity for smoother predictions
+ */
+class KalmanFilter2D {
+    constructor(options = {}) {
+        // State: [x, y, vx, vy] - position and velocity
+        this.state = new Float64Array([0, 0, 0, 0]);
+        
+        // State covariance matrix (4x4)
+        this.P = new Float64Array([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ]);
+        
+        // Process noise
+        const posNoise = options.positionNoise || 0.01;
+        const velNoise = options.velocityNoise || 0.1;
+        this.Q = new Float64Array([
+            posNoise, 0, 0, 0,
+            0, posNoise, 0, 0,
+            0, 0, velNoise, 0,
+            0, 0, 0, velNoise
+        ]);
+        
+        // Measurement noise (varies with GPS accuracy)
+        this.R_base = options.measurementNoise || 1;
+        this.minAccuracy = options.minAccuracy || 5;
+        this.maxAccuracy = options.maxAccuracy || 50;
+        
+        // Time step
+        this.dt = options.dt || 1;
+        this.lastTime = null;
+    }
+
+    /**
+     * Predict step (using constant velocity model)
+     * @param {number} dt - Time delta in seconds
+     */
+    predict(dt) {
+        if (!dt || dt <= 0) dt = this.dt;
+        
+        // State transition matrix F
+        // [1, 0, dt, 0]
+        // [0, 1, 0, dt]
+        // [0, 0, 1,  0]
+        // [0, 0, 0,  1]
+        
+        // X = F * X (state prediction)
+        const x = this.state[0];
+        const y = this.state[1];
+        const vx = this.state[2];
+        const vy = this.state[3];
+        
+        this.state[0] = x + vx * dt;
+        this.state[1] = y + vy * dt;
+        // velocity remains the same
+        
+        // P = F * P * F' + Q (covariance prediction)
+        // Simplified for constant velocity model
+        this.P[0] += this.P[2] * dt + this.P[8] * dt + this.P[10] * dt * dt + this.Q[0];
+        this.P[1] += this.P[3] * dt + this.P[9] * dt + this.P[11] * dt * dt;
+        this.P[4] += this.P[6] * dt + this.P[12] * dt + this.P[14] * dt * dt;
+        this.P[5] += this.P[7] * dt + this.P[13] * dt + this.P[15] * dt * dt + this.Q[5];
+        this.P[2] += this.P[10] * dt;
+        this.P[3] += this.P[11] * dt;
+        this.P[6] += this.P[14] * dt;
+        this.P[7] += this.P[15] * dt;
+        this.P[8] += this.P[10] * dt;
+        this.P[9] += this.P[11] * dt;
+        this.P[12] += this.P[14] * dt;
+        this.P[13] += this.P[15] * dt;
+        this.P[10] += this.Q[10];
+        this.P[15] += this.Q[15];
+    }
+
+    /**
+     * Update step with new measurement
+     * @param {number} x - Measured x position
+     * @param {number} y - Measured y position
+     * @param {number} accuracy - GPS accuracy in meters
+     * @param {number} timestamp - Timestamp in ms
+     */
+    update(x, y, accuracy = 10, timestamp = null) {
+        // Calculate dt
+        let dt = this.dt;
+        if (timestamp && this.lastTime) {
+            dt = (timestamp - this.lastTime) / 1000;
+            if (dt <= 0 || dt > 10) dt = this.dt; // Sanity check
+        }
+        this.lastTime = timestamp;
+        
+        // Predict step
+        this.predict(dt);
+        
+        // Calculate measurement noise based on accuracy
+        const R = this.R_base * Math.max(0.5, accuracy / this.minAccuracy);
+        
+        // Innovation (measurement - prediction)
+        const ix = x - this.state[0];
+        const iy = y - this.state[1];
+        
+        // Innovation covariance
+        const Sx = this.P[0] + R;
+        const Sy = this.P[5] + R;
+        
+        // Kalman gain
+        const Kx = this.P[0] / Sx;
+        const Ky = this.P[5] / Sy;
+        const Kvx = this.P[2] / Sx;
+        const Kvy = this.P[7] / Sy;
+        
+        // Update state
+        this.state[0] += Kx * ix;
+        this.state[1] += Ky * iy;
+        this.state[2] += Kvx * ix;
+        this.state[3] += Kvy * iy;
+        
+        // Update covariance
+        this.P[0] = (1 - Kx) * this.P[0];
+        this.P[5] = (1 - Ky) * this.P[5];
+        this.P[2] = (1 - Kx) * this.P[2];
+        this.P[7] = (1 - Ky) * this.P[7];
+        
+        return {
+            x: this.state[0],
+            y: this.state[1],
+            vx: this.state[2],
+            vy: this.state[3]
+        };
+    }
+
+    /**
+     * Get current filtered position
+     * @returns {Object} {x, y, vx, vy}
+     */
+    getPosition() {
+        return {
+            x: this.state[0],
+            y: this.state[1],
+            vx: this.state[2],
+            vy: this.state[3]
+        };
+    }
+
+    /**
+     * Get current speed from velocity components
+     * @returns {number} Speed in m/s
+     */
+    getSpeed() {
+        return Math.sqrt(this.state[2] * this.state[2] + this.state[3] * this.state[3]);
+    }
+
+    /**
+     * Reset the filter
+     */
+    reset(x = 0, y = 0) {
+        this.state[0] = x;
+        this.state[1] = y;
+        this.state[2] = 0;
+        this.state[3] = 0;
+        this.P.fill(0);
+        this.P[0] = 1;
+        this.P[5] = 1;
+        this.P[10] = 1;
+        this.P[15] = 1;
+        this.lastTime = null;
+    }
+}
+
+/**
+ * GPS Tracker with Kalman Filtering
+ */
 const GPSTracker = {
     watchId: null,
     isTracking: false,
@@ -30,17 +276,25 @@ const GPSTracker = {
         timeout: 10000
     },
     
-    // Filtering settings
-    minAccuracy: 50, // meters - reject readings with worse accuracy
-    minDistance: 3, // meters - minimum distance to register movement
-    minSpeedThreshold: 3, // km/h - speeds below this show as 0 (GPS noise filter)
-    speedSmoothingFactor: 0.4,
+    // Filtering settings - improved for alpine environments
+    minAccuracy: 20, // meters - reduced from 50 for better filtering
+    minDistance: 2, // meters - reduced for better precision
+    minSpeedThreshold: 1, // km/h - reduced for better sensitivity
     
-    // Speed calculation
+    // Kalman filters
+    kalmanPosition: null,
+    kalmanAltitude: null,
+    kalmanSpeed: null,
+    
+    // Speed calculation (legacy fallback)
     lastSpeeds: [],
     maxSpeedSamples: 5,
     lastPositionTime: null,
     lastPosition: null,
+    
+    // Altitude history for smoothing
+    altitudeHistory: [],
+    maxAltitudeSamples: 10,
 
     /**
      * Check if GPS is available
@@ -48,6 +302,39 @@ const GPSTracker = {
      */
     isAvailable() {
         return 'geolocation' in navigator;
+    },
+
+    /**
+     * Initialize Kalman filters
+     */
+    initKalmanFilters() {
+        // Position filter with adaptive noise based on accuracy
+        this.kalmanPosition = new KalmanFilter2D({
+            positionNoise: 0.001,
+            velocityNoise: 0.01,
+            measurementNoise: 1,
+            minAccuracy: 5,
+            maxAccuracy: 50,
+            dt: 1
+        });
+        
+        // Altitude filter - GPS altitude is notoriously noisy
+        this.kalmanAltitude = new KalmanFilter({
+            processNoise: 0.005,
+            measurementNoise: 5, // High noise for altitude
+            minMeasurementNoise: 1,
+            maxMeasurementNoise: 50,
+            adaptive: true
+        });
+        
+        // Speed filter for final smoothing
+        this.kalmanSpeed = new KalmanFilter({
+            processNoise: 0.01,
+            measurementNoise: 2,
+            minMeasurementNoise: 0.5,
+            maxMeasurementNoise: 10,
+            adaptive: true
+        });
     },
 
     /**
@@ -98,7 +385,11 @@ const GPSTracker = {
         };
         
         this.lastSpeeds = [];
+        this.altitudeHistory = [];
         this.previousPosition = null;
+        
+        // Initialize Kalman filters
+        this.initKalmanFilters();
 
         // Start watching position
         this.watchId = navigator.geolocation.watchPosition(
@@ -107,7 +398,7 @@ const GPSTracker = {
             this.options
         );
 
-        console.log('GPS tracking started');
+        console.log('GPS tracking started with Kalman filtering');
     },
 
     /**
@@ -163,9 +454,9 @@ const GPSTracker = {
 
         const processed = this.processPosition(position);
         
-        // Filter out inaccurate readings
-        if (processed.accuracy > this.minAccuracy) {
-            console.log('Rejecting inaccurate reading:', processed.accuracy);
+        // Filter out very inaccurate readings
+        if (processed.accuracy > this.minAccuracy * 2) {
+            console.log('Rejecting very inaccurate reading:', processed.accuracy);
             return;
         }
 
@@ -179,22 +470,10 @@ const GPSTracker = {
             lon: processed.longitude,
             alt: processed.altitude,
             speed: processed.speed,
-            timestamp: processed.timestamp
+            timestamp: processed.timestamp,
+            accuracy: processed.accuracy,
+            filtered: true
         });
-
-        // Calculate distance from previous position
-        if (this.previousPosition) {
-            const distance = Utils.calculateDistance(
-                this.previousPosition.latitude,
-                this.previousPosition.longitude,
-                processed.latitude,
-                processed.longitude
-            );
-            processed.distanceFromPrevious = distance;
-        }
-
-        // Smooth speed using moving average
-        processed.smoothedSpeed = this.getSmoothedSpeed(processed.speed);
 
         // Notify callback
         if (this.onPositionUpdate) {
@@ -203,37 +482,88 @@ const GPSTracker = {
     },
 
     /**
-     * Process raw GPS position into usable format
+     * Process raw GPS position with Kalman filtering
      * @param {GeolocationPosition} position - Raw position
-     * @returns {Object} Processed position data
+     * @returns {Object} Processed and filtered position data
      */
     processPosition(position) {
         const { coords, timestamp } = position;
         
-        // Convert speed from m/s to km/h
-        let speedKmh = 0;
-        
-        // Try to use GPS-reported speed first
-        if (coords.speed !== null && coords.speed >= 0) {
-            speedKmh = Utils.mpsToKmh(coords.speed);
+        // Convert lat/lon to local meters for Kalman filter
+        // Using approximate conversion: 1 degree lat ~ 111km, 1 degree lon varies
+        if (!this.origin) {
+            this.origin = { lat: coords.latitude, lon: coords.longitude };
         }
         
-        // Fallback: Calculate speed from position change if GPS speed unavailable
-        if (speedKmh === 0 && this.lastPosition && this.lastPositionTime) {
-            const timeDiff = (timestamp - this.lastPositionTime) / 1000; // seconds
-            if (timeDiff > 0 && timeDiff < 10) { // Only if reasonable time gap
+        const localX = (coords.longitude - this.origin.lon) * 111320 * Math.cos(this.origin.lat * Math.PI / 180);
+        const localY = (coords.latitude - this.origin.lat) * 110540;
+        
+        // Update position Kalman filter
+        const filteredPos = this.kalmanPosition.update(
+            localX, localY, coords.accuracy, timestamp
+        );
+        
+        // Convert back to lat/lon
+        const filteredLat = this.origin.lat + filteredPos.y / 110540;
+        const filteredLon = this.origin.lon + filteredPos.x / (111320 * Math.cos(this.origin.lat * Math.PI / 180));
+        
+        // Calculate speed from Kalman velocity (m/s)
+        const kalmanSpeedMs = this.kalmanPosition.getSpeed();
+        let speedKmh = Utils.mpsToKmh(kalmanSpeedMs);
+        
+        // Also try GPS-reported speed for comparison
+        let gpsSpeedKmh = 0;
+        if (coords.speed !== null && coords.speed >= 0) {
+            gpsSpeedKmh = Utils.mpsToKmh(coords.speed);
+        }
+        
+        // Fallback: Calculate speed from position change if both are unavailable
+        if (speedKmh < 0.5 && gpsSpeedKmh === 0 && this.lastPosition && this.lastPositionTime) {
+            const timeDiff = (timestamp - this.lastPositionTime) / 1000;
+            if (timeDiff > 0 && timeDiff < 10) {
                 const distance = Utils.calculateDistance(
                     this.lastPosition.latitude,
                     this.lastPosition.longitude,
                     coords.latitude,
                     coords.longitude
                 );
-                // Calculate speed in km/h (distance in m, time in s)
                 const calculatedSpeed = (distance / timeDiff) * 3.6;
-                // Only use if movement detected and reasonable speed
                 if (calculatedSpeed > 0.5 && calculatedSpeed < 200) {
                     speedKmh = calculatedSpeed;
                 }
+            }
+        }
+        
+        // Fuse GPS speed with Kalman speed if GPS speed is available and reasonable
+        if (gpsSpeedKmh > 1 && Math.abs(gpsSpeedKmh - speedKmh) < 30) {
+            // Weight GPS speed based on accuracy
+            const gpsWeight = Math.max(0, 1 - coords.accuracy / 50);
+            speedKmh = gpsSpeedKmh * gpsWeight + speedKmh * (1 - gpsWeight);
+        }
+        
+        // Apply speed Kalman filter for final smoothing
+        speedKmh = this.kalmanSpeed.filter(speedKmh, coords.accuracy);
+        
+        // Apply minimum speed threshold (filter GPS noise when stationary)
+        if (speedKmh < this.minSpeedThreshold) {
+            speedKmh = 0;
+        }
+        
+        // Filter altitude with Kalman filter
+        let filteredAltitude = coords.altitude;
+        if (coords.altitude !== null) {
+            filteredAltitude = this.kalmanAltitude.filter(coords.altitude, coords.altitudeAccuracy || 20);
+            
+            // Additional smoothing with median filter for altitude
+            this.altitudeHistory.push(filteredAltitude);
+            if (this.altitudeHistory.length > this.maxAltitudeSamples) {
+                this.altitudeHistory.shift();
+            }
+            
+            // Use median of recent altitudes for stability
+            if (this.altitudeHistory.length >= 3) {
+                const sorted = [...this.altitudeHistory].sort((a, b) => a - b);
+                filteredAltitude = sorted[Math.floor(sorted.length / 2)];
             }
         }
         
@@ -241,29 +571,29 @@ const GPSTracker = {
         this.lastPosition = { latitude: coords.latitude, longitude: coords.longitude };
         this.lastPositionTime = timestamp;
 
-        // Apply minimum speed threshold (filter GPS noise when stationary)
-        // Speeds below threshold are likely GPS drift, not real movement
-        if (speedKmh < this.minSpeedThreshold) {
-            speedKmh = 0;
-        }
-
         return {
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            altitude: coords.altitude,
+            latitude: filteredLat,
+            longitude: filteredLon,
+            rawLatitude: coords.latitude,
+            rawLongitude: coords.longitude,
+            altitude: filteredAltitude,
+            rawAltitude: coords.altitude,
             accuracy: coords.accuracy,
             altitudeAccuracy: coords.altitudeAccuracy,
             heading: coords.heading,
-            speed: speedKmh, // km/h (filtered)
-            speedRaw: coords.speed, // m/s (original)
-            timestamp: timestamp
+            speed: speedKmh,
+            speedRaw: coords.speed ? Utils.mpsToKmh(coords.speed) : 0,
+            speedKalman: Utils.mpsToKmh(kalmanSpeedMs),
+            timestamp: timestamp,
+            filtered: true
         };
     },
 
     /**
-     * Get smoothed speed using moving average
+     * Get smoothed speed using moving average (legacy method)
      * @param {number} speed - Current speed
      * @returns {number} Smoothed speed
+     * @deprecated Use Kalman filter instead
      */
     getSmoothedSpeed(speed) {
         // Add to samples
@@ -279,7 +609,7 @@ const GPSTracker = {
         let weightSum = 0;
         
         this.lastSpeeds.forEach((s, i) => {
-            const weight = i + 1; // Increasing weight for newer samples
+            const weight = i + 1;
             weightedSum += s * weight;
             weightSum += weight;
         });
@@ -324,7 +654,7 @@ const GPSTracker = {
     getTrackingData() {
         const positions = this.trackingData.positions;
         
-        // Calculate total distance
+        // Calculate total distance using filtered positions
         let totalDistance = 0;
         for (let i = 1; i < positions.length; i++) {
             totalDistance += Utils.calculateDistance(
@@ -335,14 +665,14 @@ const GPSTracker = {
             );
         }
 
-        // Calculate max speed
+        // Calculate max speed (use filtered values)
         const maxSpeed = positions.reduce((max, p) => Math.max(max, p.speed || 0), 0);
         
         // Calculate average speed (excluding zeros)
         const nonZeroSpeeds = positions.filter(p => p.speed > 1).map(p => p.speed);
         const avgSpeed = Utils.average(nonZeroSpeeds);
 
-        // Calculate vertical drop
+        // Calculate vertical drop using filtered altitudes
         const altitudes = positions.filter(p => p.alt !== null).map(p => p.alt);
         let verticalDrop = 0;
         let totalAscent = 0;
@@ -373,7 +703,12 @@ const GPSTracker = {
             startTime: this.trackingData.startTime,
             endTime: endTime,
             startAltitude: altitudes[0] || null,
-            endAltitude: altitudes[altitudes.length - 1] || null
+            endAltitude: altitudes[altitudes.length - 1] || null,
+            filterStats: {
+                positionFilter: 'Kalman2D',
+                altitudeFilter: 'Kalman+Median',
+                speedFilter: 'Kalman'
+            }
         };
     },
 
@@ -431,4 +766,3 @@ const GPSTracker = {
 
 // Make GPSTracker available globally
 window.GPSTracker = GPSTracker;
-
