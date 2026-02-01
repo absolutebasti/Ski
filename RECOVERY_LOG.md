@@ -29,15 +29,30 @@
 - 21:03:31 - Check #1: Manager commit detected ✅
 - 21:04:05 - Check #2: No agent activity ⚠️
 - 21:04:52 - Check #3: Still no agent commits ⚠️
+- 21:05:21 - Check #4: Still only Manager activity ⚠️
+- 21:05:45 - Check #5: 🚨 ESCALATION TRIGGERED
 
-### Current Status (21:04:52)
-- Developer: Waiting 38+ min (STILL STUCK)
-- Evaluator: Stuck 35+ min (STILL STUCK)  
+### ESCALATION (21:05:45)
+**Consecutive Timeouts:** 4 (exceeds threshold of 3)  
+**Status:** Agents not responding to recovery attempts
+
+### Current Status (21:05:45)
+- Developer: Waiting 39+ min (ESCALATED)
+- Evaluator: Stuck 36+ min (ESCALATED)  
 - Reporter: Unknown (NO CHECK-IN)
-- System: Only Manager activity
+- System: Only Manager activity (3 commits)
 
-### Next Check
-21:06:00
+### Actions Taken
+1. ✅ Manager replaced at 21:02
+2. ✅ Status files updated
+3. ✅ Recovery log created
+4. ✅ 3 Manager commits to show activity
+5. ✅ ESCALATION triggered at 21:05:45
+
+### Next Steps
+- Monitor for any agent response
+- If no response by 21:10 → Further escalation
+- Main agent may need to manually intervene
 
 ---
-*Recovery in progress - agents not responding*
+*ESCALATED - awaiting agent response*
