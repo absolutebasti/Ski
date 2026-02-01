@@ -6,12 +6,14 @@
 
 const Config = {
     // Mapbox API Token - Get yours at: https://mapbox.com
-    MAPBOX_TOKEN: 'pk.eyJ1IjoiYWJzb2x1dGViYXN0aSIsImEiOiJjbWpxMm15enkxb3JkM2VxeXdydmlwMnB6In0.q8VWl_-0LW2B3MTUDhf8hA',
+    // For production, set in .env file (see .env.example)
+    MAPBOX_TOKEN: 'YOUR_MAPBOX_TOKEN_HERE',
     
     // Supabase - Get these from: Supabase Dashboard > Settings > API
     // The anon key is safe to expose publicly (security is via Row Level Security)
-    SUPABASE_URL: 'https://aknbxzkewrbwsaxfhalz.supabase.co',
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrbmJ4emtld3Jid3NheGZoYWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5NDQ0MzYsImV4cCI6MjA4MjUyMDQzNn0.e_4D6FTQ_YKAMjaob3gP6lYFQPLUXxJe5Np73jl-DHU',
+    // For production, set in .env file (see .env.example)
+    SUPABASE_URL: 'YOUR_SUPABASE_URL_HERE',
+    SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY_HERE',
     
     // App Settings
     APP_NAME: 'Ski Tracker',
