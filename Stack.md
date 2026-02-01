@@ -38,7 +38,7 @@ Implement Kalman filter or complementary filter for:
 
 ---
 
-### [CRITICAL-002] Service Worker Missing - PWA Not Installable
+### [CRITICAL-002] Service Worker Missing - PWA Not Installable 🟡 IN PROGRESS - Ski Developer v3
 **Type:** PWA Infrastructure  
 **Impact:** Core Functionality  
 **From:** Code Review
@@ -66,6 +66,9 @@ Implement Kalman filter or complementary filter for:
 - [ ] App loads fully offline after first visit
 - [ ] Map tiles cached for offline use (at least resort area)
 - [ ] Runs saved offline sync when back online
+
+**Assigned to:** Ski Developer v3  
+**Started:** 2026-02-01
 
 ---
 
@@ -481,6 +484,137 @@ Document in `/research/gps-research.md`
 - Verified `.gitignore` excludes `.env`
 
 **Security Improvement:** 5/10 → 9/10
+
+---
+
+### [CORE-001] GPS Noise Filter Implementation
+**Type:** Data Quality Fix  
+**Completed:** 2025-12-28  
+**Commit:** 4e96688  
+**Evaluated By:** SKI EVALUATOR v3
+
+**Changes:**
+- Added `minSpeedThreshold: 3` km/h in `js/gps-tracker.js`
+- Speeds below threshold now show as 0 (filters GPS drift)
+- Distance only added when actually moving (>3m and speed >0)
+- Updated in both `gps-tracker.js` and `stats.js`
+
+**Evaluation:** ✅ GOOD
+- Code syntax valid
+- Logic correctly filters GPS noise when stationary
+- Minimum movement threshold prevents false distance accumulation
+
+**Quality Improvement:** Significant reduction in false readings
+
+---
+
+### [CORE-002] Vertical Drop Calculation Fix
+**Type:** Core Algorithm Fix  
+**Completed:** 2025-12-30  
+**Commit:** 2254a80  
+**Evaluated By:** SKI EVALUATOR v3
+
+**Changes:**
+- Changed from "highest-lowest" to CUMULATIVE descent calculation
+- Added 5m threshold to filter GPS altitude noise
+- Now properly tracks total meters descended across all runs
+- Added `previousAltitude` tracking for change detection
+
+**Evaluation:** ✅ GOOD
+- Correctly implements cumulative vertical tracking
+- 5m threshold appropriate for GPS altitude accuracy (~10-30m)
+- Properly distinguishes descent from ascent (lifts)
+
+**Before:** 2 runs of 500m each = 500m (wrong!)  
+**After:** 2 runs of 500m each = 1000m (correct!)
+
+---
+
+### [UX-001] Disable Auto-Pause for Skiing
+**Type:** UX Improvement  
+**Completed:** 2025-12-29  
+**Commit:** 7d177d5  
+**Evaluated By:** SKI EVALUATOR v3
+
+**Changes:**
+- Removed aggressive auto-pause logic from `js/app.js`
+- Manual pause only (better for skiing with frequent stops)
+- Reduced from 56 lines to 8 lines (simplified)
+
+**Evaluation:** ✅ GOOD
+- Auto-pause was indeed too aggressive for real skiing
+- Manual control better suits ski environment (lifts, queues, resting)
+- Code simplification reduces maintenance burden
+
+---
+
+### [FEATURE-001] Run Detail View with Route Map
+**Type:** Feature Implementation  
+**Completed:** 2025-12-30  
+**Commit:** 01c56fe  
+**Evaluated By:** SKI EVALUATOR v3
+
+**Changes:**
+- Added `showRunDetail()` function in `js/app.js`
+- Interactive map showing exact route (green line)
+- Start (green) and end (red) markers
+- Altitude profile chart using Canvas API
+- Stats summary: max speed, distance, vertical, duration
+- Delete button for individual runs
+
+**Evaluation:** ✅ GOOD
+- Code syntax valid
+- Proper Mapbox integration for route visualization
+- Altitude profile drawn with Canvas
+- Click handlers properly attached to history items
+
+**Note:** Corresponds to HIGH priority feature - Run Detail Visualization
+
+---
+
+### [FEATURE-002] Achievements System
+**Type:** Feature Implementation  
+**Completed:** 2025-12-30  
+**Commit:** e09390f  
+**Evaluated By:** SKI EVALUATOR v3
+
+**Changes:**
+- New file: `js/achievements.js` (416 lines)
+- 27 achievements across 5 categories (speed, distance, vertical, runs, totals)
+- Tier system: Bronze → Silver → Gold → Platinum → Legendary
+- Trophy button in header to view achievements
+- Progress circle showing % unlocked
+- Category filtering
+- Animated unlock toast with haptic feedback
+- Persistent storage via IndexedDB
+
+**Evaluation:** ✅ GOOD
+- Well-structured achievement definitions
+- Syntax valid (no errors)
+- Comprehensive coverage of skiing milestones
+- Good UI integration (CSS + HTML updates)
+
+**Note:** Corresponds to gamification aspect of HIGH-005
+
+---
+
+### [INFRA-001] Bergfex Scraper Migration
+**Type:** Infrastructure Fix  
+**Completed:** 2025-12-30  
+**Commit:** 258dfa6  
+**Evaluated By:** SKI EVALUATOR v3
+
+**Changes:**
+- Migrated from KitzSki.at to Bergfex (server-rendered HTML)
+- Updated `supabase/functions/scrape-slopes/index.ts`
+- Now returns: 52/89 slopes open, 50/56 lifts open
+- Includes breakdown by difficulty
+- Famous slopes tracked (Streif, Hahnenkamm, Ganslern)
+
+**Evaluation:** ⚠️ NEEDS VERIFICATION
+- Code structure looks correct
+- Server-rendered HTML is more reliable than JS-loaded data
+- **Action Required:** Test actual scraping to verify data accuracy
 
 ---
 
