@@ -1,7 +1,10 @@
-last_check=1769979763
+last_check=1769980045
 reviewer_alerts=3
-evaluator_alerts=4
-developer_alerts=4
-system_alerts=3
+evaluator_alerts=5
+developer_alerts=5
+system_alerts=4
 manager_replaced=2026-02-01T21:02:43
 recovery_mode=ACTIVE
+consecutive_timeouts=4
+escalation_threshold=3
+escalation_status=PENDING
