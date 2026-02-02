@@ -299,11 +299,20 @@ const App = {
             const runData = Stats.getRunData();
             if (runData.distance > 0.01 || runData.duration > 10000) {
                 // Save to localStorage as backup (faster than IndexedDB)
-                localStorage.setItem('emergencyRun', JSON.stringify({
+                const result = SecurityUtils.safeLocalStorageSet('emergencyRun', JSON.stringify({
                     ...runData,
                     savedAt: Date.now(),
                     wasTracking: this.state === 'tracking'
                 }));
+                
+                if (!result.success && result.fallback === 'indexeddb') {
+                    // Fallback to IndexedDB if localStorage is full
+                    await SecurityUtils.fallbackToIndexedDB('emergencyRun', JSON.stringify({
+                        ...runData,
+                        savedAt: Date.now(),
+                        wasTracking: this.state === 'tracking'
+                    }));
+                }
                 console.log('Emergency save completed');
             }
         } catch (e) {
@@ -315,7 +324,7 @@ const App = {
      * Check for emergency saved run on startup
      */
     async checkEmergencyRun() {
-        const saved = localStorage.getItem('emergencyRun');
+        const saved = SecurityUtils.safeLocalStorageGet('emergencyRun');
         if (saved) {
             try {
                 const runData = JSON.parse(saved);
@@ -571,10 +580,17 @@ const App = {
         
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
-        toast.innerHTML = `
-            <span class="toast-icon">${type === 'error' ? '⚠️' : type === 'success' ? '✓' : 'ℹ️'}</span>
-            <span class="toast-message">${message}</span>
-        `;
+        // SECURITY FIX: Use textContent to prevent XSS
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'toast-icon';
+        iconSpan.textContent = type === 'error' ? '⚠️' : type === 'success' ? '✓' : 'ℹ️';
+        
+        const messageSpan = document.createElement('span');
+        messageSpan.className = 'toast-message';
+        messageSpan.textContent = message;
+        
+        toast.appendChild(iconSpan);
+        toast.appendChild(messageSpan);
         
         document.body.appendChild(toast);
         
@@ -710,13 +726,14 @@ const App = {
             const intPct = (resort.difficulty.intermediate / total) * 100;
             const advPct = (resort.difficulty.advanced / total) * 100;
             
+            // SECURITY FIX: Escape all user-visible content to prevent XSS
             return `
-                <div class="resort-item ${resort.id === current?.id ? 'selected' : ''}" data-resort="${resort.id}">
+                <div class="resort-item ${resort.id === current?.id ? 'selected' : ''}" data-resort="${SecurityUtils.escapeHTML(resort.id)}">
                     <div class="resort-item-header">
                         <span class="resort-item-flag">${Resorts.getFlag(resort.country)}</span>
                         <div>
-                            <div class="resort-item-name">${resort.name}</div>
-                            <div class="resort-item-region">${resort.region}</div>
+                            <div class="resort-item-name">${SecurityUtils.escapeHTML(resort.name)}</div>
+                            <div class="resort-item-region">${SecurityUtils.escapeHTML(resort.region)}</div>
                         </div>
                     </div>
                     <div class="resort-item-stats">
@@ -724,7 +741,7 @@ const App = {
                         <span class="resort-item-stat"><strong>${resort.stats.lifts}</strong> lifts</span>
                         <span class="resort-item-stat"><strong>${resort.altitude.max}</strong>m peak</span>
                     </div>
-                    <div class="resort-item-famous">"${resort.famous}"</div>
+                    <div class="resort-item-famous">"${SecurityUtils.escapeHTML(resort.famous)}"</div>
                     <div class="resort-item-difficulty">
                         <div class="difficulty-bar difficulty-easy" style="width: ${easyPct}%"></div>
                         <div class="difficulty-bar difficulty-intermediate" style="width: ${intPct}%"></div>
@@ -774,7 +791,7 @@ const App = {
         
         // Load detailed data
         try {
-            const response = await fetch(`/assets/trails/${resort.id}-details.json`);
+            const response = await SecurityUtils.safeFetch(`/assets/trails/${resort.id}-details.json`);
             if (response.ok) {
                 this.resortDetails = await response.json();
                 this.renderResortDetails();
@@ -782,6 +799,7 @@ const App = {
                 this.renderNoDetails();
             }
         } catch (e) {
+            console.error('[App] Failed to load resort details:', e);
             this.renderNoDetails();
         }
         
@@ -795,10 +813,10 @@ const App = {
         const data = this.resortDetails;
         if (!data) return;
         
-        // Render sectors
+        // Render sectors - SECURITY FIX: Escape all user content
         this.elements.sectorsGrid.innerHTML = data.sectors.map(sector => `
             <div class="sector-card">
-                <div class="sector-name">${sector.name}</div>
+                <div class="sector-name">${SecurityUtils.escapeHTML(sector.name)}</div>
                 <div class="sector-stats">${sector.slopes} slopes · ${sector.lifts} lifts</div>
                 <div class="sector-altitude">${sector.altitude.min}m - ${sector.altitude.max}m</div>
             </div>
@@ -825,6 +843,7 @@ const App = {
         // Get live status data if available
         const liveSlopes = this.liveStatus?.slopes || [];
         
+        // SECURITY FIX: Escape all user content to prevent XSS
         this.elements.slopesList.innerHTML = filtered.map(slope => {
             // Check if this slope has live status
             const liveData = liveSlopes.find(ls => 
@@ -836,10 +855,10 @@ const App = {
             
             return `
                 <div class="slope-item">
-                    <div class="slope-difficulty ${slope.difficulty}"></div>
+                    <div class="slope-difficulty ${SecurityUtils.escapeHTML(slope.difficulty)}"></div>
                     <div class="slope-info">
-                        <div class="slope-name ${slope.famous ? 'famous' : ''}">${slope.name}</div>
-                        <div class="slope-meta">${slope.sector}</div>
+                        <div class="slope-name ${slope.famous ? 'famous' : ''}">${SecurityUtils.escapeHTML(slope.name)}</div>
+                        <div class="slope-meta">${SecurityUtils.escapeHTML(slope.sector)}</div>
                     </div>
                     <div class="slope-stats">
                         <div class="slope-length">${slope.length} km</div>
@@ -868,6 +887,7 @@ const App = {
             dragLift: '⬆️'
         };
         
+        // SECURITY FIX: Escape all user content to prevent XSS
         this.elements.liftsList.innerHTML = filtered.map(lift => {
             // Check if this lift has live status
             const liveData = liveLifts.find(ll => 
@@ -881,8 +901,8 @@ const App = {
                 <div class="lift-item">
                     <span class="lift-icon">${liftIcons[lift.type] || '🚡'}</span>
                     <div class="lift-info">
-                        <div class="lift-name">${lift.name}</div>
-                        <div class="lift-meta">${lift.sector} · ${lift.capacity} pers.</div>
+                        <div class="lift-name">${SecurityUtils.escapeHTML(lift.name)}</div>
+                        <div class="lift-meta">${SecurityUtils.escapeHTML(lift.sector)} · ${lift.capacity} pers.</div>
                     </div>
                     <div class="lift-stats">
                         <div class="lift-length">${(lift.length/1000).toFixed(1)} km</div>
