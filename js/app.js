@@ -18,11 +18,11 @@ const App = {
      * Initialize the application
      */
     async init() {
-        console.log('🎿 KitzSki Tracker initializing...');
+        Logger.log('🎿 KitzSki Tracker initializing...');
         
         // Load configuration from .env
         await Config.init();
-        console.log('Config loaded, Mapbox:', Config.hasMapbox() ? 'configured' : 'not configured');
+        Logger.debug('Config loaded, Mapbox:', Config.hasMapbox() ? 'configured' : 'not configured');
         
         // Cache DOM elements
         this.cacheElements();
@@ -48,7 +48,7 @@ const App = {
         // Load live slope status
         this.loadLiveStatus();
         
-        console.log('🎿 Ski Tracker ready!');
+        Logger.log('🎿 Ski Tracker ready!');
     },
 
     /**
