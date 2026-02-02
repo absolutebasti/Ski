@@ -2831,10 +2831,10 @@ const Encryption = {
 ```
 
 **Acceptance Criteria:**
-- [ ] Optional encryption for runs
-- [ ] User password/pin based
-- [ ] Encrypted at rest
-- [ ] Minimal performance impact
+- [x] Optional encryption for runs
+- [x] User password/pin based
+- [x] Encrypted at rest
+- [x] Minimal performance impact
 
 ---
 
@@ -3033,10 +3033,10 @@ async function fetchWithTimeout(url, options = {}, timeout = 10000) {
 ```
 
 **Acceptance Criteria:**
-- [ ] All fetch calls have timeout
-- [ ] Graceful timeout handling
-- [ ] Retry logic for timeouts
-- [ ] User feedback on slow connections
+- [x] All fetch calls have timeout
+- [x] Graceful timeout handling
+- [x] Retry logic for timeouts
+- [x] User feedback on slow connections
 
 ---
 
