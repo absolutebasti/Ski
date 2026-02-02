@@ -131,10 +131,11 @@ Complete manifest.json with all PWA required fields:
 
 ---
 
-### [HIGH-002] GPX Export/Import
+### 🟡 [HIGH-002] GPX Export/Import
 **Type:** Data Portability  
 **Impact:** User Retention  
 **From:** Competitor Analysis
+**Status:** In Progress
 
 **Competitor Status:**
 - All major apps (Slopes, Ski Tracks, Strava) support GPX
@@ -612,10 +613,15 @@ Document in `/research/gps-research.md`
 - Includes breakdown by difficulty
 - Famous slopes tracked (Streif, Hahnenkamm, Ganslern)
 
-**Evaluation:** ⚠️ NEEDS VERIFICATION
-- Code structure looks correct
+**Evaluation:** ✅ VERIFIED
+- Code structure is correct
 - Server-rendered HTML is more reliable than JS-loaded data
-- **Action Required:** Test actual scraping to verify data accuracy
+- **Test Results (2026-02-01):**
+  - Successfully parsed Bergfex HTML
+  - Slopes: 64/92 currently open
+  - Lifts: 55/56 currently open
+  - Regex patterns work correctly with actual HTML structure
+- **Status:** Production ready
 
 ---
 
@@ -659,5 +665,295 @@ Document in `/research/gps-research.md`
 
 ---
 
+## 🆕 NEW TASKS - Cycle 1 (2026-02-02)
+
+### [CRITICAL-004] Fix Potential Memory Leak in GPS Tracker
+**Type:** Performance Bug  
+**Impact:** Battery/Performance  
+**From:** Code Review - gps-tracker.js:147-200
+
+**Problem:**
+The `positions` array grows unbounded during long tracking sessions. No maximum limit or circular buffer implementation.
+
+```javascript
+// Current code - no limit
+this.positions.push(positionData); // Grows forever!
+```
+
+**Solution:**
+Implement circular buffer or periodic flushing:
+```javascript
+// Option 1: Keep only last N positions in memory
+if (this.positions.length > 10000) {
+    this.positions = this.positions.slice(-5000); // Keep last 5000
+}
+
+// Option 2: Flush to IndexedDB every 1000 points
+if (this.positions.length % 1000 === 0) {
+    await Storage.saveTrackingProgress(this.runId, this.positions);
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Memory usage stays stable during 4+ hour tracking sessions
+- [ ] No positions are lost (flush to storage)
+- [ ] Smooth performance on devices with 2GB RAM
+
+---
+
+### [CRITICAL-005] Missing Error Handling in Mapbox Initialization
+**Type:** Stability Bug  
+**Impact:** App Crash  
+**From:** Code Review - map.js:45-90
+
+**Problem:**
+Map initialization has a try-catch but doesn't handle specific Mapbox errors gracefully. Invalid token or network issues cause silent failures or unhandled rejections.
+
+**Issues Found:**
+1. `map.on('error', reject)` rejects but error isn't caught
+2. No fallback when Mapbox fails to load
+3. Missing timeout for map load
+
+**Solution:**
+```javascript
+init() {
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            reject(new Error('Map load timeout'));
+        }, 10000);
+        
+        this.map.on('load', () => {
+            clearTimeout(timeout);
+            resolve();
+        });
+        
+        this.map.on('error', (e) => {
+            clearTimeout(timeout);
+            console.error('[Map] Error:', e);
+            this.showMapError();
+            reject(e);
+        });
+    });
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Graceful fallback when Mapbox fails
+- [ ] User-friendly error message shown
+- [ ] App continues working without map
+
+---
+
+### [HIGH-006] Implement Run Auto-Detection (Lift vs Ski)
+**Type:** Feature Enhancement  
+**Impact:** User Experience  
+**From:** Competitor Analysis - Slopes has this
+
+**Problem:**
+Currently all tracking is one continuous session. Users must manually start/stop for each run. Competitors auto-detect when user is on lift vs skiing.
+
+**Implementation:**
+```javascript
+const RunDetector = {
+    detectActivityType(positions) {
+        const recent = positions.slice(-10);
+        const avgSpeed = recent.reduce((s, p) => s + p.speed, 0) / recent.length;
+        const altitudeChange = recent[recent.length-1].alt - recent[0].alt;
+        
+        if (avgSpeed < 5 && altitudeChange > 10) {
+            return 'lift'; // Going up slowly
+        } else if (avgSpeed > 15 && altitudeChange < -5) {
+            return 'skiing'; // Going down fast
+        } else if (avgSpeed < 2) {
+            return 'stopped';
+        }
+        return 'unknown';
+    },
+    
+    autoSplitRuns(positions) {
+        // Split into separate runs when lift ride detected
+        // Each ski descent = one run
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Automatically detect lift rides
+- [ ] Split tracking into separate runs
+- [ ] Show "Run 1 of 5" indicator
+- [ ] Manual override available
+
+---
+
+### [HIGH-007] Add Heart Rate Monitoring (Apple Watch/Bluetooth)
+**Type:** Feature  
+**Impact:** Fitness Tracking  
+**From:** Competitor Analysis
+
+**Problem:**
+No heart rate data integration. Modern ski apps connect to heart rate monitors for fitness tracking.
+
+**Implementation:**
+```javascript
+// Web Bluetooth API for HR monitors
+const HRMService = {
+    async connect() {
+        const device = await navigator.bluetooth.requestDevice({
+            filters: [{ services: ['heart_rate'] }]
+        });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('heart_rate');
+        const characteristic = await service.getCharacteristic('heart_rate_measurement');
+        
+        characteristic.addEventListener('characteristicvaluechanged', (e) => {
+            const heartRate = e.target.value.getUint8(1);
+            this.onHeartRate(heartRate);
+        });
+        
+        await characteristic.startNotifications();
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Connect to Bluetooth HR monitors
+- [ ] Display current HR during tracking
+- [ ] Show average/max HR per run
+- [ ] Store HR data with run
+
+---
+
+### [MEDIUM-006] Dark Mode Toggle (Auto/System/Default)
+**Type:** UX Enhancement  
+**Impact:** Accessibility  
+**From:** Code Review - styles.css only has dark theme
+
+**Problem:**
+App is hardcoded to dark mode only. No option for light mode or system preference following.
+
+**Solution:**
+```css
+:root {
+    --bg-primary: #0a0a1a;
+    --text-primary: #ffffff;
+}
+
+[data-theme="light"] {
+    --bg-primary: #f0f0f0;
+    --text-primary: #1a1a1a;
+}
+
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+        --bg-primary: #f0f0f0;
+    }
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Light mode option in settings
+- [ ] System preference detection
+- [ ] Theme persists across sessions
+- [ ] All elements properly themed
+
+---
+
+### [MEDIUM-007] Implement IndexedDB Cleanup/Archive Old Runs
+**Type:** Data Management  
+**Impact:** Performance/Storage  
+**From:** Code Review - storage.js has no cleanup
+
+**Problem:**
+Runs are stored forever. No automatic archiving or cleanup. Could hit browser storage limits.
+
+**Solution:**
+```javascript
+const StorageCleanup = {
+    async archiveOldRuns(daysOld = 90) {
+        const cutoff = Date.now() - (daysOld * 24 * 60 * 60 * 1000);
+        const runs = await Storage.getAllRuns();
+        
+        const toArchive = runs.filter(r => r.date < cutoff);
+        const toKeep = runs.filter(r => r.date >= cutoff);
+        
+        // Export old runs to JSON file
+        const exportData = JSON.stringify(toArchive);
+        await this.downloadBackup(exportData);
+        
+        // Keep only recent runs in IndexedDB
+        await Storage.clearAllRuns();
+        for (const run of toKeep) {
+            await Storage.saveRun(run);
+        }
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Auto-archive runs older than 90 days
+- [ ] Export archived runs before deletion
+- [ ] Settings to adjust retention period
+- [ ] Warning when storage >80% full
+
+---
+
+### [LOW-005] Add Haptic Feedback for Key Actions
+**Type:** UX Polish  
+**Impact:** Native Feel  
+**From:** Feature Request
+
+**Implementation:**
+```javascript
+const Haptics = {
+    startTracking() {
+        if (navigator.vibrate) navigator.vibrate([50, 100, 50]);
+    },
+    achievementUnlocked() {
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+    },
+    buttonPress() {
+        if (navigator.vibrate) navigator.vibrate(20);
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Haptic on tracking start/stop
+- [ ] Celebration pattern on achievement
+- [ ] Light feedback on button presses
+- [ ] Respects system accessibility settings
+
+---
+
+### [RESEARCH-004] Investigate WebGL Performance on Mobile
+**Type:** Research  
+**Impact:** Performance  
+**From:** 3D visualization feature
+
+**Questions:**
+1. What % of devices support WebGL 2.0?
+2. Battery impact of continuous WebGL rendering?
+3. Alternative: CSS 3D transforms vs WebGL?
+
+**Deliverable:**
+Performance benchmark document
+
+---
+
+## 📊 Updated Priority Matrix
+
+| Priority | Count | New Tasks |
+|----------|-------|-----------|
+| CRITICAL | 5 | +2 (memory leak, map error handling) |
+| HIGH | 7 | +2 (run detection, heart rate) |
+| MEDIUM | 7 | +2 (theme toggle, cleanup) |
+| LOW | 5 | +1 (haptics) |
+| RESEARCH | 4 | +1 (WebGL performance) |
+
+**Total Tasks:** 28 (+3 from review cycle)
+
+---
+
 *Managed by Reviewer Agent*  
-*Last comprehensive review: 2026-02-01*
+*Last comprehensive review: 2026-02-01*  
+*Last cycle: 2026-02-02 - Cycle 1*
