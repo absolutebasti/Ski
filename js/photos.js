@@ -264,7 +264,7 @@ const Photos = {
      * @param {HTMLElement} container - Container element
      */
     renderPhotoStrip(photos, container) {
-        container.innerHTML = '';
+        container.textContent = '';
         
         if (!photos || photos.length === 0) {
             container.style.display = 'none';
@@ -277,10 +277,19 @@ const Photos = {
         for (const photo of photos) {
             const photoEl = document.createElement('div');
             photoEl.className = 'photo-thumbnail';
-            photoEl.innerHTML = `
-                <img src="${photo.thumbnail}" alt="Ski photo" loading="lazy">
-                ${photo.caption ? `<span class="photo-caption">${photo.caption}</span>` : ''}
-            `;
+            // SECURITY FIX: Use safe element creation instead of innerHTML
+            const img = document.createElement('img');
+            img.src = photo.thumbnail;
+            img.alt = 'Ski photo';
+            img.loading = 'lazy';
+            photoEl.appendChild(img);
+            
+            if (photo.caption) {
+                const caption = document.createElement('span');
+                caption.className = 'photo-caption';
+                caption.textContent = photo.caption;
+                photoEl.appendChild(caption);
+            }
             
             photoEl.addEventListener('click', () => {
                 this.showPhotoModal(photo);
@@ -301,21 +310,54 @@ const Photos = {
         
         const modal = document.createElement('div');
         modal.className = 'photo-modal';
-        modal.innerHTML = `
-            <div class="photo-modal-backdrop"></div>
-            <div class="photo-modal-content">
-                <button class="photo-modal-close">&times;</button>
-                <img src="${photo.thumbnail}" alt="Ski photo" class="photo-modal-image">
-                <div class="photo-modal-info">
-                    <div class="photo-meta">
-                        <span>📍 ${photo.position.lat.toFixed(5)}, ${photo.position.lon.toFixed(5)}</span>
-                        <span>⚡ ${Math.round(photo.speed)} km/h</span>
-                        <span>📅 ${new Date(photo.timestamp).toLocaleString()}</span>
-                    </div>
-                    ${photo.caption ? `<p class="photo-caption-text">${photo.caption}</p>` : ''}
-                </div>
-            </div>
-        `;
+        // SECURITY FIX: Use safe element creation instead of innerHTML
+        const backdrop = document.createElement('div');
+        backdrop.className = 'photo-modal-backdrop';
+        
+        const content = document.createElement('div');
+        content.className = 'photo-modal-content';
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'photo-modal-close';
+        closeBtn.innerHTML = '&times;'; // Safe HTML entity
+        
+        const img = document.createElement('img');
+        img.src = photo.thumbnail;
+        img.alt = 'Ski photo';
+        img.className = 'photo-modal-image';
+        
+        const info = document.createElement('div');
+        info.className = 'photo-modal-info';
+        
+        const meta = document.createElement('div');
+        meta.className = 'photo-meta';
+        
+        const positionSpan = document.createElement('span');
+        positionSpan.textContent = `📍 ${photo.position.lat.toFixed(5)}, ${photo.position.lon.toFixed(5)}`;
+        
+        const speedSpan = document.createElement('span');
+        speedSpan.textContent = `⚡ ${Math.round(photo.speed)} km/h`;
+        
+        const dateSpan = document.createElement('span');
+        dateSpan.textContent = `📅 ${new Date(photo.timestamp).toLocaleString()}`;
+        
+        meta.appendChild(positionSpan);
+        meta.appendChild(speedSpan);
+        meta.appendChild(dateSpan);
+        info.appendChild(meta);
+        
+        if (photo.caption) {
+            const caption = document.createElement('p');
+            caption.className = 'photo-caption-text';
+            caption.textContent = photo.caption;
+            info.appendChild(caption);
+        }
+        
+        content.appendChild(closeBtn);
+        content.appendChild(img);
+        content.appendChild(info);
+        modal.appendChild(backdrop);
+        modal.appendChild(content);
         
         modal.querySelector('.photo-modal-backdrop').addEventListener('click', () => {
             modal.remove();

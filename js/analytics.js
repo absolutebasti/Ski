@@ -126,9 +126,14 @@ const Analytics = {
      */
     storeUser() {
         try {
-            localStorage.setItem('analytics_user', JSON.stringify(this.user));
+            // SECURITY FIX: Use safe localStorage with quota checking
+            const result = SecurityUtils.safeLocalStorageSet('analytics_user', JSON.stringify(this.user));
+            if (!result.success && result.fallback === 'indexeddb') {
+                SecurityUtils.fallbackToIndexedDB('analytics_user', JSON.stringify(this.user)).catch(() => {});
+            }
         } catch (e) {
             // Storage might be full or unavailable
+            console.warn('[Analytics] Failed to store user:', e);
         }
     },
     
@@ -378,7 +383,8 @@ const Analytics = {
         this.eventQueue = [];
         
         try {
-            const response = await fetch(this.config.endpoint, {
+            // SECURITY FIX: Use safeFetch with error handling
+            const response = await SecurityUtils.safeFetch(this.config.endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -397,6 +403,8 @@ const Analytics = {
             
         } catch (error) {
             // Put events back in queue for retry
+            console.error('[Analytics] Flush failed:', error);
+            ErrorTracker?.handleError(error, { context: 'analyticsFlush' });
             this.eventQueue.unshift(...events);
             
             if (this.config.debug) {
@@ -442,8 +450,9 @@ const Analytics = {
      */
     optOut() {
         this.disable();
-        localStorage.setItem('analytics_opt_out', 'true');
-        localStorage.removeItem('analytics_user');
+        // SECURITY FIX: Use safe localStorage with quota checking
+        SecurityUtils.safeLocalStorageSet('analytics_opt_out', 'true');
+        SecurityUtils.safeLocalStorageRemove('analytics_user');
         console.log('[Analytics] Opted out');
     },
     

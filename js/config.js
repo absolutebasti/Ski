@@ -36,7 +36,7 @@ const Config = {
     async init() {
         // Try to load from .env for local dev (won't work in production, that's ok)
         try {
-            const response = await fetch('/.env');
+            const response = await SecurityUtils.safeFetch('/.env', {}, 5000);
             if (response.ok) {
                 const text = await response.text();
                 this.parseEnv(text);

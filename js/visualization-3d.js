@@ -190,7 +190,7 @@ const Visualization3D = {
         // Add start marker
         const startEl = document.createElement('div');
         startEl.className = 'marker-3d marker-start';
-        startEl.innerHTML = '🏁';
+        startEl.textContent = '🏁'; // SECURITY FIX: Use textContent instead of innerHTML
         new mapboxgl.Marker(startEl)
             .setLngLat(coordinates[0])
             .addTo(this.map);
@@ -198,7 +198,7 @@ const Visualization3D = {
         // Add end marker
         const endEl = document.createElement('div');
         endEl.className = 'marker-3d marker-end';
-        endEl.innerHTML = '🏔️';
+        endEl.textContent = '🏔️'; // SECURITY FIX: Use textContent instead of innerHTML
         new mapboxgl.Marker(endEl)
             .setLngLat(coordinates[coordinates.length - 1])
             .addTo(this.map);

@@ -18,19 +18,12 @@ const RequestUtils = {
      * @returns {Promise} Fetch promise
      */
     async fetchWithTimeout(url, options = {}, timeout = this.DEFAULT_TIMEOUT) {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
-        
         try {
-            const response = await fetch(url, {
-                ...options,
-                signal: controller.signal
-            });
-            clearTimeout(id);
+            // SECURITY FIX: Use safeFetch with built-in timeout
+            const response = await SecurityUtils.safeFetch(url, options, timeout);
             return response;
         } catch (error) {
-            clearTimeout(id);
-            if (error.name === 'AbortError') {
+            if (error.message.includes('timeout')) {
                 throw new Error(`Request timeout after ${timeout}ms: ${url}`);
             }
             throw error;

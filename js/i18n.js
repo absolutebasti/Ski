@@ -722,7 +722,11 @@ const I18n = {
     setLanguage(lang) {
         if (this.supportedLangs.includes(lang)) {
             this.currentLang = lang;
-            localStorage.setItem('ski-app-lang', lang);
+            // SECURITY FIX: Use safe localStorage with quota checking
+            const result = SecurityUtils.safeLocalStorageSet('ski-app-lang', lang);
+            if (!result.success && result.fallback === 'indexeddb') {
+                SecurityUtils.fallbackToIndexedDB('ski-app-lang', lang).catch(() => {});
+            }
             document.documentElement.setAttribute('lang', lang);
             this.updatePageTitle();
             return true;

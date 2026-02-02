@@ -353,7 +353,11 @@ const BarometricAltimeter = {
             if (typeof Storage !== 'undefined') {
                 await Storage.set('barometerCalibration', data);
             } else {
-                localStorage.setItem('barometerCalibration', JSON.stringify(data));
+                // SECURITY FIX: Use safe localStorage with quota checking
+                const result = SecurityUtils.safeLocalStorageSet('barometerCalibration', JSON.stringify(data));
+                if (!result.success && result.fallback === 'indexeddb') {
+                    SecurityUtils.fallbackToIndexedDB('barometerCalibration', JSON.stringify(data)).catch(() => {});
+                }
             }
         } catch (e) {
             console.error('[Barometer] Failed to save calibration:', e);

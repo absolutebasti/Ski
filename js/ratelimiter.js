@@ -321,12 +321,20 @@ const RateLimiter = {
      */
     saveState() {
         try {
-            localStorage.setItem('rateLimiterState', JSON.stringify({
+            // SECURITY FIX: Use safe localStorage with quota checking
+            const result = SecurityUtils.safeLocalStorageSet('rateLimiterState', JSON.stringify({
                 calls: this.calls,
                 circuits: this.circuits
             }));
+            if (!result.success && result.fallback === 'indexeddb') {
+                SecurityUtils.fallbackToIndexedDB('rateLimiterState', JSON.stringify({
+                    calls: this.calls,
+                    circuits: this.circuits
+                })).catch(() => {});
+            }
         } catch (e) {
             // localStorage might be full
+            console.warn('[RateLimiter] Failed to save state:', e);
         }
     },
     
@@ -382,7 +390,8 @@ const RateLimiter = {
         const limitName = options.limitName || 'default';
         
         return this.request(key, async () => {
-            const response = await fetch(url, options);
+            // SECURITY FIX: Use safeFetch with error handling
+            const response = await SecurityUtils.safeFetch(url, options);
             if (!response.ok) {
                 const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
                 error.status = response.status;

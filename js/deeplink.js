@@ -258,11 +258,16 @@ const DeepLink = {
     createShareButton(runId, options = {}) {
         const button = document.createElement('button');
         button.className = 'btn-share';
-        button.innerHTML = '↗️ ' + I18n.t('shareRun');
+        button.textContent = '↗️ ' + I18n.t('shareRun'); // SECURITY FIX: Use textContent instead of innerHTML
         button.onclick = async () => {
-            const run = await Storage.getRun(runId);
-            if (run) {
-                this.shareRun(run, options);
+            try {
+                const run = await Storage.getRun(runId);
+                if (run) {
+                    this.shareRun(run, options);
+                }
+            } catch (error) {
+                console.error('[DeepLink] Failed to share run:', error);
+                ErrorTracker?.handleError(error, { context: 'createShareButton' });
             }
         };
         return button;

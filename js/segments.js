@@ -510,6 +510,7 @@ const Segments = {
     renderSegmentsList(container) {
         const segments = this.getAllSegments();
         
+        // SECURITY FIX: Escape user content
         container.innerHTML = `
             <div class="segments-header">
                 <h2>${I18n.t('segments')}</h2>
@@ -536,12 +537,13 @@ const Segments = {
         const pb = segment.personalBest;
         const topTime = segment.leaderboard[0];
         
+        // SECURITY FIX: Escape all user content
         return `
-            <div class="segment-card" data-segment-id="${segment.id}">
+            <div class="segment-card" data-segment-id="${SecurityUtils.escapeHTML(segment.id)}">
                 <div class="segment-difficulty" style="background: ${this.getDifficultyColor(segment.difficulty)}"></div>
                 <div class="segment-info">
-                    <h3>${segment.name}</h3>
-                    <p class="segment-desc">${segment.description}</p>
+                    <h3>${SecurityUtils.escapeHTML(segment.name)}</h3>
+                    <p class="segment-desc">${SecurityUtils.escapeHTML(segment.description)}</p>
                     <div class="segment-stats">
                         <span>📏 ${(segment.distance / 1000).toFixed(1)} km</span>
                         <span>⛰️ ${segment.vertical} m</span>
@@ -577,13 +579,14 @@ const Segments = {
         
         const modal = document.createElement('div');
         modal.className = 'modal segment-modal';
+        // SECURITY FIX: Escape all user content
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="segment-header">
-                    <h2>${segment.name}</h2>
+                    <h2>${SecurityUtils.escapeHTML(segment.name)}</h2>
                     <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
                 </div>
-                <p class="segment-description">${segment.description}</p>
+                <p class="segment-description">${SecurityUtils.escapeHTML(segment.description)}</p>
                 <div class="segment-meta">
                     <span class="difficulty-badge" style="background: ${this.getDifficultyColor(segment.difficulty)}">
                         ${I18n.t(`difficulty${segment.difficulty.charAt(0).toUpperCase() + segment.difficulty.slice(1)}`)}
@@ -599,7 +602,7 @@ const Segments = {
                         ${entries.map((e, i) => `
                             <div class="leaderboard-entry ${e.isPersonal ? 'is-personal' : ''}">
                                 <span class="rank">${e.rank}</span>
-                                <span class="name">${e.displayName}</span>
+                                <span class="name">${SecurityUtils.escapeHTML(e.displayName)}</span>
                                 <span class="time">${this.formatTime(e.time * 1000)}</span>
                                 <span class="speed">${e.speed.toFixed(1)} km/h</span>
                             </div>

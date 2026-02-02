@@ -324,7 +324,7 @@ const ResortManager = {
         // Load trail data
         if (resort.trailsUrl) {
             try {
-                const response = await fetch(resort.trailsUrl);
+                const response = await SecurityUtils.safeFetch(resort.trailsUrl);
                 if (response.ok) {
                     const trails = await response.json();
                     // Store or process trails
@@ -332,6 +332,7 @@ const ResortManager = {
                 }
             } catch (e) {
                 console.warn('[ResortManager] Failed to load trails:', e);
+                ErrorTracker?.handleError(e, { context: 'loadResortData' });
             }
         }
         
@@ -513,22 +514,23 @@ const ResortManager = {
         const resorts = this.getAllResorts();
         const current = this.getCurrentResort();
         
+        // SECURITY FIX: Escape all user content to prevent XSS
         container.innerHTML = `
             <div class="resort-selector">
                 <h3>${I18n.t('selectResort') || 'Select Resort'}</h3>
                 <div class="resort-list">
                     ${resorts.map(r => `
                         <div class="resort-item ${r.isCurrent ? 'current' : ''}" 
-                             data-resort-id="${r.id}"
-                             onclick="ResortManager.switchResort('${r.id}')">
+                             data-resort-id="${SecurityUtils.escapeHTML(r.id)}"
+                             onclick="ResortManager.switchResort('${SecurityUtils.escapeHTML(r.id)}')">
                             <div class="resort-flag">🇦🇹</div>
                             <div class="resort-info">
-                                <h4>${r.name}</h4>
+                                <h4>${SecurityUtils.escapeHTML(r.name)}</h4>
                                 <span>${r.slopes} slopes • ${r.lifts} lifts</span>
                             </div>
                             ${r.isCurrent ? '<span class="current-badge">Current</span>' : ''}
                             <button class="btn-favorite ${r.isFavorite ? 'active' : ''}" 
-                                    onclick="event.stopPropagation(); ResortManager.toggleFavorite('${r.id}')">
+                                    onclick="event.stopPropagation(); ResortManager.toggleFavorite('${SecurityUtils.escapeHTML(r.id)}')">
                                 ${r.isFavorite ? '★' : '☆'}
                             </button>
                         </div>
@@ -545,15 +547,16 @@ const ResortManager = {
         const resort = this.getCurrentResort();
         
         if (!resort) {
-            container.innerHTML = '<p>No resort selected</p>';
+            container.textContent = 'No resort selected';
             return;
         }
         
+        // SECURITY FIX: Escape all user content to prevent XSS
         container.innerHTML = `
             <div class="resort-info-panel">
-                <h2>${resort.name}</h2>
+                <h2>${SecurityUtils.escapeHTML(resort.name)}</h2>
                 <div class="resort-meta">
-                    <span>🇦🇹 ${resort.region}, ${resort.country}</span>
+                    <span>🇦🇹 ${SecurityUtils.escapeHTML(resort.region)}, ${SecurityUtils.escapeHTML(resort.country)}</span>
                     <span class="season-badge ${this.isInSeason(resort.id) ? 'open' : 'closed'}">
                         ${this.isInSeason(resort.id) ? 'In Season' : 'Out of Season'}
                     </span>

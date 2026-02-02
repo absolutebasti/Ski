@@ -480,9 +480,15 @@ const Store = {
      */
     persistPreferences() {
         try {
-            localStorage.setItem('userPreferences', JSON.stringify(this.state.user.preferences));
+            const result = SecurityUtils.safeLocalStorageSet('userPreferences', JSON.stringify(this.state.user.preferences));
+            if (!result.success && result.fallback === 'indexeddb') {
+                // Fallback to IndexedDB
+                SecurityUtils.fallbackToIndexedDB('userPreferences', JSON.stringify(this.state.user.preferences))
+                    .catch(err => console.error('[Store] Failed to persist preferences to fallback:', err));
+            }
         } catch (e) {
             console.error('[Store] Failed to persist preferences:', e);
+            ErrorTracker?.handleError(e, { context: 'persistPreferences' });
         }
     },
     
