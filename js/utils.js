@@ -243,6 +243,31 @@ const Utils = {
      */
     clamp(value, min, max) {
         return Math.min(Math.max(value, min), max);
+    },
+
+    /**
+     * Sanitize a string for safe HTML display
+     * CRITICAL-004: XSS Protection - Use this instead of innerHTML with user content
+     * @param {string} str - String to sanitize
+     * @returns {string} Sanitized string
+     */
+    sanitizeHTML(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    },
+
+    /**
+     * Escape HTML special characters
+     * @param {string} str - String to escape
+     * @returns {string} Escaped string
+     */
+    escapeHTML(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 };
 
