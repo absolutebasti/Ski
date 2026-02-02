@@ -160,6 +160,9 @@ const App = {
         // Initialize photos
         Photos.init();
         
+        // Initialize audio
+        Audio.init();
+        
         // Initialize stats
         Stats.init();
         
@@ -366,6 +369,9 @@ const App = {
             // Initialize photos for new run
             Photos.startRun();
             
+            // Initialize audio for new run
+            Audio.startRun();
+            
             // Clear previous track
             SkiMap.clearTrack();
             
@@ -450,11 +456,18 @@ const App = {
             const newAchievements = await Achievements.checkAfterRun(runData);
             if (newAchievements.length > 0) {
                 this.showAchievementUnlock(newAchievements[0]);
+                // Announce achievements
+                for (const achievement of newAchievements) {
+                    Audio.announceAchievement(achievement);
+                }
                 // Queue additional achievements
                 for (let i = 1; i < newAchievements.length; i++) {
                     setTimeout(() => this.showAchievementUnlock(newAchievements[i]), i * 3000);
                 }
             }
+            
+            // Announce run summary
+            Audio.announceRunSummary(runData);
             
             Utils.vibrate([50, 50, 100]);
         }
@@ -510,6 +523,11 @@ const App = {
         if (SkiMap.isInitialized) {
             SkiMap.updateUserPosition(position.longitude, position.latitude, false);
             SkiMap.addToTrack(position.longitude, position.latitude);
+        }
+        
+        // Check for audio announcements
+        if (this.state === 'tracking') {
+            Audio.checkSpeedAnnouncement(position.smoothedSpeed || position.speed || 0);
         }
         
         // Auto-pause logic (for lift rides)
@@ -616,6 +634,7 @@ const App = {
             this.elements.historyPanel?.classList.remove('hidden');
         } else if (panel === 'settings') {
             this.elements.settingsPanel?.classList.remove('hidden');
+            this.initAudioSettings();
         } else if (panel === 'resorts') {
             this.elements.resortsPanel?.classList.remove('hidden');
         } else if (panel === 'details') {
@@ -1696,6 +1715,69 @@ const App = {
         });
         
         input.click();
+    },
+
+    /**
+     * Initialize audio settings UI
+     */
+    initAudioSettings() {
+        const audioEnabled = document.getElementById('audioEnabled');
+        const audioAchievements = document.getElementById('audioAchievements');
+        const audioSummary = document.getElementById('audioSummary');
+        const testAudioBtn = document.getElementById('testAudioBtn');
+        
+        if (audioEnabled) {
+            audioEnabled.checked = Audio.settings.enabled;
+            audioEnabled.addEventListener('change', (e) => {
+                Audio.setEnabled(e.target.checked);
+                this.updateAudioSettingsVisibility();
+            });
+        }
+        
+        if (audioAchievements) {
+            audioAchievements.checked = Audio.settings.announceAchievements;
+            audioAchievements.addEventListener('change', (e) => {
+                Audio.updateSettings({ announceAchievements: e.target.checked });
+            });
+        }
+        
+        if (audioSummary) {
+            audioSummary.checked = Audio.settings.announceSummary;
+            audioSummary.addEventListener('change', (e) => {
+                Audio.updateSettings({ announceSummary: e.target.checked });
+            });
+        }
+        
+        if (testAudioBtn) {
+            testAudioBtn.addEventListener('click', () => {
+                Audio.testAudio();
+            });
+        }
+        
+        this.updateAudioSettingsVisibility();
+    },
+    
+    /**
+     * Update audio settings visibility based on enabled state
+     */
+    updateAudioSettingsVisibility() {
+        const audioEnabled = Audio.settings.enabled;
+        const achievementsItem = document.getElementById('audioAchievementsItem');
+        const summaryItem = document.getElementById('audioSummaryItem');
+        const testBtn = document.getElementById('testAudioBtn');
+        
+        if (achievementsItem) {
+            achievementsItem.style.opacity = audioEnabled ? '1' : '0.5';
+            achievementsItem.style.pointerEvents = audioEnabled ? 'auto' : 'none';
+        }
+        if (summaryItem) {
+            summaryItem.style.opacity = audioEnabled ? '1' : '0.5';
+            summaryItem.style.pointerEvents = audioEnabled ? 'auto' : 'none';
+        }
+        if (testBtn) {
+            testBtn.style.opacity = audioEnabled ? '1' : '0.5';
+            testBtn.disabled = !audioEnabled;
+        }
     },
 
     /**

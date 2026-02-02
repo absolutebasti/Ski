@@ -185,48 +185,21 @@ Complete manifest.json with all PWA required fields:
 
 ---
 
-### [HIGH-004] Audio Announcements
+### 🟡 [HIGH-004] Audio Announcements
 **Type:** Accessibility/Safety  
 **Impact:** User Experience  
 **From:** Competitive Research
+**Status:** In Progress
 
 **Why It Matters:**
 - Skiers can't look at phone while skiing
 - Safety: knowing speed without looking down
 - Motivation: "New top speed! 65 km/h!"
 
-**Implementation:**
-```javascript
-const AudioFeedback = {
-  announceSpeed(speed) {
-    if (speed % 10 === 0 && speed > 0) {
-      this.speak(`${speed} kilometers per hour`);
-    }
-  },
-  
-  announceAchievement(achievement) {
-    this.speak(`Achievement unlocked! ${achievement.name}`);
-  },
-  
-  speak(text) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.2;
-    speechSynthesis.speak(utterance);
-  }
-};
-```
-
-**Settings:**
-- Enable/disable announcements
-- Announcement frequency (every X km/h or every X minutes)
-- Volume control
-- Language selection
-
 **Acceptance Criteria:**
 - [ ] Optional speed announcements every 10 km/h
 - [ ] Achievement announcements
 - [ ] Run summary announcement at end
-- [ ] Works with phone locked (using Web Audio API with wake lock)
 
 ---
 
