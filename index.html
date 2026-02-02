@@ -176,6 +176,13 @@
                     </svg>
                     <span>End Run</span>
                 </button>
+                <button class="btn btn-photo hidden" id="photoBtn" aria-label="Take Photo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="6" width="18" height="12" rx="2"/>
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M8 6h8l-1.5-3h-5L8 6z"/>
+                    </svg>
+                </button>
             </div>
         </main>
 
@@ -323,6 +330,12 @@
                         <span id="profileStartAlt">--m</span>
                         <span id="profileEndAlt">--m</span>
                     </div>
+                </div>
+                
+                <!-- Photos Section -->
+                <div class="run-detail-photos" id="runDetailPhotos">
+                    <h3>Ski Moments</h3>
+                    <div class="photo-strip" id="photoStrip"></div>
                 </div>
             </div>
             <div class="panel-footer">
@@ -565,6 +578,7 @@
     <script src="js/supabase.js"></script>
     <script src="js/resorts.js"></script>
     <script src="js/achievements.js"></script>
+    <script src="js/photos.js"></script>
     <script src="js/gps-tracker.js"></script>
     <script src="js/stats.js"></script>
     <script src="js/map.js"></script>

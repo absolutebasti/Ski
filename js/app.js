@@ -59,6 +59,7 @@ const App = {
             startBtn: document.getElementById('startBtn'),
             pauseBtn: document.getElementById('pauseBtn'),
             stopBtn: document.getElementById('stopBtn'),
+            photoBtn: document.getElementById('photoBtn'),
             locateBtn: document.getElementById('locateBtn'),
             historyBtn: document.getElementById('historyBtn'),
             settingsBtn: document.getElementById('settingsBtn'),
@@ -152,6 +153,9 @@ const App = {
         // Initialize achievements
         await Achievements.init();
         
+        // Initialize photos
+        Photos.init();
+        
         // Initialize stats
         Stats.init();
         
@@ -181,6 +185,7 @@ const App = {
         this.elements.startBtn?.addEventListener('click', () => this.startTracking());
         this.elements.pauseBtn?.addEventListener('click', () => this.togglePause());
         this.elements.stopBtn?.addEventListener('click', () => this.stopTracking());
+        this.elements.photoBtn?.addEventListener('click', () => this.capturePhoto());
         this.elements.locateBtn?.addEventListener('click', () => this.centerOnUser());
         
         // Panel buttons
@@ -350,6 +355,9 @@ const App = {
             Stats.reset();
             Stats.startTimer();
             
+            // Initialize photos for new run
+            Photos.startRun();
+            
             // Clear previous track
             SkiMap.clearTrack();
             
@@ -415,6 +423,12 @@ const App = {
         // Get run data
         const runData = Stats.getRunData();
         
+        // Get captured photos
+        const photos = Photos.endRun();
+        if (photos.length > 0) {
+            runData.photos = photos;
+        }
+        
         // Only save if there's meaningful data
         if (runData.distance > 0.01 || runData.duration > 30000) {
             await Storage.saveRun(runData);
@@ -445,6 +459,35 @@ const App = {
         Stats.reset();
         
         console.log('Tracking stopped, run saved');
+    },
+
+    /**
+     * Capture a photo during tracking
+     */
+    async capturePhoto() {
+        if (this.state !== 'tracking') return;
+        
+        // Get current position
+        const position = GPSTracker.getCurrentPosition ? 
+            GPSTracker.getCurrentPosition() : 
+            await GPSTracker.getCurrentPosition();
+        
+        if (!position) {
+            this.showToast('GPS position not available', 'error');
+            return;
+        }
+        
+        try {
+            this.showToast('Opening camera...', 'info');
+            const photo = await Photos.capturePhoto(position);
+            this.showToast('Photo captured!', 'success');
+            Utils.vibrate(50);
+        } catch (error) {
+            if (error.message !== 'Photo capture cancelled') {
+                console.error('Photo capture failed:', error);
+                this.showToast(error.message || 'Failed to capture photo', 'error');
+            }
+        }
     },
 
     /**
@@ -523,18 +566,20 @@ const App = {
      * Update control button visibility
      */
     updateControlButtons() {
-        const { startBtn, pauseBtn, stopBtn } = this.elements;
+        const { startBtn, pauseBtn, stopBtn, photoBtn } = this.elements;
         const pauseBtnText = document.getElementById('pauseBtnText');
         
         if (this.state === 'idle') {
             startBtn?.classList.remove('hidden');
             pauseBtn?.classList.add('hidden');
             stopBtn?.classList.add('hidden');
+            photoBtn?.classList.add('hidden');
             if (pauseBtnText) pauseBtnText.textContent = 'Pause';
         } else {
             startBtn?.classList.add('hidden');
             pauseBtn?.classList.remove('hidden');
             stopBtn?.classList.remove('hidden');
+            photoBtn?.classList.remove('hidden');
         }
         
         console.log('Button state updated:', this.state);
@@ -963,12 +1008,31 @@ const App = {
         
         // Show panel first so map container has size
         this.elements.runDetailPanel?.classList.remove('hidden');
-        
+
         // Initialize map after a short delay for DOM to settle
         setTimeout(() => {
             this.initRunDetailMap(run);
             this.drawAltitudeProfile(run);
+            this.renderRunPhotos(run);
         }, 100);
+    },
+
+    /**
+     * Render photos for run detail view
+     * @param {Object} run - Run data
+     */
+    renderRunPhotos(run) {
+        const photoStrip = document.getElementById('photoStrip');
+        const photosSection = document.getElementById('runDetailPhotos');
+
+        if (!photoStrip || !photosSection) return;
+
+        if (run.photos && run.photos.length > 0) {
+            Photos.renderPhotoStrip(run.photos, photoStrip);
+            photosSection.style.display = 'block';
+        } else {
+            photosSection.style.display = 'none';
+        }
     },
     
     /**

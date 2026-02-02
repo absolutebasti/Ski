@@ -2172,6 +2172,268 @@ Battery optimization guide
 
 ---
 
+## 🆕 NEW TASKS - Cycle 8 (Final Cycle 2026-02-02)
+
+### [CRITICAL-013] Add Request Timeout Handling
+**Type:** Reliability  
+**Impact:** User Experience  
+**From:** Code Review - No timeout on fetch requests
+
+**Problem:**
+Fetch requests (Supabase, scraper) have no timeout. Can hang indefinitely on poor connections.
+
+**Solution:**
+```javascript
+async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+    } catch (error) {
+        clearTimeout(id);
+        if (error.name === 'AbortError') {
+            throw new Error('Request timeout');
+        }
+        throw error;
+    }
+}
+```
+
+**Acceptance Criteria:**
+- [ ] All fetch calls have timeout
+- [ ] Graceful timeout handling
+- [ ] Retry logic for timeouts
+- [ ] User feedback on slow connections
+
+---
+
+### [HIGH-016] Implement Proper State Management
+**Type:** Architecture  
+**Impact:** Maintainability  
+**From:** Code Review - State scattered across modules
+
+**Problem:**
+App state is scattered across multiple objects (App.state, Stats, GPSTracker). Hard to track and debug.
+
+**Solution:**
+```javascript
+const Store = {
+    state: {
+        tracking: {
+            status: 'idle', // idle, tracking, paused
+            startTime: null,
+            positions: []
+        },
+        ui: {
+            activePanel: null,
+            theme: 'dark'
+        },
+        user: {
+            preferences: {},
+            records: {}
+        }
+    },
+    
+    mutations: {
+        startTracking(state) {
+            state.tracking.status = 'tracking';
+            state.tracking.startTime = Date.now();
+        }
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Centralized state store
+- [ ] Predictable state changes
+- [ ] Time-travel debugging support
+- [ ] Clear state flow documentation
+
+---
+
+### [MEDIUM-020] Add Request Retry with Exponential Backoff
+**Type:** Reliability  
+**Impact:** Offline Experience  
+**From:** Code Review - Simple retry logic
+
+**Implementation:**
+```javascript
+async function retryWithBackoff(fn, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await fn();
+        } catch (error) {
+            if (i === maxRetries - 1) throw error;
+            const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
+            await new Promise(r => setTimeout(r, delay));
+        }
+    }
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Exponential backoff for retries
+- [ ] Configurable retry count
+- [ ] Jitter to prevent thundering herd
+- [ ] Circuit breaker pattern
+
+---
+
+### [MEDIUM-021] Implement Feature Flags
+**Type:** DevOps  
+**Impact:** Deployment Safety  
+**From:** Best Practices
+
+**Use Cases:**
+- Gradually roll out new features
+- A/B testing
+- Emergency kill switches
+
+**Implementation:**
+```javascript
+const FeatureFlags = {
+    flags: {},
+    
+    async init() {
+        // Load from Supabase or local
+        this.flags = await Supabase.getFeatureFlags();
+    },
+    
+    isEnabled(flag) {
+        return this.flags[flag] || false;
+    }
+};
+
+// Usage
+if (FeatureFlags.isEnabled('new-ui-2025')) {
+    showNewUI();
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Feature flag system
+- [ ] Remote configuration
+- [ ] Per-user targeting
+- [ ] Real-time updates
+
+---
+
+### [LOW-012] Add Performance Budget Monitoring
+**Type:** Performance  
+**Impact:** Load Time  
+**From:** Performance Engineering
+
+**Budgets:**
+- JS: <100KB gzipped
+- CSS: <20KB gzipped
+- First Paint: <2s
+- Time to Interactive: <3s
+
+**Implementation:**
+```javascript
+// PerformanceObserver
+new PerformanceObserver((list) => {
+    for (const entry of list.getEntries()) {
+        if (entry.duration > 3000) {
+            console.warn('Long task detected:', entry.duration);
+        }
+    }
+}).observe({ entryTypes: ['longtask'] });
+```
+
+**Acceptance Criteria:**
+- [ ] Performance budgets defined
+- [ ] Monitoring in place
+- [ ] CI/CD checks
+- [ ] Alerting on violations
+
+---
+
+### [RESEARCH-011] Evaluate Edge Computing for Slope Status
+**Type:** Architecture Research  
+**Impact:** Performance/Cost  
+**From:** Infrastructure Optimization
+
+**Research Questions:**
+1. Can we cache slope status at edge (Cloudflare/Vercel Edge)?
+2. Cost comparison: Edge vs Supabase
+3. Update frequency requirements
+4. Regional latency improvements?
+
+**Deliverable:**
+Architecture recommendation
+
+---
+
+## 📊 Final Priority Matrix
+
+| Priority | Count | Total Effort |
+|----------|-------|--------------|
+| CRITICAL | 13 | ~4 weeks |
+| HIGH | 16 | ~6 weeks |
+| MEDIUM | 21 | ~8 weeks |
+| LOW | 12 | ~4 weeks |
+| RESEARCH | 11 | ~3 weeks |
+
+**Total Tasks:** 73 (+6 from final cycle)  
+**Estimated Total Effort:** ~25 weeks (1 developer)
+
+---
+
+## 🎯 Top 10 Immediate Priorities
+
+1. **CRITICAL-004** - Fix memory leak in GPS tracker
+2. **CRITICAL-007** - Implement error boundaries
+3. **CRITICAL-009** - Add input validation
+4. **CRITICAL-010** - Add CSP headers
+5. **HIGH-001** - Photo integration
+6. **HIGH-003** - 3D visualization MVP
+7. **HIGH-008** - German i18n
+8. **MEDIUM-008** - Accessibility audit
+9. **MEDIUM-014** - Unit tests
+10. **MEDIUM-015** - E2E tests
+
+---
+
+## 📈 Review Summary
+
+**Cycles Completed:** 8  
+**Total New Tasks Added:** 48  
+**Files Reviewed:**  
+- js/app.js (1750 lines)
+- js/gps-tracker.js (768 lines)
+- js/map.js (476 lines)
+- js/achievements.js (416 lines)
+- js/gpx.js (403 lines) ✅ Already implemented
+- js/stats.js (358 lines)
+- js/storage.js (343 lines)
+- js/supabase.js (240 lines)
+- js/utils.js (251 lines)
+- js/resorts.js (241 lines)
+- js/config.js (68 lines)
+- css/styles.css (1815 lines)
+- index.html (574 lines)
+- sw.js (full review)
+- manifest.json (full review)
+- supabase/functions/scrape-slopes/index.ts (full review)
+
+**Key Findings:**
+1. Strong foundation with Kalman filtering and PWA features
+2. GPX export/import already implemented (surprise!)
+3. Security needs attention (CSP, input validation)
+4. Testing coverage is zero - needs immediate attention
+5. Performance optimizations available (lazy loading, throttling)
+6. Feature parity gaps identified (photos, 3D, audio)
+
+---
+
 *Managed by Reviewer Agent*  
-*Last comprehensive review: 2026-02-01*  
-*Last cycle: 2026-02-02 - Cycle 7*
+*Review completed: 2026-02-02*  
+*Total review time: ~2 hours*  
+*Tasks identified: 73*
