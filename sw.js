@@ -423,8 +423,41 @@ self.addEventListener('message', (event) => {
         self.skipWaiting();
     } else if (event.data?.type === 'CLEAR_CACHES') {
         event.waitUntil(clearAllCaches());
+    } else if (event.data?.type === 'CLEAR_TILE_CACHE') {
+        event.waitUntil(clearTileCache());
+    } else if (event.data?.type === 'GET_CACHE_STATS') {
+        event.waitUntil(sendCacheStats(event.source));
     }
 });
+
+/**
+ * Clear only tile cache
+ */
+async function clearTileCache() {
+    await caches.delete(TILE_CACHE);
+    console.log('[SW] Tile cache cleared');
+}
+
+/**
+ * Send cache statistics to client
+ * @param {Client} client - The client to send stats to
+ */
+async function sendCacheStats(client) {
+    try {
+        const tileCache = await caches.open(TILE_CACHE);
+        const tileKeys = await tileCache.keys();
+        
+        client.postMessage({
+            type: 'CACHE_STATS',
+            tiles: {
+                count: tileKeys.length,
+                estimatedSize: tileKeys.length * 15 // ~15KB per tile estimate
+            }
+        });
+    } catch (error) {
+        console.error('[SW] Failed to get cache stats:', error);
+    }
+}
 
 /**
  * Clear all caches
