@@ -31,18 +31,38 @@ const Config = {
     
     /**
      * Initialize config
+     * HIGH-008: Handle missing .env file gracefully in production
      */
     async init() {
-        // Try to load from .env for local dev (won't work on Vercel, that's ok)
+        // Try to load from .env for local dev (won't work in production, that's ok)
         try {
             const response = await fetch('/.env');
             if (response.ok) {
                 const text = await response.text();
                 this.parseEnv(text);
+                Logger.debug('Config loaded from .env file');
+            } else if (response.status === 404) {
+                // Expected in production - .env file not served
+                Logger.debug('Using bundled config (.env not found - expected in production)');
             }
         } catch (e) {
-            // Using bundled config
+            // Using bundled config - this is expected behavior in production
+            Logger.debug('Using bundled config (fetch failed - expected in production)');
         }
+        
+        // Log config status (without exposing actual keys)
+        if (this.hasMapbox()) {
+            Logger.debug('Mapbox: configured');
+        } else {
+            Logger.warn('Mapbox: not configured - map features will be limited');
+        }
+        
+        if (this.hasSupabase()) {
+            Logger.debug('Supabase: configured');
+        } else {
+            Logger.debug('Supabase: not configured - using local storage only');
+        }
+        
         return this;
     },
     
