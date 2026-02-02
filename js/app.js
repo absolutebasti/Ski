@@ -33,19 +33,19 @@ const App = {
         // Set up event listeners
         this.bindEvents();
         
-        // Check online status
-        this.updateOnlineStatus();
+        // HIGH-007: Run independent operations in parallel
+        await Promise.all([
+            // Check online status
+            (async () => this.updateOnlineStatus())(),
+            // Register service worker
+            (async () => this.registerServiceWorker())(),
+            // Load saved data
+            this.loadSavedData(),
+            // Check for emergency saved run
+            this.checkEmergencyRun()
+        ]);
         
-        // Register service worker
-        this.registerServiceWorker();
-        
-        // Load saved data
-        await this.loadSavedData();
-        
-        // Check for emergency saved run (crash recovery)
-        await this.checkEmergencyRun();
-        
-        // Load live slope status
+        // Load live slope status (non-blocking)
         this.loadLiveStatus();
         
         Logger.log('🎿 Ski Tracker ready!');
@@ -151,27 +151,30 @@ const App = {
      * Initialize all modules
      */
     async initModules() {
-        // Initialize storage
+        // HIGH-007: Use Promise.all() for parallel initialization of independent modules
+        
+        // Phase 1: Core storage must be ready first
         await Storage.init();
         
-        // Initialize achievements
-        await Achievements.init();
+        // Phase 2: Initialize independent modules in parallel
+        const independentInits = [
+            Achievements.init(),
+            Resorts.loadSaved()
+        ];
         
-        // Initialize photos
+        // Initialize synchronous modules (no await needed)
         Photos.init();
-        
-        // Initialize audio
         Audio.init();
-        
-        // Initialize stats
         Stats.init();
         
-        // Load saved resort
-        await Resorts.loadSaved();
+        // Wait for all async initializations
+        await Promise.all(independentInits);
+        
+        // Update UI after resort data is loaded
         this.updateResortUI();
         this.renderResortList();
         
-        // Initialize map with current resort
+        // Phase 3: Initialize map (depends on resort data)
         try {
             const resort = Resorts.getCurrent();
             if (resort) {
@@ -180,7 +183,7 @@ const App = {
             }
             await SkiMap.init('map');
         } catch (error) {
-            console.log('Map initialization skipped:', error.message);
+            Logger.warn('Map initialization skipped:', error.message);
         }
     },
 
