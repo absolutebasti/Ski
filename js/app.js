@@ -986,21 +986,26 @@ const App = {
      * Load and display run history
      */
     async loadHistory() {
-        const runs = await Storage.getAllRuns();
-        const records = await Storage.getRecords();
-        
-        Stats.updateRecords(records);
-        
-        if (runs.length === 0) return;
-        
-        const html = runs.map(run => this.renderHistoryItem(run)).join('');
-        
-        this.elements.historyList.innerHTML = html;
-        
-        // Add click handlers for each history item
-        this.elements.historyList.querySelectorAll('.history-item').forEach(item => {
-            item.addEventListener('click', () => this.showRunDetail(item.dataset.id));
-        });
+        try {
+            const runs = await Storage.getAllRuns();
+            const records = await Storage.getRecords();
+            
+            Stats.updateRecords(records);
+            
+            if (runs.length === 0) return;
+            
+            const html = runs.map(run => this.renderHistoryItem(run)).join('');
+            
+            this.elements.historyList.innerHTML = html;
+            
+            // Add click handlers for each history item
+            this.elements.historyList.querySelectorAll('.history-item').forEach(item => {
+                item.addEventListener('click', () => this.showRunDetail(item.dataset.id));
+            });
+        } catch (error) {
+            console.error('[App] Failed to load history:', error);
+            ErrorTracker?.handleError(error, { context: 'loadHistory' });
+        }
     },
 
     /**
@@ -1010,8 +1015,9 @@ const App = {
      */
     renderHistoryItem(run) {
         const date = new Date(run.startTime);
+        // SECURITY FIX: Escape run.id to prevent XSS
         return `
-            <div class="history-item" data-id="${run.id}">
+            <div class="history-item" data-id="${SecurityUtils.escapeHTML(run.id)}">
                 <div class="history-item-header">
                     <span class="history-item-date">${Utils.formatDate(date)} ${Utils.formatTime(date)}</span>
                     <span class="history-item-duration">${Utils.formatDuration(run.duration)}</span>
@@ -1098,7 +1104,12 @@ const App = {
         
         const positions = run.positions || [];
         if (positions.length === 0) {
-            this.elements.runDetailMap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-tertiary);font-size:13px;">No GPS data recorded</div>';
+            // SECURITY FIX: Use textContent instead of innerHTML
+            this.elements.runDetailMap.textContent = '';
+            const noDataDiv = document.createElement('div');
+            noDataDiv.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-tertiary);font-size:13px;';
+            noDataDiv.textContent = 'No GPS data recorded';
+            this.elements.runDetailMap.appendChild(noDataDiv);
             return;
         }
         
@@ -1291,14 +1302,15 @@ const App = {
             return tierOrder[a.tier] - tierOrder[b.tier];
         });
         
+        // SECURITY FIX: Escape all user content to prevent XSS
         this.elements.achievementsList.innerHTML = achievements.map(a => `
-            <div class="achievement-card ${a.isUnlocked ? 'unlocked' : 'locked'}" data-tier="${a.tier}">
+            <div class="achievement-card ${a.isUnlocked ? 'unlocked' : 'locked'}" data-tier="${SecurityUtils.escapeHTML(a.tier)}">
                 <div class="achievement-icon">${a.icon}</div>
                 <div class="achievement-info">
-                    <div class="achievement-name">${a.name}</div>
-                    <div class="achievement-description">${a.description}</div>
+                    <div class="achievement-name">${SecurityUtils.escapeHTML(a.name)}</div>
+                    <div class="achievement-description">${SecurityUtils.escapeHTML(a.description)}</div>
                 </div>
-                <div class="achievement-badge">${a.tier}</div>
+                <div class="achievement-badge">${SecurityUtils.escapeHTML(a.tier)}</div>
             </div>
         `).join('');
     },
@@ -1334,13 +1346,32 @@ const App = {
         
         const toast = document.createElement('div');
         toast.className = 'achievement-toast';
-        toast.innerHTML = `
-            <div class="achievement-toast-header">🎉 Achievement Unlocked!</div>
-            <div class="achievement-toast-icon">${achievement.icon}</div>
-            <div class="achievement-toast-name">${achievement.name}</div>
-            <div class="achievement-toast-description">${achievement.description}</div>
-            <div class="achievement-toast-tier">${achievement.tier}</div>
-        `;
+        // SECURITY FIX: Use textContent and safe element creation instead of innerHTML with user data
+        const header = document.createElement('div');
+        header.className = 'achievement-toast-header';
+        header.textContent = '🎉 Achievement Unlocked!';
+        
+        const icon = document.createElement('div');
+        icon.className = 'achievement-toast-icon';
+        icon.textContent = achievement.icon;
+        
+        const name = document.createElement('div');
+        name.className = 'achievement-toast-name';
+        name.textContent = achievement.name;
+        
+        const desc = document.createElement('div');
+        desc.className = 'achievement-toast-description';
+        desc.textContent = achievement.description;
+        
+        const tier = document.createElement('div');
+        tier.className = 'achievement-toast-tier';
+        tier.textContent = achievement.tier;
+        
+        toast.appendChild(header);
+        toast.appendChild(icon);
+        toast.appendChild(name);
+        toast.appendChild(desc);
+        toast.appendChild(tier);
         
         document.body.appendChild(toast);
         
@@ -1517,12 +1548,18 @@ const App = {
         const btn = this.elements.refreshStatusBtn;
         const originalHtml = btn.innerHTML;
         
-        btn.innerHTML = '<div class="loading-spinner" style="width:16px;height:16px;"></div> Refreshing...';
+        // SECURITY FIX: Use safe HTML structure instead of innerHTML
+        btn.textContent = '';
+        const spinner = document.createElement('div');
+        spinner.className = 'loading-spinner';
+        spinner.style.cssText = 'width:16px;height:16px;display:inline-block;margin-right:8px;';
+        btn.appendChild(spinner);
+        btn.appendChild(document.createTextNode(' Refreshing...'));
         btn.disabled = true;
         
         try {
             // Call the Edge Function to scrape fresh data
-            const response = await fetch(`${Config.SUPABASE_URL}/functions/v1/scrape-slopes`, {
+            const response = await SecurityUtils.safeFetch(`${Config.SUPABASE_URL}/functions/v1/scrape-slopes`, {
                 headers: {
                     'Authorization': `Bearer ${Config.SUPABASE_ANON_KEY}`
                 }
@@ -1661,13 +1698,49 @@ const App = {
             const progressBar = document.getElementById('viz3DProgressBar');
             
             if (playBtn) {
+                // SECURITY FIX: Use SVG element creation instead of innerHTML
+                const createPlayIcon = () => {
+                    playBtn.textContent = '';
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('width', '24');
+                    svg.setAttribute('height', '24');
+                    svg.setAttribute('viewBox', '0 0 24 24');
+                    svg.setAttribute('fill', 'currentColor');
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    polygon.setAttribute('points', '5 3 19 12 5 21 5 3');
+                    svg.appendChild(polygon);
+                    playBtn.appendChild(svg);
+                };
+                
+                const createPauseIcon = () => {
+                    playBtn.textContent = '';
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('width', '24');
+                    svg.setAttribute('height', '24');
+                    svg.setAttribute('viewBox', '0 0 24 24');
+                    svg.setAttribute('fill', 'currentColor');
+                    const rect1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect1.setAttribute('x', '6');
+                    rect1.setAttribute('y', '4');
+                    rect1.setAttribute('width', '4');
+                    rect1.setAttribute('height', '16');
+                    const rect2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect2.setAttribute('x', '14');
+                    rect2.setAttribute('y', '4');
+                    rect2.setAttribute('width', '4');
+                    rect2.setAttribute('height', '16');
+                    svg.appendChild(rect1);
+                    svg.appendChild(rect2);
+                    playBtn.appendChild(svg);
+                };
+                
                 playBtn.addEventListener('click', () => {
                     if (Visualization3D.isPlaying) {
                         Visualization3D.togglePause();
-                        playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+                        createPlayIcon();
                     } else {
                         Visualization3D.startAnimation(run);
-                        playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+                        createPauseIcon();
                     }
                 });
             }
@@ -1676,7 +1749,17 @@ const App = {
                 resetBtn.addEventListener('click', () => {
                     Visualization3D.resetAnimation();
                     if (playBtn) {
-                        playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+                        // SECURITY FIX: Use safe icon creation
+                        playBtn.textContent = '';
+                        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        svg.setAttribute('width', '24');
+                        svg.setAttribute('height', '24');
+                        svg.setAttribute('viewBox', '0 0 24 24');
+                        svg.setAttribute('fill', 'currentColor');
+                        const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                        polygon.setAttribute('points', '5 3 19 12 5 21 5 3');
+                        svg.appendChild(polygon);
+                        playBtn.appendChild(svg);
                     }
                 });
             }
@@ -1690,7 +1773,26 @@ const App = {
             
             // Update play button to pause icon
             if (playBtn) {
-                playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+                // SECURITY FIX: Use safe icon creation
+                playBtn.textContent = '';
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', '24');
+                svg.setAttribute('height', '24');
+                svg.setAttribute('viewBox', '0 0 24 24');
+                svg.setAttribute('fill', 'currentColor');
+                const rect1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect1.setAttribute('x', '6');
+                rect1.setAttribute('y', '4');
+                rect1.setAttribute('width', '4');
+                rect1.setAttribute('height', '16');
+                const rect2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect2.setAttribute('x', '14');
+                rect2.setAttribute('y', '4');
+                rect2.setAttribute('width', '4');
+                rect2.setAttribute('height', '16');
+                svg.appendChild(rect1);
+                svg.appendChild(rect2);
+                playBtn.appendChild(svg);
             }
 
         } catch (error) {
@@ -1866,7 +1968,7 @@ const App = {
                 anonKey: Config.SUPABASE_ANON_KEY
             };
             
-            const response = await fetch(`${config.url}/functions/v1/scrape-slopes`, {
+            const response = await SecurityUtils.safeFetch(`${config.url}/functions/v1/scrape-slopes`, {
                 headers: {
                     'Authorization': `Bearer ${config.anonKey}`
                 }
@@ -1881,6 +1983,7 @@ const App = {
             }
         } catch (e) {
             console.error('Failed to refresh status:', e);
+            ErrorTracker?.handleError(e, { context: 'refreshSlopeStatus' });
             this.loadLiveStatus();
         }
     },

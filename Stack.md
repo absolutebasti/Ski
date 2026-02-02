@@ -94,16 +94,16 @@ window.addEventListener('unhandledrejection', event => {
 3. Add user-facing error states for all async operations
 
 **Files to Audit:**
-- [ ] `js/config.js`
-- [ ] `js/supabase.js`
-- [ ] `js/app.js`
-- [ ] `js/storage.js`
-- [ ] `js/map.js`
+- [x] `js/config.js`
+- [x] `js/supabase.js`
+- [x] `js/app.js`
+- [x] `js/storage.js`
+- [x] `js/map.js`
 
 **Acceptance Criteria:**
-- [ ] Every fetch() has error handling
-- [ ] Users see error messages when operations fail
-- [ ] No unhandled promise rejections in console during normal usage
+- [x] Every fetch() has error handling
+- [x] Users see error messages when operations fail
+- [x] No unhandled promise rejections in console during normal usage
 
 ---
 
