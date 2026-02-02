@@ -265,6 +265,12 @@ const GPSTracker = {
         totalPausedTime: 0
     },
     
+    // Memory management - CRITICAL FIX for memory leak
+    POSITION_BUFFER_LIMIT: 5000,     // Max positions in memory
+    POSITION_FLUSH_SIZE: 2500,       // Number to flush when limit reached
+    flushedPositionCount: 0,         // Track total flushed positions
+    runId: null,                     // Current run ID for storage
+    
     // Callbacks
     onPositionUpdate: null,
     onError: null,
@@ -364,8 +370,9 @@ const GPSTracker = {
      * Start GPS tracking
      * @param {Function} onUpdate - Position update callback
      * @param {Function} onError - Error callback
+     * @param {string} runId - Optional run ID for storage
      */
-    startTracking(onUpdate, onError) {
+    startTracking(onUpdate, onError, runId = null) {
         if (!this.isAvailable()) {
             onError(new Error('Geolocation is not supported'));
             return;
@@ -375,6 +382,8 @@ const GPSTracker = {
         this.onError = onError;
         this.isTracking = true;
         this.isPaused = false;
+        this.runId = runId || `run-${Date.now()}`;
+        this.flushedPositionCount = 0;
         
         // Reset tracking data
         this.trackingData = {
@@ -398,7 +407,36 @@ const GPSTracker = {
             this.options
         );
 
-        console.log('GPS tracking started with Kalman filtering');
+        console.log('[GPS] Tracking started with Kalman filtering, runId:', this.runId);
+    },
+
+    /**
+     * Flush positions to IndexedDB to prevent memory leak
+     * CRITICAL FIX: Implements circular buffer pattern
+     */
+    async flushPositionsToStorage() {
+        if (!this.runId || this.trackingData.positions.length === 0) {
+            return;
+        }
+
+        try {
+            // Save the oldest positions that will be removed from memory
+            const positionsToFlush = this.trackingData.positions.slice(0, this.POSITION_FLUSH_SIZE);
+            
+            // Store in IndexedDB via Storage module (if available)
+            if (window.Storage && typeof window.Storage.saveTrackingProgress === 'function') {
+                await window.Storage.saveTrackingProgress(this.runId, positionsToFlush, this.flushedPositionCount);
+            }
+            
+            // Remove flushed positions from memory
+            this.trackingData.positions = this.trackingData.positions.slice(this.POSITION_FLUSH_SIZE);
+            this.flushedPositionCount += positionsToFlush.length;
+            
+            console.log(`[GPS] Flushed ${positionsToFlush.length} positions to storage. In memory: ${this.trackingData.positions.length}, Total flushed: ${this.flushedPositionCount}`);
+        } catch (error) {
+            console.error('[GPS] Failed to flush positions:', error);
+            // If flush fails, continue with positions in memory - don't lose data
+        }
     },
 
     /**
@@ -428,9 +466,9 @@ const GPSTracker = {
 
     /**
      * Stop GPS tracking
-     * @returns {Object} Final tracking data
+     * @returns {Promise<Object>} Final tracking data
      */
-    stopTracking() {
+    async stopTracking() {
         if (this.watchId !== null) {
             navigator.geolocation.clearWatch(this.watchId);
             this.watchId = null;
@@ -439,8 +477,12 @@ const GPSTracker = {
         this.isTracking = false;
         this.isPaused = false;
         
-        const finalData = this.getTrackingData();
-        console.log('GPS tracking stopped', finalData);
+        const finalData = await this.getTrackingData();
+        
+        // Cleanup tracking progress from storage
+        await this.cleanupTrackingProgress();
+        
+        console.log('[GPS] Tracking stopped', finalData);
         
         return finalData;
     },
@@ -449,14 +491,20 @@ const GPSTracker = {
      * Handle incoming position data
      * @param {GeolocationPosition} position - Raw position from GPS
      */
-    handlePosition(position) {
+    async handlePosition(position) {
         if (this.isPaused) return;
 
         const processed = this.processPosition(position);
         
         // Filter out very inaccurate readings
         if (processed.accuracy > this.minAccuracy * 2) {
-            console.log('Rejecting very inaccurate reading:', processed.accuracy);
+            console.log('[GPS] Rejecting very inaccurate reading:', processed.accuracy);
+            return;
+        }
+
+        // Validate position data (CRITICAL-006: Input validation)
+        if (!this.validatePosition(processed)) {
+            console.warn('[GPS] Invalid position data rejected:', processed);
             return;
         }
 
@@ -475,10 +523,53 @@ const GPSTracker = {
             filtered: true
         });
 
+        // CRITICAL FIX: Check if we need to flush positions to prevent memory leak
+        if (this.trackingData.positions.length >= this.POSITION_BUFFER_LIMIT) {
+            await this.flushPositionsToStorage();
+        }
+
         // Notify callback
         if (this.onPositionUpdate) {
             this.onPositionUpdate(processed);
         }
+    },
+
+    /**
+     * Validate GPS position data
+     * CRITICAL-006: Input validation for GPS Position Data
+     * @param {Object} pos - Processed position object
+     * @returns {boolean} True if valid
+     */
+    validatePosition(pos) {
+        // Check coordinate bounds
+        if (pos.latitude < -90 || pos.latitude > 90) {
+            console.warn('[GPS] Invalid latitude:', pos.latitude);
+            return false;
+        }
+        if (pos.longitude < -180 || pos.longitude > 180) {
+            console.warn('[GPS] Invalid longitude:', pos.longitude);
+            return false;
+        }
+
+        // Check altitude sanity (mountain range dependent, -500m to 5000m covers most ski areas)
+        if (pos.altitude !== null && (pos.altitude < -500 || pos.altitude > 5000)) {
+            console.warn('[GPS] Invalid altitude:', pos.altitude);
+            return false;
+        }
+
+        // Check speed sanity (world record ~250 km/h, allow up to 252 km/h = 70 m/s)
+        if (pos.speed > 252) {
+            console.warn('[GPS] Impossible speed detected:', pos.speed);
+            return false;
+        }
+
+        // Check accuracy threshold (positions >100m accuracy are too unreliable)
+        if (pos.accuracy > 100) {
+            console.warn('[GPS] Position accuracy too low:', pos.accuracy);
+            return false;
+        }
+
+        return true;
     },
 
     /**
@@ -651,8 +742,23 @@ const GPSTracker = {
      * Get current tracking data summary
      * @returns {Object} Tracking data summary
      */
-    getTrackingData() {
-        const positions = this.trackingData.positions;
+    async getTrackingData() {
+        let positions = [...this.trackingData.positions];
+        
+        // CRITICAL FIX: Retrieve flushed positions from storage
+        if (this.flushedPositionCount > 0 && this.runId) {
+            try {
+                const progress = await Storage.getTrackingProgress(this.runId);
+                if (progress && progress.positions) {
+                    // Combine flushed positions with in-memory positions
+                    positions = [...progress.positions, ...positions];
+                    console.log('[GPS] Retrieved', progress.positions.length, 'flushed positions from storage');
+                }
+            } catch (error) {
+                console.error('[GPS] Failed to retrieve flushed positions:', error);
+                // Continue with in-memory positions only
+            }
+        }
         
         // Calculate total distance using filtered positions
         let totalDistance = 0;
@@ -704,12 +810,28 @@ const GPSTracker = {
             endTime: endTime,
             startAltitude: altitudes[0] || null,
             endAltitude: altitudes[altitudes.length - 1] || null,
+            flushedPositionCount: this.flushedPositionCount,
+            totalPositionCount: positions.length,
             filterStats: {
                 positionFilter: 'Kalman2D',
                 altitudeFilter: 'Kalman+Median',
                 speedFilter: 'Kalman'
             }
         };
+    },
+
+    /**
+     * Cleanup tracking progress from storage after run is saved
+     */
+    async cleanupTrackingProgress() {
+        if (this.runId) {
+            try {
+                await Storage.deleteTrackingProgress(this.runId);
+                console.log('[GPS] Cleaned up tracking progress for run:', this.runId);
+            } catch (error) {
+                console.error('[GPS] Failed to cleanup tracking progress:', error);
+            }
+        }
     },
 
     /**

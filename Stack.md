@@ -1,8 +1,340 @@
 # 🎿 Task Stack - Ski Project
 
-> **Last Updated:** 2026-02-01  
+> **Last Updated:** 2026-02-02  
 > **System:** Multi-Agent Async Development  
 > **Status:** Active Review Phase
+
+---
+
+## 📊 Task Summary
+
+| Priority | Total | Completed | Pending |
+|----------|-------|-----------|---------|
+| 🔴 CRITICAL | 7 | 3 | 4 |
+| 🟠 HIGH | 12 | 7 | 5 |
+| 🟡 MEDIUM | 23 | 2 | 21 |
+| 🟢 LOW | 31 | 3 | 28 |
+| **TOTAL** | **73** | **15** | **58** |
+
+## 🆕 NEW TASKS - From Code Reviewer Agent (2026-02-02)
+
+### 🔴 [CRITICAL-004] XSS Vulnerability - innerHTML Usage
+**Type:** Security  
+**Impact:** Critical Security Flaw  
+**From:** Code Review - Found 15+ innerHTML usages without sanitization
+
+**Problem:**
+Multiple files use `innerHTML` with dynamic content without sanitization:
+- `js/app.js`: Lines 574, 737, 799, 828, 871, 909, 978, 1081, 1274, 1317, 1403
+- `js/analytics.js`: Line 464
+- `js/activity-detector.js`: Line 453
+
+This creates XSS vulnerabilities if user-controlled data (run names, locations, etc.) contains malicious scripts.
+
+**Solution:**
+1. Create sanitization utility in `js/utils.js`:
+```javascript
+const sanitizeHTML = (str) => {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+};
+```
+2. Replace all `innerHTML =` with `textContent` where possible
+3. Use template literals with sanitized variables
+4. Consider using DOMPurify library for complex cases
+
+**Files to Update:**
+- [ ] `js/app.js` - 11 occurrences
+- [ ] `js/analytics.js` - 1 occurrence  
+- [ ] `js/activity-detector.js` - 1 occurrence
+
+**Acceptance Criteria:**
+- [ ] All user-input displayed via DOM uses sanitization
+- [ ] No `innerHTML =` with unsanitized variables
+- [ ] Security audit passes
+
+---
+
+### 🔴 [CRITICAL-005] Unhandled Promise Rejections - Missing catch()
+**Type:** Reliability  
+**Impact:** Silent Failures / App Crashes  
+**From:** Code Review - grep found 0 .catch() patterns for fetch()
+
+**Problem:**
+Multiple async operations lack error handling. The codebase has 338 error handling patterns but fetch calls specifically lack `.catch()` handlers. This causes:
+- Silent failures when network requests fail
+- Unhandled promise rejections
+- Poor user experience (infinite loading states)
+
+**Locations Found:**
+- `js/config.js:24` - fetch('/.env') has no catch
+- `js/supabase.js` - Multiple API calls without error boundaries
+- `js/app.js` - Many async functions without try-catch
+
+**Solution:**
+1. Add global error handler for unhandled promise rejections:
+```javascript
+window.addEventListener('unhandledrejection', event => {
+    console.error('Unhandled promise rejection:', event.reason);
+    Analytics.trackError(event.reason);
+});
+```
+2. Wrap all fetch calls with try-catch
+3. Add user-facing error states for all async operations
+
+**Files to Audit:**
+- [ ] `js/config.js`
+- [ ] `js/supabase.js`
+- [ ] `js/app.js`
+- [ ] `js/storage.js`
+- [ ] `js/map.js`
+
+**Acceptance Criteria:**
+- [ ] Every fetch() has error handling
+- [ ] Users see error messages when operations fail
+- [ ] No unhandled promise rejections in console during normal usage
+
+---
+
+### 🔴 [CRITICAL-006] localStorage Quota Exceeded Risk
+**Type:** Data Integrity  
+**Impact:** App Crashes on Data Save  
+**From:** Code Review - 10+ localStorage usages without quota checks
+
+**Problem:**
+Code uses localStorage extensively without checking quota limits:
+- `js/analytics.js`: User tracking data
+- `js/app.js`: Emergency run backup (could be large)
+- `js/barometer.js`: Calibration data
+- `js/i18n.js`: Language preference
+- `js/ratelimiter.js`: State persistence
+
+localStorage limit is ~5MB. Large GPS tracks could exceed this.
+
+**Solution:**
+1. Create safe storage wrapper in `js/storage.js`:
+```javascript
+safeLocalStorage: {
+    set(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (e) {
+            if (e.name === 'QuotaExceededError') {
+                console.warn('localStorage quota exceeded');
+                return false;
+            }
+            throw e;
+        }
+    }
+}
+```
+2. Fall back to IndexedDB for large data
+3. Add size checks before saves
+
+**Acceptance Criteria:**
+- [ ] All localStorage writes wrapped with quota checks
+- [ ] Graceful degradation when quota exceeded
+- [ ] Large data automatically uses IndexedDB instead
+
+---
+
+### 🟠 [HIGH-006] Memory Leak - Uncleared Intervals/Timers
+**Type:** Performance  
+**Impact:** Battery Drain / App Slowdown  
+**From:** Code Review - 13 setInterval/setTimeout found
+
+**Problem:**
+Multiple timers created but potentially not cleaned up:
+- `js/analytics.js:63` - flush interval (no clear found)
+- `js/ratelimiter.js:53` - cleanup interval (no clear found)
+- `js/stats.js:88,119` - timerInterval may not be cleared on errors
+- `js/visualization-3d.js:275` - animation timeout
+
+**Solution:**
+1. Track all timer IDs in a central registry
+2. Add cleanup in page unload / component destroy
+3. Use WeakRef where appropriate
+4. Add timer leak detection in debug mode
+
+**Acceptance Criteria:**
+- [ ] All setInterval calls have corresponding clearInterval
+- [ ] All setTimeout calls tracked and cancellable
+- [ ] No timer leaks detected after 1 hour of usage
+
+---
+
+### 🟠 [HIGH-007] Missing Promise.all() for Parallel Operations
+**Type:** Performance  
+**Impact:** Slower Load Times  
+**From:** Code Review - Only 2 Promise.all patterns found
+
+**Problem:**
+Async operations run sequentially that could be parallel:
+- Module initialization in `app.js:init()`
+- Data loading operations
+- Multiple independent storage reads
+
+**Solution:**
+1. Audit all async initialization
+2. Use Promise.all() for independent operations:
+```javascript
+// Instead of sequential:
+await ModuleA.init();
+await ModuleB.init();
+
+// Use parallel:
+await Promise.all([ModuleA.init(), ModuleB.init()]);
+```
+
+**Acceptance Criteria:**
+- [ ] App initialization time reduced by 30%+
+- [ ] Independent async operations run in parallel
+- [ ] No race conditions introduced
+
+---
+
+### 🟠 [HIGH-008] Config System - .env File Load Fails in Production
+**Type:** Configuration  
+**Impact:** Production Misconfiguration  
+**From:** Code Review - `js/config.js:24`
+
+**Problem:**
+Config tries to fetch `/.env` file which:
+- Won't exist in production builds
+- Causes 404 errors
+- Silently falls back to defaults
+
+**Solution:**
+1. Remove automatic .env fetch
+2. Use build-time environment injection
+3. Add explicit config validation
+4. Show error banner if critical config missing
+
+**Acceptance Criteria:**
+- [ ] No 404 errors for .env in production
+- [ ] Clear error message if Mapbox/Supabase keys missing
+- [ ] Config validation on app startup
+
+---
+
+### 🟡 [MEDIUM-006] Add Automated Error Reporting
+**Type:** Monitoring  
+**Impact:** Faster Bug Fixes  
+**From:** Code Review - Analytics exists but no error tracking
+
+**Implementation:**
+1. Extend analytics.js to capture errors:
+```javascript
+trackError(error, context) {
+    this.trackEvent('error', {
+        message: error.message,
+        stack: error.stack,
+        context: context,
+        url: window.location.href
+    });
+}
+```
+2. Hook into window.onerror and window.onunhandledrejection
+3. Send critical errors to Supabase
+
+**Acceptance Criteria:**
+- [ ] All JS errors logged with context
+- [ ] Errors viewable in admin dashboard
+- [ ] Rate limiting to prevent spam
+
+---
+
+### 🟡 [MEDIUM-007] Performance Budget & Bundle Size Audit
+**Type:** Performance  
+**Impact:** Load Time  
+**From:** Code Review - 21 JS files, ~7000+ lines total
+
+**Current Stats:**
+- 21 JavaScript files
+- ~7000+ lines of code
+- No minification visible
+- Large libraries (Mapbox GL JS) loaded on all pages
+
+**Solution:**
+1. Add bundle size monitoring
+2. Implement code splitting (lazy load map module)
+3. Audit for unused code
+4. Add compression (gzip/brotli)
+
+**Acceptance Criteria:**
+- [ ] Initial bundle < 200KB
+- [ ] Map module lazy loaded
+- [ ] Performance budget enforced in CI
+
+---
+
+### 🟡 [MEDIUM-008] Accessibility Audit (a11y)
+**Type:** Accessibility  
+**Impact:** WCAG Compliance  
+**From:** Code Review - Minimal ARIA attributes found
+
+**Issues Found:**
+- Dynamic content without ARIA live regions
+- Buttons may lack accessible labels
+- Map not keyboard accessible
+- No skip navigation link
+
+**Solution:**
+1. Add ARIA labels to all interactive elements
+2. Implement keyboard navigation for map
+3. Add screen reader announcements for stats
+4. Run axe-core automated audit
+
+**Acceptance Criteria:**
+- [ ] WCAG 2.1 AA compliance
+- [ ] Keyboard navigable interface
+- [ ] Screen reader tested
+
+---
+
+### 🟢 [LOW-005] Add Unit Tests for Core Modules
+**Type:** Testing  
+**Impact:** Code Quality  
+**From:** Code Review - No test files found
+
+**Priority Order:**
+1. `js/utils.js` - Helper functions
+2. `js/stats.js` - Statistics calculations
+3. `js/gps-tracker.js` - GPS processing
+4. `js/storage.js` - Data persistence
+
+**Framework:** Jest or Vitest
+
+**Acceptance Criteria:**
+- [ ] Core utilities have 80%+ coverage
+- [ ] GPS calculations verified
+- [ ] Storage operations tested
+
+---
+
+### 🟢 [LOW-006] Add E2E Tests for Critical User Flows
+**Type:** Testing  
+**Impact:** Regression Prevention  
+**From:** Code Review - No automated testing
+
+**Flows to Test:**
+1. Start tracking → Record points → Stop → Save
+2. View run history → Open detail → Delete
+3. Offline mode → Reconnect → Sync
+4. 3D visualization playback
+
+**Framework:** Playwright
+
+**Acceptance Criteria:**
+- [ ] Critical flows automated
+- [ ] Tests run in CI
+- [ ] No regressions in releases
+
+---
+
+*End of NEW TASKS from Code Reviewer Agent*
 
 ---
 
@@ -755,41 +1087,36 @@ Complete activity detection system in `js/activity-detector.js`:
 
 ---
 
-### [HIGH-007] Add Heart Rate Monitoring (Apple Watch/Bluetooth)
+### ✅ [HIGH-007] Add Heart Rate Monitoring (Apple Watch/Bluetooth) - COMPLETED
 **Type:** Feature  
 **Impact:** Fitness Tracking  
 **From:** Competitor Analysis
-
-**Problem:**
-No heart rate data integration. Modern ski apps connect to heart rate monitors for fitness tracking.
+**Status:** ✅ COMPLETED by Ski Developer Agent  
+**Commit:** `2695744`  
+**Completed:** 2026-02-02
 
 **Implementation:**
-```javascript
-// Web Bluetooth API for HR monitors
-const HRMService = {
-    async connect() {
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [{ services: ['heart_rate'] }]
-        });
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('heart_rate');
-        const characteristic = await service.getCharacteristic('heart_rate_measurement');
-        
-        characteristic.addEventListener('characteristicvaluechanged', (e) => {
-            const heartRate = e.target.value.getUint8(1);
-            this.onHeartRate(heartRate);
-        });
-        
-        await characteristic.startNotifications();
-    }
-};
-```
+Complete heart rate monitoring in `js/heart-rate.js`:
+- ✅ Web Bluetooth API integration for HR monitors
+- ✅ Support for Polar, Wahoo, Garmin, WHOOP, Apple Watch
+- ✅ Real-time heart rate display with zone calculation
+- ✅ Heart rate history tracking (up to 1 hour)
+- ✅ Statistics calculation (min, max, average)
+- ✅ Heart rate zones (Recovery, Aerobic, Tempo, Threshold, Max)
+- ✅ Export data for runs
+
+**Key Features:**
+- `HeartRateMonitor.connect()` - Pair with Bluetooth HRM
+- `HeartRateMonitor.getCurrentHeartRate()` - Get live HR
+- `HeartRateMonitor.calculateZones()` - Calculate HR zones
+- `HeartRateMonitor.getCurrentZone()` - Current zone with color
+- Auto-reconnection and error handling
 
 **Acceptance Criteria:**
-- [ ] Connect to Bluetooth HR monitors
-- [ ] Display current HR during tracking
-- [ ] Show average/max HR per run
-- [ ] Store HR data with run
+- [x] Connect to Bluetooth HR monitors
+- [x] Display current HR during tracking
+- [x] Show average/max HR per run
+- [x] Store HR data with run
 
 ---
 
@@ -1465,41 +1792,36 @@ const Logger = {
 
 ---
 
-### [HIGH-012] Implement Barometric Altimeter Support
+### ✅ [HIGH-012] Implement Barometric Altimeter Support - COMPLETED
 **Type:** Data Quality  
 **Impact:** Accuracy  
 **From:** Technical Gap Analysis
-
-**Problem:**
-GPS altitude is inaccurate (~10-30m error). Modern phones have barometric altimeters that are much more precise (±1m).
+**Status:** ✅ COMPLETED by Ski Developer Agent  
+**Commit:** `2695744`  
+**Completed:** 2026-02-02
 
 **Implementation:**
-```javascript
-const Altimeter = {
-    async init() {
-        // Check for barometer API (iOS 15.0+, Android via sensors)
-        if ('Barometer' in window) {
-            this.barometer = new window.Barometer({ frequency: 1 });
-            this.barometer.addEventListener('reading', (e) => {
-                this.pressure = e.target.pressure; // hPa
-                this.altitude = this.pressureToAltitude(this.pressure);
-            });
-            await this.barometer.start();
-        }
-    },
-    
-    pressureToAltitude(pressure, seaLevel = 1013.25) {
-        // Hypsometric formula
-        return 44330 * (1 - Math.pow(pressure / seaLevel, 0.1903));
-    }
-};
-```
+Complete barometric altimeter in `js/barometer.js`:
+- ✅ Barometer API detection (iOS 15+, Chrome Android)
+- ✅ Hypsometric formula for pressure-to-altitude conversion
+- ✅ GPS calibration to determine sea level pressure
+- ✅ Smoothed altitude readings (moving average)
+- ✅ Relative altitude change tracking
+- ✅ Persistent calibration storage
+- ✅ Fallback to GPS when barometer unavailable
+
+**Key Features:**
+- `BarometricAltimeter.start()` - Begin barometer readings
+- `BarometricAltimeter.getAltitude()` - Get current altitude
+- `BarometricAltimeter.calibrateWithGPS()` - Calibrate with GPS reference
+- `BarometricAltimeter.getAltitudeWithFallback()` - Smart fallback logic
+- Automatic calibration on first GPS fix
 
 **Acceptance Criteria:**
-- [ ] Detect barometric sensor availability
-- [ ] Calibrate using GPS altitude initially
-- [ ] Use barometer for relative altitude changes
-- [ ] Fallback to GPS when barometer unavailable
+- [x] Detect barometric sensor availability
+- [x] Calibrate using GPS altitude initially
+- [x] Use barometer for relative altitude changes
+- [x] Fallback to GPS when barometer unavailable
 
 ---
 
@@ -1620,47 +1942,49 @@ No CSP headers defined. App loads external scripts (Mapbox, Supabase) which coul
 
 ---
 
-### [HIGH-013] Implement Analytics (Privacy-First)
+### ✅ [HIGH-013] Implement Analytics (Privacy-First) - COMPLETED
 **Type:** Data Insights  
 **Impact:** Product Development  
 **From:** Business Need
+**Status:** ✅ COMPLETED by Ski Developer Agent  
+**Commit:** `2695744`  
+**Completed:** 2026-02-02
 
-**Problem:**
-No visibility into user behavior, feature usage, or app performance.
+**Implementation:**
+Complete analytics system in `js/analytics.js`:
+- ✅ Privacy-first design (no cookies, no personal data)
+- ✅ Anonymous session and user IDs
+- ✅ GDPR-compliant with opt-out controls
+- ✅ Event batching and queue management
+- ✅ Performance metrics tracking
+- ✅ SPA navigation tracking
+- ✅ Custom events for app features
 
-**Privacy-First Solution:**
-```javascript
-const Analytics = {
-    // Self-hosted Plausible or similar
-    // No cookies, no personal data, anonymized
-    
-    track(event, properties = {}) {
-        fetch('/api/analytics', {
-            method: 'POST',
-            body: JSON.stringify({
-                event,
-                properties,
-                timestamp: Date.now(),
-                sessionId: this.getAnonymousSessionId()
-            })
-        }).catch(() => {}); // Silent fail
-    }
-};
-```
+**Events Tracked:**
+- `page_view` - Page navigation
+- `tracking_started/stopped` - Tracking lifecycle
+- `run_saved` - Run completion
+- `achievement_unlocked` - Gamification
+- `segment_completed` - Segment times
+- `feature_used` - Feature adoption
+- `error` - Error reporting
+- `performance` - Load times
+- `share` - Social sharing
+- `data_transfer` - Export/import
 
-**Events to Track:**
-- Tracking started/stopped
-- Run saved
-- Achievement unlocked
-- Feature usage (map, history, achievements)
-- Export/import usage
-- Errors
+**Key Features:**
+- `Analytics.track()` - Track custom events
+- `Analytics.trackPageView()` - Page navigation
+- `Analytics.trackFeature()` - Feature usage
+- `Analytics.optOut()` - Complete opt-out
+- Do Not Track header respected
+- Console-only mode for debugging
 
 **Acceptance Criteria:**
-- [ ] Privacy-first analytics (no cookies, anonymized)
-- [ ] GDPR-compliant
-- [ ] Track key user flows
-- [ ] Performance metrics
+- [x] Privacy-first analytics (no cookies, anonymized)
+- [x] GDPR-compliant
+- [x] Track key user flows
+- [x] Performance metrics
 
 ---
 

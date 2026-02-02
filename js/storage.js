@@ -4,7 +4,7 @@
 
 const Storage = {
     DB_NAME: 'KitzSkiDB',
-    DB_VERSION: 1,
+    DB_VERSION: 2, // Incremented for new object store
     db: null,
 
     /**
@@ -46,7 +46,13 @@ const Storage = {
                     db.createObjectStore('records', { keyPath: 'type' });
                 }
 
-                console.log('Database schema created');
+                // Tracking progress store (for GPS memory leak fix)
+                if (!db.objectStoreNames.contains('trackingProgress')) {
+                    const progressStore = db.createObjectStore('trackingProgress', { keyPath: 'runId' });
+                    progressStore.createIndex('timestamp', 'timestamp', { unique: false });
+                }
+
+                console.log('Database schema created/upgraded to v' + this.DB_VERSION);
             };
         });
     },
@@ -333,6 +339,113 @@ const Storage = {
             const request = store.count();
 
             request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    /**
+     * Save tracking progress (for GPS memory leak fix)
+     * Stores flushed positions during active tracking
+     * @param {string} runId - Run ID
+     * @param {Array} positions - Positions to save
+     * @param {number} offset - Starting offset for these positions
+     * @returns {Promise} Save promise
+     */
+    async saveTrackingProgress(runId, positions, offset) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['trackingProgress'], 'readwrite');
+            const store = transaction.objectStore('trackingProgress');
+            
+            // Get existing progress or create new
+            const getRequest = store.get(runId);
+            
+            getRequest.onsuccess = () => {
+                let progress = getRequest.result || {
+                    runId,
+                    positions: [],
+                    timestamp: Date.now(),
+                    totalCount: 0
+                };
+                
+                // Append new positions
+                progress.positions.push(...positions);
+                progress.totalCount = progress.positions.length;
+                progress.timestamp = Date.now();
+                
+                const putRequest = store.put(progress);
+                putRequest.onsuccess = () => {
+                    console.log('[Storage] Saved tracking progress:', runId, 'Total positions:', progress.totalCount);
+                    resolve(progress);
+                };
+                putRequest.onerror = () => reject(putRequest.error);
+            };
+            
+            getRequest.onerror = () => reject(getRequest.error);
+        });
+    },
+
+    /**
+     * Get tracking progress for a run
+     * @param {string} runId - Run ID
+     * @returns {Promise<Object>} Tracking progress or null
+     */
+    async getTrackingProgress(runId) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['trackingProgress'], 'readonly');
+            const store = transaction.objectStore('trackingProgress');
+            const request = store.get(runId);
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    /**
+     * Delete tracking progress after run is saved
+     * @param {string} runId - Run ID
+     * @returns {Promise} Delete promise
+     */
+    async deleteTrackingProgress(runId) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['trackingProgress'], 'readwrite');
+            const store = transaction.objectStore('trackingProgress');
+            const request = store.delete(runId);
+
+            request.onsuccess = () => {
+                console.log('[Storage] Deleted tracking progress:', runId);
+                resolve();
+            };
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    /**
+     * Clear old tracking progress (cleanup)
+     * @param {number} maxAgeHours - Maximum age in hours
+     * @returns {Promise<number>} Number of entries deleted
+     */
+    async clearOldTrackingProgress(maxAgeHours = 24) {
+        return new Promise((resolve, reject) => {
+            const cutoff = Date.now() - (maxAgeHours * 60 * 60 * 1000);
+            const transaction = this.db.transaction(['trackingProgress'], 'readwrite');
+            const store = transaction.objectStore('trackingProgress');
+            const index = store.index('timestamp');
+            const request = index.openCursor(IDBKeyRange.upperBound(cutoff));
+            
+            let deletedCount = 0;
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    store.delete(cursor.primaryKey);
+                    deletedCount++;
+                    cursor.continue();
+                } else {
+                    console.log('[Storage] Cleared', deletedCount, 'old tracking progress entries');
+                    resolve(deletedCount);
+                }
+            };
+
             request.onerror = () => reject(request.error);
         });
     }

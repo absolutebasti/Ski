@@ -3,10 +3,14 @@
  * Provides offline support, caching, and background sync
  */
 
-const CACHE_NAME = 'kitzski-v1';
-const STATIC_CACHE = 'kitzski-static-v1';
-const TILE_CACHE = 'kitzski-tiles-v1';
+const CACHE_NAME = 'kitzski-v2';
+const STATIC_CACHE = 'kitzski-static-v2';
+const TILE_CACHE = 'kitzski-tiles-v2';
 const OFFLINE_PAGE = '/offline.html';
+
+// Cache expiration times
+const TILE_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+const STATIC_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Static assets to precache
 const STATIC_ASSETS = [
@@ -119,33 +123,96 @@ self.addEventListener('fetch', (event) => {
 
 /**
  * Handle Mapbox tile requests with dedicated tile cache
+ * CRITICAL-015: Implement proper offline tile caching with expiry
  */
 async function handleMapboxTile(request) {
     const cache = await caches.open(TILE_CACHE);
     const cached = await cache.match(request);
     
+    // Check if we have a valid cached tile
     if (cached) {
-        // Return cached and refresh in background
-        fetch(request)
-            .then((response) => {
-                if (response && response.status === 200) {
-                    cache.put(request, response.clone());
-                }
-            })
-            .catch(() => {});
-        return cached;
+        const cachedDate = cached.headers.get('sw-cached-date');
+        const isExpired = cachedDate && (Date.now() - parseInt(cachedDate)) > TILE_MAX_AGE;
+        
+        if (!isExpired) {
+            // Return cached tile and refresh in background (stale-while-revalidate)
+            fetch(request)
+                .then((response) => {
+                    if (response && response.status === 200) {
+                        cache.put(request, addCacheTimestamp(response.clone()));
+                    }
+                })
+                .catch(() => {});
+            
+            // Return cached response immediately
+            return cached;
+        }
+        // If expired, continue to fetch fresh tile
     }
     
     try {
         const response = await fetch(request);
         if (response && response.status === 200) {
-            cache.put(request, response.clone());
+            // Add timestamp header and cache the response
+            const responseWithTimestamp = addCacheTimestamp(response.clone());
+            cache.put(request, responseWithTimestamp);
         }
         return response;
     } catch (error) {
         console.error('[SW] Failed to fetch tile:', error);
-        return new Response('', { status: 404, statusText: 'Tile not cached' });
+        
+        // Return expired cached tile as fallback if available
+        if (cached) {
+            console.log('[SW] Serving expired tile as fallback');
+            return cached;
+        }
+        
+        // Return transparent 1x1 pixel as ultimate fallback
+        return createTransparentTile();
     }
+}
+
+/**
+ * Add cache timestamp header to response
+ * @param {Response} response - Original response
+ * @returns {Response} Response with timestamp header
+ */
+function addCacheTimestamp(response) {
+    const headers = new Headers(response.headers);
+    headers.set('sw-cached-date', Date.now().toString());
+    
+    return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: headers
+    });
+}
+
+/**
+ * Create a transparent 1x1 pixel PNG as fallback
+ * @returns {Response} Transparent PNG response
+ */
+function createTransparentTile() {
+    // 1x1 transparent PNG
+    const transparentPng = new Uint8Array([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+        0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+        0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+        0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+        0x42, 0x60, 0x82
+    ]);
+    
+    return new Response(transparentPng, {
+        status: 200,
+        headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=86400'
+        }
+    });
 }
 
 /**
