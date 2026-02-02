@@ -334,6 +334,99 @@ trackError(error, context) {
 
 ---
 
+### 🟢 [LOW-007] Add Input Validation for Photo Metadata
+**Type:** Security  
+**Impact:** Data Integrity  
+**From:** Code Review - `js/photos.js`
+
+**Problem:**
+Photo metadata is processed without validation:
+- File size not checked before thumbnail creation
+- Image dimensions not validated
+- Base64 thumbnail could be very large
+
+**Solution:**
+Add validation in `processPhoto()`:
+```javascript
+// Validate file size (max 10MB)
+if (file.size > 10 * 1024 * 1024) {
+    throw new Error('Photo too large (max 10MB)');
+}
+// Validate dimensions (max 100MP)
+if (dimensions.width * dimensions.height > 100000000) {
+    throw new Error('Image dimensions too large');
+}
+```
+
+**Acceptance Criteria:**
+- [ ] File size limits enforced
+- [ ] Dimension limits checked
+- [ ] Thumbnail size capped
+
+---
+
+### 🟢 [LOW-008] Add Rate Limiting to Achievement Checks
+**Type:** Performance  
+**Impact:** Battery Life  
+**From:** Code Review - `js/achievements.js`
+
+**Problem:**
+Achievement checking happens on every GPS update (every second) without throttling.
+
+**Solution:**
+Add throttling to achievement checks:
+```javascript
+// Check achievements max once per 5 seconds
+const throttledCheck = Utils.throttle(this.checkAchievements.bind(this), 5000);
+```
+
+**Acceptance Criteria:**
+- [ ] Achievement checks throttled
+- [ ] No missed achievements
+- [ ] Reduced CPU usage
+
+---
+
+### 🟢 [LOW-009] Optimize GeoJSON Trail Data Loading
+**Type:** Performance  
+**Impact:** Load Time  
+**From:** Code Review - Trail data loaded synchronously
+
+**Problem:**
+`kitzbuehel.geojson` (~300 lines) loaded upfront. Could be lazy-loaded when map initializes.
+
+**Solution:**
+1. Split trail data by difficulty level
+2. Load only visible trails initially
+3. Cache loaded data
+
+**Acceptance Criteria:**
+- [ ] Trail data lazy loaded
+- [ ] Initial bundle reduced by 50KB+
+- [ ] Map still functional offline
+
+---
+
+### 🟢 [LOW-010] Add CSS Critical Path Optimization
+**Type:** Performance  
+**Impact:** First Paint  
+**From:** Code Review - `css/styles.css` is 2108 lines
+
+**Problem:**
+All CSS loaded upfront. 2108 lines of CSS blocking first paint.
+
+**Solution:**
+1. Extract critical CSS (first 600px styles)
+2. Inline critical CSS in `<head>`
+3. Load remaining CSS asynchronously
+
+**Acceptance Criteria:**
+- [ ] First paint < 1s on 3G
+- [ ] No flash of unstyled content
+- [ ] Lighthouse performance score > 90
+
+---
+
 *End of NEW TASKS from Code Reviewer Agent*
 
 ---
