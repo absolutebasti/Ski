@@ -1973,6 +1973,204 @@ Feasibility study
 
 ---
 
+## 🆕 NEW TASKS - Cycle 7 (2026-02-02)
+
+### [CRITICAL-012] Implement Data Encryption for Sensitive Storage
+**Type:** Security  
+**Impact:** Privacy  
+**From:** Security Audit
+
+**Problem:**
+Run data stored in IndexedDB is unencrypted. If device is compromised, location history is exposed.
+
+**Solution:**
+```javascript
+const Encryption = {
+    async encrypt(data, password) {
+        const encoder = new TextEncoder();
+        const key = await this.deriveKey(password);
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        
+        const encrypted = await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv },
+            key,
+            encoder.encode(JSON.stringify(data))
+        );
+        
+        return { iv, data: Array.from(new Uint8Array(encrypted)) };
+    },
+    
+    async deriveKey(password) {
+        const encoder = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw',
+            encoder.encode(password),
+            'PBKDF2',
+            false,
+            ['deriveBits', 'deriveKey']
+        );
+        
+        return crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt: encoder.encode('kitzski'), iterations: 100000, hash: 'SHA-256' },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt', 'decrypt']
+        );
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Optional encryption for runs
+- [ ] User password/pin based
+- [ ] Encrypted at rest
+- [ ] Minimal performance impact
+
+---
+
+### [HIGH-015] Implement Background Geolocation (iOS/Android Native)
+**Type:** Feature  
+**Impact:** Tracking Quality  
+**From:** Technical Limitation
+
+**Problem:**
+Web GPS stops when app is backgrounded. Native apps continue tracking.
+
+**Research Options:**
+1. Capacitor/Cordova bridge for native GPS
+2. React Native port
+3. Background fetch API (limited)
+4. Keepalive techniques (battery drain)
+
+**Acceptance Criteria:**
+- [ ] Research native wrapper options
+- [ ] Document trade-offs
+- [ ] Prototype if feasible
+- [ ] Maintain PWA compatibility
+
+---
+
+### [MEDIUM-018] Add Voice Control Support
+**Type:** Accessibility  
+**Impact:** Safety  
+**From:** Accessibility Research
+
+**Commands:**
+- "Start tracking"
+- "Stop tracking"
+- "What's my speed?"
+- "Save run"
+
+**Implementation:**
+```javascript
+const VoiceControl = {
+    init() {
+        if ('webkitSpeechRecognition' in window) {
+            this.recognition = new webkitSpeechRecognition();
+            this.recognition.continuous = true;
+            this.recognition.onresult = (e) => this.handleCommand(e);
+            this.recognition.start();
+        }
+    },
+    
+    handleCommand(e) {
+        const command = e.results[e.results.length-1][0].transcript.toLowerCase();
+        if (command.includes('start')) App.startTracking();
+        if (command.includes('stop')) App.stopTracking();
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Voice commands work
+- [ ] Offline capable
+- [ ] Multiple language support
+- [ ] Toggle in settings
+
+---
+
+### [MEDIUM-019] Implement Social Share Cards
+**Type:** Marketing  
+**Impact:** Viral Growth  
+**From:** Competitor Analysis
+
+**Dynamic Image Generation:**
+```javascript
+const ShareCard = {
+    async generate(run) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = 630;
+        const ctx = canvas.getContext('2d');
+        
+        // Draw gradient background
+        // Draw stats
+        // Draw map preview
+        // Export as image
+        
+        return canvas.toDataURL('image/png');
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Generate 1200x630 share image
+- [ ] Include key stats
+- [ ] Download or native share
+- [ ] Instagram story format (9:16)
+
+---
+
+### [LOW-011] Add Onboarding Flow for First-Time Users
+**Type:** UX  
+**Impact:** User Retention  
+**From:** UX Best Practices
+
+**Steps:**
+1. Welcome screen
+2. Permissions explanation (GPS)
+3. Quick tutorial (start/stop/save)
+4. First achievement unlocked
+
+**Acceptance Criteria:**
+- [ ] 3-step onboarding
+- [ ] Skip option available
+- [ ] Only shown once
+- [ ] Tracks completion
+
+---
+
+### [RESEARCH-010] Study Battery Optimization Patterns
+**Type:** Research  
+**Impact:** User Experience  
+**From:** Performance Analysis
+
+**Questions:**
+1. How do top apps optimize battery?
+2. What GPS update frequencies work best?
+3. Screen-on vs screen-off behavior?
+4. Adaptive power modes?
+
+**Deliverable:**
+Battery optimization guide
+
+---
+
+## 📊 Updated Priority Matrix
+
+| Priority | Count | New Tasks |
+|----------|-------|-----------|
+| CRITICAL | 12 | +1 (encryption) |
+| HIGH | 15 | +1 (background GPS) |
+| MEDIUM | 19 | +2 (voice control, share cards) |
+| LOW | 11 | +1 (onboarding) |
+| RESEARCH | 10 | +1 (battery patterns) |
+
+**Total Tasks:** 67 (+6 from review cycles)
+
+---
+
 *Managed by Reviewer Agent*  
 *Last comprehensive review: 2026-02-01*  
-*Last cycle: 2026-02-02 - Cycle 6*
+*Last cycle: 2026-02-02 - Cycle 7*
