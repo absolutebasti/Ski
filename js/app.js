@@ -130,7 +130,11 @@ const App = {
             profileEndAlt: document.getElementById('profileEndAlt'),
             deleteRunBtn: document.getElementById('deleteRunBtn'),
             exportGPXBtn: document.getElementById('exportGPXBtn'),
-            importGPXBtn: document.getElementById('importGPXBtn')
+            importGPXBtn: document.getElementById('importGPXBtn'),
+            replay3DBtn: document.getElementById('replay3DBtn'),
+            viz3DPanel: document.getElementById('viz3DPanel'),
+            closeViz3DBtn: document.getElementById('closeViz3DBtn'),
+            viz3DMap: document.getElementById('viz3DMap')
         };
     },
 
@@ -213,6 +217,10 @@ const App = {
         this.elements.closeRunDetailBtn?.addEventListener('click', () => this.hidePanel('runDetail'));
         this.elements.deleteRunBtn?.addEventListener('click', () => this.deleteCurrentDetailRun());
         this.elements.exportGPXBtn?.addEventListener('click', () => this.exportCurrentRunAsGPX());
+        this.elements.replay3DBtn?.addEventListener('click', () => this.show3DReplay());
+        
+        // 3D Visualization
+        this.elements.closeViz3DBtn?.addEventListener('click', () => this.hidePanel('viz3D'));
         
         // GPX Import
         this.elements.importGPXBtn?.addEventListener('click', () => this.importGPXFiles());
@@ -639,6 +647,10 @@ const App = {
             this.elements.liveStatusPanel?.classList.add('hidden');
         } else if (panel === 'achievements') {
             this.elements.achievementsPanel?.classList.add('hidden');
+        } else if (panel === 'viz3D') {
+            this.elements.viz3DPanel?.classList.add('hidden');
+            // Stop 3D visualization
+            Visualization3D.close();
         }
     },
 
@@ -1575,6 +1587,77 @@ const App = {
         } catch (error) {
             console.error('Export failed:', error);
             this.showToast('Export failed: ' + error.message, 'error');
+        }
+    },
+
+    /**
+     * Show 3D replay of current run
+     */
+    async show3DReplay() {
+        if (!this.currentDetailRunId) return;
+
+        // Check if 3D is supported
+        if (!Visualization3D.isSupported()) {
+            this.showToast('3D visualization not supported on this device', 'error');
+            return;
+        }
+
+        try {
+            const run = await Storage.getRun(this.currentDetailRunId);
+            if (!run || !run.positions || run.positions.length < 2) {
+                this.showToast('Not enough data for 3D replay', 'error');
+                return;
+            }
+
+            // Show panel
+            this.elements.viz3DPanel?.classList.remove('hidden');
+
+            // Initialize 3D visualization
+            Visualization3D.init('viz3DMap');
+            await Visualization3D.createMap(run);
+            
+            // Bind control buttons
+            const playBtn = document.getElementById('viz3DPlayBtn');
+            const resetBtn = document.getElementById('viz3DResetBtn');
+            const progressBar = document.getElementById('viz3DProgressBar');
+            
+            if (playBtn) {
+                playBtn.addEventListener('click', () => {
+                    if (Visualization3D.isPlaying) {
+                        Visualization3D.togglePause();
+                        playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+                    } else {
+                        Visualization3D.startAnimation(run);
+                        playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+                    }
+                });
+            }
+            
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    Visualization3D.resetAnimation();
+                    if (playBtn) {
+                        playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+                    }
+                });
+            }
+            
+            if (progressBar) {
+                Visualization3D.progressBar = progressBar;
+            }
+
+            // Auto-start animation
+            await Visualization3D.startAnimation(run);
+            
+            // Update play button to pause icon
+            if (playBtn) {
+                playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+            }
+
+        } catch (error) {
+            console.error('3D replay failed:', error);
+            this.showToast('3D replay failed: ' + error.message, 'error');
+            this.hidePanel('viz3D');
         }
     },
 

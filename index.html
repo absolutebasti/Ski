@@ -339,6 +339,12 @@
                 </div>
             </div>
             <div class="panel-footer">
+                <button class="btn btn-secondary" id="replay3DBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                    </svg>
+                    3D Replay
+                </button>
                 <button class="btn btn-secondary" id="exportGPXBtn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -497,6 +503,40 @@
             </div>
         </div>
 
+        <!-- 3D Visualization Panel -->
+        <div class="panel panel-3d-viz hidden" id="viz3DPanel">
+            <div class="panel-header">
+                <h2>3D Run Replay</h2>
+                <button class="btn-close" id="closeViz3DBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="panel-content viz-3d-content">
+                <div id="viz3DMap" class="viz-3d-map"></div>
+                <div class="viz-3d-overlay" id="viz3DOverlay">
+                    <div class="viz-3d-progress">
+                        <div class="viz-3d-progress-bar" id="viz3DProgressBar"></div>
+                    </div>
+                    <div class="viz-3d-controls">
+                        <button class="viz-btn" id="viz3DResetBtn" title="Reset">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                <path d="M3 3v5h5"/>
+                            </svg>
+                        </button>
+                        <button class="viz-btn viz-play" id="viz3DPlayBtn" title="Play/Pause">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Settings Panel -->
         <div class="panel panel-settings hidden" id="settingsPanel">
             <div class="panel-header">
@@ -582,6 +622,7 @@
     <script src="js/gps-tracker.js"></script>
     <script src="js/stats.js"></script>
     <script src="js/map.js"></script>
+    <script src="js/visualization-3d.js"></script>
     <script src="js/gpx.js"></script>
     <script src="js/app.js"></script>
 </body>

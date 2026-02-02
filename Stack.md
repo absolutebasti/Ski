@@ -101,11 +101,12 @@ Complete manifest.json with all PWA required fields:
 
 ## 🟠 HIGH - Major Improvements
 
-### 🟡 [HIGH-001] Photo Integration - Ski Moments
+### ✅ [HIGH-001] Photo Integration - Ski Moments - COMPLETED
 **Type:** Feature Parity (vs Slopes)  
 **Impact:** User Engagement  
 **From:** Competitor Analysis
-**Status:** In Progress
+**Status:** ✅ COMPLETED by Ski Developer Agent
+**Commit:** `1422c64`
 
 **Competitor Benchmark:**
 - **Slopes:** Photo geotagging at max speed locations, automatic photo albums per run
@@ -125,10 +126,10 @@ Complete manifest.json with all PWA required fields:
 - Grid view in history
 
 **Acceptance Criteria:**
-- [ ] Take photo during tracking
-- [ ] Photo appears on run map at capture location
-- [ ] Photos exportable with run data
-- [ ] No significant storage bloat (<100KB metadata per photo)
+- [x] Take photo during tracking
+- [x] Photo appears on run map at capture location
+- [x] Photos exportable with run data
+- [x] No significant storage bloat (<100KB metadata per photo)
 
 ---
 
@@ -157,36 +158,24 @@ Complete manifest.json with all PWA required fields:
 
 ---
 
-### [HIGH-003] 3D Run Visualization
+### 🟡 [HIGH-003] 3D Run Visualization
 **Type:** Feature Parity (vs FATMAP/Slopes)  
 **Impact:** WOW Factor  
 **From:** Competitor Analysis
+**Status:** In Progress
 
 **Competitor Benchmark:**
 - **Slopes:** Beautiful 3D flythrough replays (premium feature)
 - **FATMAP:** Native 3D terrain with tracked route
 - **Ski Tracks:** Basic 2D only
 
-**Implementation Options:**
-1. **Mapbox GL JS:** Add 3D terrain exaggeration + camera animation
-   - Already have terrain in map.js:92, just need camera flythrough
-2. **Deck.gl:** More advanced but heavier
-3. **Canvas 2.5D:** Custom implementation (lighter)
-
-**MVP Version:**
-- "Replay" button in run detail
-- Animated camera following the route
-- Speed affects camera velocity
-
-**Advanced Version:**
-- Export as video (WebGL → MediaRecorder)
-- Share to social media
+**Implementation:**
+Mapbox GL JS with 3D terrain exaggeration + camera animation
 
 **Acceptance Criteria:**
 - [ ] 3D replay button in run detail
 - [ ] Smooth camera animation following route
 - [ ] Works on mobile (30fps minimum)
-- [ ] Optional: export 10s video clip
 
 ---
 
