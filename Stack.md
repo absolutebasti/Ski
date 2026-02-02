@@ -2347,33 +2347,328 @@ Architecture recommendation
 
 ---
 
-## 📊 Final Priority Matrix
+## 🆕 NEW TASKS - Cycle 9 (Fresh Analysis 2026-02-02)
+
+### [CRITICAL-014] Fix GPS Position Buffer Memory Leak
+**Type:** Performance Bug  
+**Impact:** App Stability  
+**From:** Code Review - gps-tracker.js
+
+**Problem:**
+The `positions` array in GPSTracker grows unbounded during long tracking sessions. For a full 8-hour ski day at 1Hz GPS updates, this creates ~28,800 position objects in memory, causing crashes on devices with limited RAM.
+
+**Current Code:**
+```javascript
+// gps-tracker.js:147
+this.positions.push(positionData); // No limit!
+```
+
+**Solution:**
+```javascript
+// Implement circular buffer with auto-flush
+const POSITION_BUFFER_LIMIT = 5000;
+
+if (this.positions.length >= POSITION_BUFFER_LIMIT) {
+    // Save older positions to IndexedDB
+    await Storage.savePositionBatch(this.runId, this.positions.slice(0, 2500));
+    // Keep only recent half in memory
+    this.positions = this.positions.slice(2500);
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Maximum 5000 positions kept in memory
+- [ ] Older positions flushed to IndexedDB automatically
+- [ ] No data loss during long tracking sessions
+- [ ] Memory usage stays <100MB during 8h tracking
+
+---
+
+### [CRITICAL-015] Add Offline Map Tile Caching Strategy
+**Type:** PWA Enhancement  
+**Impact:** Offline Experience  
+**From:** Real Usage Scenario - Mountains have poor connectivity
+
+**Problem:**
+Current service worker doesn't cache map tiles effectively. When offline, the map shows blank areas.
+
+**Implementation:**
+```javascript
+// In sw.js - Add tile caching strategy
+const TILE_CACHE = 'map-tiles-v1';
+const TILE_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// Cache tiles as user browses
+self.addEventListener('fetch', (e) => {
+    if (e.request.url.includes('mapbox.com')) {
+        e.respondWith(cacheFirstWithExpiry(e.request, TILE_MAX_AGE));
+    }
+});
+
+async function cacheFirstWithExpiry(request, maxAge) {
+    const cache = await caches.open(TILE_CACHE);
+    const cached = await cache.match(request);
+    
+    if (cached) {
+        const date = new Date(cached.headers.get('date'));
+        if (Date.now() - date < maxAge) {
+            return cached;
+        }
+    }
+    
+    const response = await fetch(request);
+    cache.put(request, response.clone());
+    return response;
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Map tiles cached automatically during usage
+- [ ] Cached tiles served when offline
+- [ ] 30-day expiry for tile freshness
+- [ ] Visual indicator for cached vs live tiles
+
+---
+
+### [HIGH-017] Implement Ski Style Detection (AI-powered)
+**Type:** Feature Innovation  
+**Impact:** Differentiation  
+**From:** Competitive Gap Analysis
+
+**Concept:**
+Automatically detect skiing style from GPS patterns:
+- **Carving:** Consistent radius turns, smooth speed curves
+- **Moguls:** High frequency direction changes, vertical oscillations
+- **Powder:** Slower speeds, more irregular patterns
+- **Racing:** High speeds, minimal turning
+
+**Implementation:**
+```javascript
+const SkiStyleDetector = {
+    analyzeRun(positions) {
+        const features = this.extractFeatures(positions);
+        
+        // Simple rule-based classification (can evolve to ML)
+        if (features.turnFrequency > 2 && features.speedVariance < 10) {
+            return { style: 'carving', confidence: 0.85 };
+        } else if (features.verticalOscillation > 5) {
+            return { style: 'moguls', confidence: 0.75 };
+        } else if (features.avgSpeed > 60 && features.turnFrequency < 0.5) {
+            return { style: 'racing', confidence: 0.80 };
+        }
+        
+        return { style: 'mixed', confidence: 0.60 };
+    },
+    
+    extractFeatures(positions) {
+        return {
+            turnFrequency: this.calculateTurns(positions),
+            speedVariance: this.calculateSpeedVariance(positions),
+            verticalOscillation: this.calculateVerticalOscillation(positions),
+            avgSpeed: this.calculateAvgSpeed(positions)
+        };
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Detect 4+ skiing styles automatically
+- [ ] Confidence score for each classification
+- [ ] Display style badge on run detail
+- [ ] Style-based achievements ("Powder Hound", "Carving Master")
+
+---
+
+### [HIGH-018] Add Real-Time Weather Overlay
+**Type:** Feature Enhancement  
+**Impact:** Safety & Planning  
+**From:** Competitor Analysis - FATMAP has this
+
+**Implementation:**
+```javascript
+const WeatherOverlay = {
+    async loadWeatherMap() {
+        // OpenWeatherMap or similar with map tiles
+        const weatherLayer = await fetch(
+            `https://tile.openweathermap.org/map/snow/{z}/{x}/{y}.png?appid=${API_KEY}`
+        );
+        
+        map.addLayer({
+            id: 'weather-overlay',
+            type: 'raster',
+            source: {
+                type: 'raster',
+                tiles: [weatherLayer.url],
+                tileSize: 256
+            },
+            paint: {
+                'raster-opacity': 0.6
+            }
+        });
+    },
+    
+    showWeatherWidget() {
+        // Display: Temperature, Wind, Visibility, Snow forecast
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Weather overlay on map (snow radar)
+- [ ] Current conditions widget
+- [ ] 3-hour forecast
+- [ ] Wind speed/direction for lift safety
+
+---
+
+### [MEDIUM-022] Implement Smart Pause Detection
+**Type:** UX Enhancement  
+**Impact:** Data Quality  
+**From:** User Feedback Pattern
+
+**Problem:**
+Users forget to pause when taking breaks. Current auto-pause was removed because it was too aggressive.
+
+**Smart Solution:**
+```javascript
+const SmartPause = {
+    detectBreak(positions) {
+        const recent = positions.slice(-30); // Last 30 seconds
+        const avgSpeed = this.getAvgSpeed(recent);
+        const altitudeChange = this.getAltitudeChange(recent);
+        
+        // On lift: low speed + ascending
+        if (avgSpeed < 5 && altitudeChange > 20) {
+            return { action: 'pause', reason: 'lift' };
+        }
+        
+        // At restaurant: very low speed + long duration
+        if (avgSpeed < 1 && recent.length >= 300) { // 5 min
+            return { action: 'pause', reason: 'break' };
+        }
+        
+        return { action: 'continue' };
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Auto-pause on lift detection
+- [ ] Auto-pause on long breaks (>5 min)
+- [ ] Manual override always available
+- [ ] Visual indicator of why pause triggered
+
+---
+
+### [MEDIUM-023] Add Emergency SOS Feature
+**Type:** Safety Feature  
+**Impact:** Critical Safety  
+**From:** Real-world skiing safety need
+
+**Implementation:**
+```javascript
+const EmergencySOS = {
+    async activate() {
+        // Get current position
+        const pos = await GPS.getCurrentPosition();
+        
+        // Send to emergency contacts
+        const message = `🚨 SKI EMERGENCY
+Location: https://maps.google.com/?q=${pos.lat},${pos.lon}
+Altitude: ${pos.alt}m
+Time: ${new Date().toISOString()}
+`;
+        
+        // SMS via Twilio API
+        await fetch('/api/emergency', {
+            method: 'POST',
+            body: JSON.stringify({ position: pos, message })
+        });
+        
+        // Show local emergency numbers
+        this.showEmergencyNumbers();
+    },
+    
+    showEmergencyNumbers() {
+        // Austria: 140 (mountain rescue), 133 (police), 122 (fire)
+        // Germany: 112
+        // Display based on current location
+    }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] One-tap SOS button (hidden but accessible)
+- [ ] Sends location to emergency contacts
+- [ ] Shows local emergency numbers
+- [ ] Works offline (queue if no signal)
+
+---
+
+### [LOW-013] Add Ski Resort Comparison Tool
+**Type:** Feature  
+**Impact:** Engagement  
+**From:** User Value Add
+
+**Concept:**
+Compare your stats across different resorts:
+- "You ski 15% faster at Kitzbühel than Zell am See"
+- "Your longest run was at Saalbach"
+
+**Acceptance Criteria:**
+- [ ] Resort-by-resort breakdown
+- [ ] Compare stats across resorts
+- [ ] Favorite resort calculation
+- [ ] Shareable comparison cards
+
+---
+
+### [RESEARCH-012] Investigate Sensor Fusion (Accelerometer + GPS)
+**Type:** Technical Research  
+**Impact:** Accuracy  
+**From:** Technical Innovation
+
+**Question:**
+Can we use device accelerometer to improve GPS accuracy and detect turns?
+
+**Investigation Points:**
+1. Read accelerometer data during turns
+2. Correlate with GPS direction changes
+3. Detect jumps/airtime
+4. Calculate G-forces
+
+**Deliverable:**
+Prototype with accelerometer integration
+
+---
+
+## 📊 Updated Priority Matrix
 
 | Priority | Count | Total Effort |
 |----------|-------|--------------|
-| CRITICAL | 13 | ~4 weeks |
-| HIGH | 16 | ~6 weeks |
-| MEDIUM | 21 | ~8 weeks |
-| LOW | 12 | ~4 weeks |
-| RESEARCH | 11 | ~3 weeks |
+| CRITICAL | 15 | ~5 weeks |
+| HIGH | 18 | ~7 weeks |
+| MEDIUM | 23 | ~9 weeks |
+| LOW | 13 | ~4 weeks |
+| RESEARCH | 12 | ~3 weeks |
 
-**Total Tasks:** 73 (+6 from final cycle)  
-**Estimated Total Effort:** ~25 weeks (1 developer)
+**Total Tasks:** 81 (+8 from fresh analysis)  
+**Estimated Total Effort:** ~28 weeks (1 developer)
 
 ---
 
 ## 🎯 Top 10 Immediate Priorities
 
 1. **CRITICAL-004** - Fix memory leak in GPS tracker
-2. **CRITICAL-007** - Implement error boundaries
-3. **CRITICAL-009** - Add input validation
-4. **CRITICAL-010** - Add CSP headers
-5. **HIGH-001** - Photo integration
-6. **HIGH-003** - 3D visualization MVP
-7. **HIGH-008** - German i18n
-8. **MEDIUM-008** - Accessibility audit
-9. **MEDIUM-014** - Unit tests
-10. **MEDIUM-015** - E2E tests
+2. **CRITICAL-014** - GPS position buffer memory leak
+3. **CRITICAL-015** - Offline map tile caching
+4. **CRITICAL-007** - Implement error boundaries
+5. **HIGH-017** - Ski style detection (AI)
+6. **HIGH-018** - Real-time weather overlay
+7. **MEDIUM-023** - Emergency SOS feature
+8. **MEDIUM-022** - Smart pause detection
+9. **MEDIUM-008** - Accessibility audit
+10. **RESEARCH-012** - Sensor fusion investigation
 
 ---
 
