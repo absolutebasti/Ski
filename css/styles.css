@@ -1278,10 +1278,18 @@ html, body {
     padding: 16px 20px;
     background: var(--card-bg);
     border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 12px;
+}
+
+.panel-run-detail .panel-footer .btn {
+    flex: 1;
+    justify-content: center;
+    gap: 8px;
 }
 
 .panel-run-detail .btn-danger {
-    width: 100%;
+    flex: 1;
     justify-content: center;
     gap: 8px;
 }

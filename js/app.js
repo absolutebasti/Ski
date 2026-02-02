@@ -127,7 +127,9 @@ const App = {
             altitudeCanvas: document.getElementById('altitudeCanvas'),
             profileStartAlt: document.getElementById('profileStartAlt'),
             profileEndAlt: document.getElementById('profileEndAlt'),
-            deleteRunBtn: document.getElementById('deleteRunBtn')
+            deleteRunBtn: document.getElementById('deleteRunBtn'),
+            exportGPXBtn: document.getElementById('exportGPXBtn'),
+            importGPXBtn: document.getElementById('importGPXBtn')
         };
     },
 
@@ -205,6 +207,10 @@ const App = {
         // Run details
         this.elements.closeRunDetailBtn?.addEventListener('click', () => this.hidePanel('runDetail'));
         this.elements.deleteRunBtn?.addEventListener('click', () => this.deleteCurrentDetailRun());
+        this.elements.exportGPXBtn?.addEventListener('click', () => this.exportCurrentRunAsGPX());
+        
+        // GPX Import
+        this.elements.importGPXBtn?.addEventListener('click', () => this.importGPXFiles());
         
         // Achievements
         this.elements.achievementsBtn?.addEventListener('click', () => this.showAchievementsPanel());
@@ -1488,6 +1494,61 @@ const App = {
             await Stats.updateRunCount();
             alert('All data cleared');
         }
+    },
+
+    /**
+     * Export current run as GPX
+     */
+    async exportCurrentRunAsGPX() {
+        if (!this.currentDetailRunId) return;
+        
+        try {
+            const run = await Storage.getRun(this.currentDetailRunId);
+            if (run) {
+                GPX.exportRun(run);
+                this.showToast('GPX exported successfully!', 'success');
+            }
+        } catch (error) {
+            console.error('Export failed:', error);
+            this.showToast('Export failed: ' + error.message, 'error');
+        }
+    },
+
+    /**
+     * Import GPX files
+     */
+    async importGPXFiles() {
+        const input = GPX.createImportInput();
+        
+        input.addEventListener('change', async (e) => {
+            if (e.target.files.length === 0) return;
+            
+            this.showToast(`Importing ${e.target.files.length} file(s)...`, 'info');
+            
+            try {
+                const result = await GPX.importFiles(e.target.files);
+                
+                if (result.imported.length > 0) {
+                    await this.loadHistory();
+                    await Stats.updateRunCount();
+                    this.showToast(`Imported ${result.imported.length} run(s)`, 'success');
+                }
+                
+                if (result.errors.length > 0) {
+                    console.error('Import errors:', result.errors);
+                    if (result.errors.length === 1) {
+                        this.showToast(`Error: ${result.errors[0].error}`, 'error');
+                    } else {
+                        this.showToast(`${result.errors.length} file(s) failed to import`, 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Import failed:', error);
+                this.showToast('Import failed: ' + error.message, 'error');
+            }
+        });
+        
+        input.click();
     },
 
     /**
