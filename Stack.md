@@ -1960,46 +1960,35 @@ Feasibility report with prototype
 
 ## 🆕 NEW TASKS - Cycle 4 (2026-02-02)
 
-### [CRITICAL-009] Fix Console.log Statements in Production
+### ✅ [CRITICAL-009] Fix Console.log Statements in Production - COMPLETED
 **Type:** Performance/Security  
 **Impact:** Production Quality  
 **From:** Code Review - Multiple files have console.log
+**Status:** ✅ COMPLETED by Ski Developer Agent  
+**Commit:** `ae0ac59`  
+**Completed:** 2026-02-02
 
-**Problem:**
-Multiple `console.log` statements throughout codebase. These should be stripped or disabled in production for performance and to prevent information leakage.
+**Implementation:**
+Complete production logger in `js/logger.js`:
+- ✅ Log level system (debug, info, warn, error)
+- ✅ Environment detection (disabled in production)
+- ✅ Logger.debug() - Development only
+- ✅ Logger.log() / Logger.info() - Development only
+- ✅ Logger.warn() - Always enabled
+- ✅ Logger.error() - Always enabled with error tracking integration
+- ✅ Logger.group() / Logger.time() - Development only
 
-**Files Affected:**
-- app.js (30+ console statements)
-- gps-tracker.js (15+ console statements)
-- supabase.js (8+ console statements)
-- storage.js (5+ console statements)
-- map.js, achievements.js, utils.js, sw.js
-
-**Solution:**
-```javascript
-// Create a logger that can be disabled in production
-const Logger = {
-    enabled: process.env.NODE_ENV !== 'production',
-    
-    log(...args) {
-        if (this.enabled) console.log(...args);
-    },
-    
-    error(...args) {
-        // Always log errors, but could send to error tracking service
-        console.error(...args);
-        if (!this.enabled) {
-            ErrorTracker.report(args[0]);
-        }
-    }
-};
-```
+**Key Features:**
+- `Logger.setEnabled()` - Toggle logging
+- `Logger.setMinLevel()` - Set minimum log level
+- Integration with ErrorTracker for production errors
+- Localhost auto-detection for development mode
 
 **Acceptance Criteria:**
-- [ ] Replace all console.log with Logger.log
-- [ ] Keep console.error for actual errors
-- [ ] Logger disabled in production builds
-- [ ] Optional: Send errors to Sentry/log service
+- [x] Replace all console.log with Logger.log
+- [x] Keep console.error for actual errors
+- [x] Logger disabled in production builds
+- [x] Optional: Send errors to Sentry/log service
 
 ---
 
