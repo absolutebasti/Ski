@@ -1072,10 +1072,13 @@ Complete segments system in `js/segments.js`:
 
 ## 🟡 MEDIUM - Nice to Have
 
-### [MEDIUM-001] Weather Integration
+### ✅ [MEDIUM-001] Weather Integration - COMPLETED
 **Type:** Data Enrichment  
 **Impact:** User Planning  
 **From:** Feature Gap Analysis
+**Status:** ✅ COMPLETED by Ski Developer Agent (combined with HIGH-018)  
+**Commit:** `5de4a7c`  
+**Completed:** 2026-02-02
 
 **API Options:**
 - OpenWeatherMap (free tier: 1000 calls/day)
@@ -3343,10 +3346,13 @@ const SkiStyleDetector = {
 
 ---
 
-### [HIGH-018] Add Real-Time Weather Overlay
+### ✅ [HIGH-018] Add Real-Time Weather Overlay - COMPLETED
 **Type:** Feature Enhancement  
 **Impact:** Safety & Planning  
 **From:** Competitor Analysis - FATMAP has this
+**Status:** ✅ COMPLETED by Ski Developer Agent  
+**Commit:** `5de4a7c`  
+**Completed:** 2026-02-02
 
 **Implementation:**
 ```javascript
