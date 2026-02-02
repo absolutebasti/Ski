@@ -101,10 +101,11 @@ Complete manifest.json with all PWA required fields:
 
 ## 🟠 HIGH - Major Improvements
 
-### [HIGH-001] Photo Integration - Ski Moments
+### 🟡 [HIGH-001] Photo Integration - Ski Moments
 **Type:** Feature Parity (vs Slopes)  
 **Impact:** User Engagement  
 **From:** Competitor Analysis
+**Status:** In Progress
 
 **Competitor Benchmark:**
 - **Slopes:** Photo geotagging at max speed locations, automatic photo albums per run
