@@ -57,7 +57,7 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches with race condition fix
 self.addEventListener('activate', (event) => {
     console.log('[SW] Activating...');
     
@@ -79,7 +79,19 @@ self.addEventListener('activate', (event) => {
             })
             .then(() => {
                 console.log('[SW] Claiming clients');
+                // CRITICAL-011: Claim clients immediately to prevent race conditions
                 return self.clients.claim();
+            })
+            .then(() => {
+                // Notify all clients that the service worker is activated
+                return self.clients.matchAll().then((clients) => {
+                    clients.forEach(client => {
+                        client.postMessage({
+                            type: 'SW_ACTIVATED',
+                            version: CACHE_NAME
+                        });
+                    });
+                });
             })
     );
 });

@@ -13,8 +13,8 @@
 | 🔴 CRITICAL | 7 | 3 | 4 |
 | 🟠 HIGH | 12 | 7 | 5 |
 | 🟡 MEDIUM | 23 | 2 | 21 |
-| 🟢 LOW | 31 | 3 | 28 |
-| **TOTAL** | **73** | **15** | **58** |
+| 🟢 LOW | 41 | 3 | 38 |
+| **TOTAL** | **83** | **15** | **68** |
 
 ## 🆕 NEW TASKS - From Code Reviewer Agent (2026-02-02)
 
@@ -537,6 +537,285 @@ Add theme toggle in settings:
 - [ ] All shortcuts implemented
 - [ ] Help modal with shortcut reference
 - [ ] No conflicts with browser shortcuts
+
+---
+
+### 🟢 [LOW-016] Add NPM Build Scripts
+**Type:** Developer Experience  
+**Impact:** Build Process  
+**From:** Code Review - No build system
+
+**Problem:**
+Package.json only has serve scripts. No build, test, or lint scripts.
+
+**Add to package.json:**
+```json
+{
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "eslint js/",
+    "format": "prettier --write .",
+    "analyze": "vite-bundle-visualizer"
+  }
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Build script creates production bundle
+- [ ] Test script runs unit tests
+- [ ] Lint script checks code quality
+
+---
+
+### 🟢 [LOW-017] Add JSDoc Documentation
+**Type:** Documentation  
+**Impact:** Code Maintainability  
+**From:** Code Review - Inconsistent JSDoc coverage
+
+**Problem:**
+Some functions have JSDoc, many don't. No generated documentation.
+
+**Solution:**
+1. Add JSDoc to all public functions
+2. Generate docs with TypeDoc
+3. Host on GitHub Pages
+
+**Acceptance Criteria:**
+- [ ] 100% public API documented
+- [ ] Generated docs site
+- [ ] CI builds docs on release
+
+---
+
+### 🟢 [LOW-018] Add GitHub Actions CI/CD
+**Type:** DevOps  
+**Impact:** Automation  
+**From:** Code Review - No CI configured
+
+**Workflows:**
+1. **PR Check** - Lint, test, build on pull requests
+2. **Release** - Deploy to Vercel on main branch
+3. **Nightly** - Run E2E tests
+4. **Dependency** - Check for security updates
+
+**Acceptance Criteria:**
+- [ ] PR checks run automatically
+- [ ] Auto-deploy to staging
+- [ ] Security alerts configured
+
+---
+
+### 🟢 [LOW-019] Add CHANGELOG.md
+**Type:** Documentation  
+**Impact:** User Communication  
+**From:** Code Review - No version history
+
+**Format:** Keep a Changelog (https://keepachangelog.com/)
+
+**Sections:**
+- [Unreleased]
+- [1.0.0] - YYYY-MM-DD
+  - Added
+  - Changed
+  - Fixed
+  - Deprecated
+
+**Acceptance Criteria:**
+- [ ] Changelog created
+- [ ] All past releases documented
+- [ ] Updated with each release
+
+---
+
+### 🟢 [LOW-020] Add CONTRIBUTING.md
+**Type:** Documentation  
+**Impact:** Community  
+**From:** Code Review - No contribution guidelines
+
+**Sections:**
+1. Code of Conduct
+2. How to report bugs
+3. Feature request process
+4. Development setup
+5. Pull request process
+6. Coding standards
+
+**Acceptance Criteria:**
+- [ ] Contributing guide written
+- [ ] Linked from README
+- [ ] Code of Conduct included
+
+### 🟢 [LOW-021] Remove Debug Console Statements
+**Type:** Code Quality  
+**Impact:** Production Performance  
+**From:** Code Review - 147 console.log statements found
+
+**Problem:**
+147 console.log/debugger statements throughout codebase. Should be removed or disabled in production.
+
+**Solution:**
+1. Replace with proper logging utility that checks environment
+2. Use build process to strip console statements
+3. Keep only error-level logs in production
+
+**Files Affected:**
+- js/app.js - 45+ console statements
+- js/gps-tracker.js - 20+ statements
+- js/analytics.js - 15+ statements
+
+**Acceptance Criteria:**
+- [ ] All debug logs removed from production build
+- [ ] Error logs still functional
+- [ ] No console output in production (except errors)
+
+---
+
+### 🟢 [LOW-022] Add Environment-Based Feature Flags
+**Type:** Architecture  
+**Impact:** Deployment Flexibility  
+**From:** Code Review - No feature flag system
+
+**Problem:**
+No way to enable/disable features per environment.
+
+**Solution:**
+Create feature flag system:
+```javascript
+const Features = {
+  heartRate: Config.isEnabled('HEART_RATE'),
+  analytics: Config.isEnabled('ANALYTICS'),
+  segments: Config.isEnabled('SEGMENTS'),
+  barometer: Config.isEnabled('BAROMETER')
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Feature flag system implemented
+- [ ] All major features flaggable
+- [ ] Runtime flag changes supported
+
+---
+
+### 🟢 [LOW-023] Add Source Maps for Production
+**Type:** Developer Experience  
+**Impact:** Debugging  
+**From:** Code Review - No build process
+
+**Problem:**
+No source maps for production debugging.
+
+**Solution:**
+1. Add source map generation to build process
+2. Upload to Sentry or similar error tracking
+3. Don't serve to users (security)
+
+**Acceptance Criteria:**
+- [ ] Source maps generated on build
+- [ ] Maps uploaded to error tracker
+- [ ] Original source debuggable in production
+
+---
+
+### 🟢 [LOW-024] Add Security Headers
+**Type:** Security  
+**Impact:** Protection  
+**From:** Code Review - No security headers configured
+
+**Required Headers:**
+- `Content-Security-Policy` - Prevent XSS
+- `X-Frame-Options` - Prevent clickjacking
+- `X-Content-Type-Options` - Prevent MIME sniffing
+- `Referrer-Policy` - Control referrer info
+
+**Acceptance Criteria:**
+- [ ] All security headers configured
+- [ ] CSP allows Mapbox, Supabase domains
+- [ ] Security scan passes (A+ rating)
+
+---
+
+### 🟢 [LOW-025] Add Version Check & Update Prompt
+**Type:** UX  
+**Impact:** User Retention  
+**From:** Feature Gap
+
+**Problem:**
+Users may continue using old PWA versions without updating.
+
+**Solution:**
+1. Check version on service worker update
+2. Show "Update Available" prompt
+3. Force refresh when user accepts
+
+**Acceptance Criteria:**
+- [ ] Version check on app load
+- [ ] Update prompt shown to user
+- [ ] Graceful update without data loss
+
+---
+
+### 🟢 [LOW-026] Add IntersectionObserver for Lazy Loading
+**Type:** Performance  
+**Impact:** Initial Load Time  
+**From:** Code Review - No lazy loading implementation
+
+**Problem:**
+All images and components load upfront. No lazy loading for off-screen content.
+
+**Solution:**
+Implement IntersectionObserver for:
+- Run history list items
+- Achievement badges
+- Photo thumbnails
+- Map tiles beyond viewport
+
+**Acceptance Criteria:**
+- [ ] Images load as they enter viewport
+- [ ] Placeholder shown while loading
+- [ ] Smooth fade-in animation
+
+---
+
+### 🟢 [LOW-027] Add ResizeObserver for Responsive Components
+**Type:** UX  
+**Impact:** Responsive Design  
+**From:** Code Review - Window resize not handled
+
+**Problem:**
+Components don't adapt when window is resized (desktop browser).
+
+**Solution:**
+Use ResizeObserver for:
+- Chart resizing
+- Map container
+- Stats dashboard layout
+- Modal positioning
+
+**Acceptance Criteria:**
+- [ ] Components resize smoothly
+- [ ] No layout shifts
+- [ ] Performance maintained
+
+---
+
+### 🟢 [LOW-028] Add Web Vitals Monitoring
+**Type:** Performance  
+**Impact:** User Experience  
+**From:** Code Review - No Core Web Vitals tracking
+
+**Metrics to Track:**
+- LCP (Largest Contentful Paint)
+- FID (First Input Delay)
+- CLS (Cumulative Layout Shift)
+- TTFB (Time to First Byte)
+- FCP (First Contentful Paint)
+
+**Acceptance Criteria:**
+- [ ] All Web Vitals measured
+- [ ] Reports sent to analytics
+- [ ] Alerts for poor scores
 
 ---
 
