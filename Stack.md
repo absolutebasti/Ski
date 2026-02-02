@@ -427,6 +427,119 @@ All CSS loaded upfront. 2108 lines of CSS blocking first paint.
 
 ---
 
+### 🟢 [LOW-011] Add Service Worker Cache Size Management
+**Type:** Performance  
+**Impact:** Storage  
+**From:** Code Review - `sw.js` tile cache grows unbounded
+
+**Problem:**
+Map tile cache in service worker has no size limit. Can consume excessive storage over time.
+
+**Solution:**
+Add cache size limits and LRU eviction:
+```javascript
+// Max 50MB for tiles
+const MAX_TILE_CACHE_SIZE = 50 * 1024 * 1024;
+// Evict oldest tiles when limit reached
+```
+
+**Acceptance Criteria:**
+- [ ] Tile cache limited to 50MB
+- [ ] LRU eviction implemented
+- [ ] Cache size logged periodically
+
+---
+
+### 🟢 [LOW-012] Add Data Migration System
+**Type:** Architecture  
+**Impact:** Future Compatibility  
+**From:** Code Review - No database migration strategy
+
+**Problem:**
+IndexedDB schema changes could break existing user data.
+
+**Solution:**
+Create migration system in `js/storage.js`:
+```javascript
+migrations: {
+  1: (db) => { /* initial schema */ },
+  2: (db) => { /* add photos store */ },
+  3: (db) => { /* add segments index */ }
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Migration framework implemented
+- [ ] Version tracking in IndexedDB
+- [ ] Automatic migration on app update
+
+---
+
+### 🟢 [LOW-013] Add Compression for Stored Runs
+**Type:** Performance  
+**Impact:** Storage Efficiency  
+**From:** Code Review - GPS tracks can be large
+
+**Problem:**
+Long runs with GPS points every second can generate MBs of data.
+
+**Solution:**
+1. Compress position data using delta encoding
+2. Use pako.js for gzip compression
+3. Decompress on demand
+
+**Acceptance Criteria:**
+- [ ] 50%+ storage reduction for runs
+- [ ] Sub-100ms decompression time
+- [ ] Backward compatible
+
+---
+
+### 🟢 [LOW-014] Add Dark Mode Toggle (Manual Override)
+**Type:** UX  
+**Impact:** Accessibility  
+**From:** Code Review - Only dark theme available
+
+**Problem:**
+App only supports dark mode. Some users prefer light mode for daytime visibility.
+
+**Solution:**
+Add theme toggle in settings:
+```css
+:root[data-theme="light"] {
+  --bg: #ffffff;
+  --card: #f2f2f7;
+  --text: #000000;
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Light/dark/auto theme options
+- [ ] Theme persists across sessions
+- [ ] Map style adapts to theme
+
+---
+
+### 🟢 [LOW-015] Add Keyboard Shortcuts
+**Type:** UX  
+**Impact:** Power User Experience  
+**From:** Feature Gap
+
+**Shortcuts:**
+- `Space` - Start/Stop tracking
+- `P` - Pause/Resume
+- `H` - Open history
+- `S` - Open settings
+- `F` - Toggle fullscreen
+- `Esc` - Close panels
+
+**Acceptance Criteria:**
+- [ ] All shortcuts implemented
+- [ ] Help modal with shortcut reference
+- [ ] No conflicts with browser shortcuts
+
+---
+
 *End of NEW TASKS from Code Reviewer Agent*
 
 ---
@@ -2433,25 +2546,41 @@ const Encryption = {
 
 ---
 
-### [HIGH-015] Implement Background Geolocation (iOS/Android Native)
+### ✅ [HIGH-015] Implement Background Geolocation (iOS/Android Native) - COMPLETED
 **Type:** Feature  
 **Impact:** Tracking Quality  
 **From:** Technical Limitation
+**Status:** ✅ COMPLETED by Ski Developer Agent  
+**Commit:** `b21d2c1`  
+**Completed:** 2026-02-02
 
-**Problem:**
-Web GPS stops when app is backgrounded. Native apps continue tracking.
+**Implementation:**
+Complete background geolocation in `js/background-geolocation.js`:
+- ✅ Auto-detection of native wrappers (Capacitor, Cordova, React Native)
+- ✅ Native permission handling for iOS and Android
+- ✅ Background task registration for location updates
+- ✅ Wake lock support to prevent screen sleep
+- ✅ Web fallback with Page Visibility API
+- ✅ Setup instructions for developers
 
-**Research Options:**
-1. Capacitor/Cordova bridge for native GPS
-2. React Native port
-3. Background fetch API (limited)
-4. Keepalive techniques (battery drain)
+**Supported Platforms:**
+- Capacitor (recommended)
+- Cordova
+- React Native (limited)
+- Web (with limitations)
+
+**Key Features:**
+- `BackgroundGeolocation.start()` - Begin background tracking
+- `BackgroundGeolocation.stop()` - Stop tracking
+- `BackgroundGeolocation.requestPermissions()` - Get necessary permissions
+- `BackgroundGeolocation.getSetupInstructions()` - Developer documentation
+- Automatic provider detection and configuration
 
 **Acceptance Criteria:**
-- [ ] Research native wrapper options
-- [ ] Document trade-offs
-- [ ] Prototype if feasible
-- [ ] Maintain PWA compatibility
+- [x] Research native wrapper options
+- [x] Document trade-offs
+- [x] Prototype if feasible
+- [x] Maintain PWA compatibility
 
 ---
 
