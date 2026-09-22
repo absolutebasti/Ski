@@ -40,24 +40,24 @@ interpretation. Everything below already exists and compiles.
 
 | Provider | Type | Owner | File |
 |---|---|---|---|
-| `databaseProvider` | `Provider<AppDatabase>` | WP-02 | data/db/database.dart |
-| `daysRepositoryProvider` | `Provider<DaysRepository>` | WP-02 | data/db/days_repository.dart |
+| `databaseProvider` | `Provider<AppDatabase>` | WP-02 (done) | data/db/providers.dart |
+| `daysRepositoryProvider` | `Provider<DaysRepository>` | WP-02 (done) | data/db/providers.dart |
 | `daysListProvider` | `StreamProvider<List<DaySummary>>` (finished days, newest first, soft-deleted excluded) | WP-02 | data/db/providers.dart |
 | `dayDetailProvider` | `FutureProvider.family<DayDetail, String>` | WP-02 | data/db/providers.dart |
 | `seasonTotalsProvider` | `StreamProvider<List<SeasonTotals>>` (newest season first) | WP-02 | data/db/providers.dart |
 | `personalBestsProvider` | `StreamProvider<PersonalBests>` | WP-02 | data/db/providers.dart |
-| `resortRepositoryProvider` | `Provider<ResortRepository>` with `Resort? nearest(double lat, double lon)` and `Resort? byId(String)` | WP-02 | data/resorts/resort_repository.dart |
-| `locationSourceProvider`, `barometerSourceProvider`, `batterySourceProvider`, `heartRateSourceProvider` | `Provider<...Source>` | WP-03 | platform/providers.dart |
-| `permissionServiceProvider` | `Provider<PermissionService>` — `Future<LocationPermissionState> requestWhenInUse()`, `Future<LocationPermissionState> requestAlways()`, `Future<bool> requestMotion()`, `Future<bool> requestNotifications()`, `Future<LocationPermissionState> status()`, `Future<bool> hasPreciseLocation()`, `Future<bool> requestTemporaryFullAccuracy()`, `Future<void> openSettings()` | WP-03 | platform/permission_service.dart |
-| `notificationServiceProvider` | `Provider<NotificationService>` — `showReminder(id, title, body)`, `cancel(id)`, `scheduleIn(id, Duration, title, body)` | WP-03 | platform/notification_service.dart |
-| `watchdogChannelProvider` | `Provider<WatchdogChannel>` — `start()`, `stop()`, `Future<bool> didLaunchFromLocation()` | WP-03 | platform/watchdog_channel.dart |
+| `resortRepositoryProvider` | `FutureProvider<ResortRepository>` with `Resort? nearest(double lat, double lon)`, `Resort? byId(String)`, `List<Resort> all` | WP-02 (done) | data/resorts/resort_repository.dart |
+| `locationSourceProvider`, `barometerSourceProvider`, `batterySourceProvider`, `heartRateSourceProvider` | `Provider<...Source>` | WP-03 (done) | platform/providers.dart |
+| `permissionServiceProvider` | `Provider<PermissionService>` — `Future<LocationPermissionState> requestWhenInUse()`, `Future<LocationPermissionState> requestAlways()`, `Future<bool> requestMotion()`, `Future<bool> requestNotifications()`, `Future<LocationPermissionState> status()`, `Future<bool> hasPreciseLocation()`, `Future<bool> requestTemporaryFullAccuracy()`, `Future<void> openSettings()` | WP-03 (done) | platform/permission_service.dart |
+| `notificationServiceProvider` | `Provider<NotificationService>` — `showReminder(id, title, body)`, `cancel(id)`, `scheduleIn(id, Duration, title, body)` | WP-03 (done) | platform/notification_service.dart |
+| `watchdogChannelProvider` | `Provider<WatchdogChannel>` — `start()`, `stop()`, `Future<bool> didLaunchFromLocation()` | WP-03 (done) | platform/watchdog_channel.dart |
 | `recordingControllerProvider` | `NotifierProvider<RecordingController, RecordingState>` — `Future<void> startDay()`, `Future<String?> endDay()` (returns dayId or null if discarded), `Future<void> discardDay()`, `Future<void> resumeIfActive()` | WP-05 | features/recording/recording_controller.dart |
 | `liveStateProvider` | `Provider<LiveState>` (rebuilds ≈1 Hz while recording) | WP-05 | features/recording/live_state_provider.dart |
 | `recoveryProvider` | `FutureProvider<RecoveryInfo?>` (`dayId`, `startedAt`, `lastFixAt`, `runCount`, `dropM`) | WP-05 | features/recording/recovery_service.dart |
 | `weatherProvider` | `FutureProvider.family<WeatherSnapshot?, Resort>` | WP-11 | data/weather/weather_provider.dart |
 | `TrackingEngine` | class — `TrackingEngine(config)`, `void addFix(RawFix)`, `void addPressure(PressureSample)`, `EngineTick tick(int nowMs)` returning the new `TrackPoint` + `LiveState` + emitted `Segment`s; `static DayComputation computeDay(List<TrackPoint>)` | WP-01 | tracking/engine.dart |
 | `TrackMap` | widget — `TrackMap({required List<TrackPoint> points, required List<Segment> segments, bool follow = false, LatLng? center, bool interactive = true, int? scrubTs})` | WP-09 | features/map/track_map.dart |
-| `MapSheet.show(context)` | static — full-height sheet with live map (reads `liveStateProvider` + WP-05's `liveTrackProvider: Provider<List<TrackPoint>>` ring) | WP-09 | features/map/map_sheet.dart |
+| `MapSheet.show(context)` | static — full-height sheet with live map (reads `liveStateProvider` + `liveTrackProvider` from features/recording/live_track_provider.dart) | WP-09 | features/map/map_sheet.dart |
 | `ThumbnailRenderer.render(DayDetail) → Future<String path>` | | WP-09 | features/map/thumbnail_renderer.dart |
 | `AltitudeProfile` | widget — `AltitudeProfile({required List<TrackPoint> points, required List<Segment> segments, ValueChanged<int?>? onScrub})` | WP-10 | features/profile/altitude_profile.dart |
 | `ShareService` | `Future<void> shareDayCard(BuildContext, DayDetail)`, `Future<void> shareGpx(DayDetail)`, `Future<void> shareDiagnostics(String dayId)` | WP-10 | features/share/share_service.dart |

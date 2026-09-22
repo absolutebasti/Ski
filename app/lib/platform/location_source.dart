@@ -22,6 +22,7 @@ class GeolocatorLocationSource implements LocationSource {
   @override
   Stream<RawFix> get fixes => _out.stream;
   Stream<int> get restarts => _restarts.stream;
+  @override
   int get restartCount => _restartCount;
   int? get lastFixTs => _lastFixTs;
 
@@ -75,7 +76,7 @@ class GeolocatorLocationSource implements LocationSource {
     _sub = null;
   }
 
-  /// Cancel + resubscribe if no fix arrived for [TrackingConfig.streamWatchdogS].
+  @override
   Future<bool> restartIfSilent(int nowMs) async {
     if (_sub == null) return false;
     final last = _lastFixTs;

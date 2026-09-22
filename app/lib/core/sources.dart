@@ -7,6 +7,11 @@ abstract class LocationSource {
   Future<void> start();
   Future<void> stop();
   bool get isRunning;
+  /// Cancel + resubscribe when no fix arrived for TrackingConfig.streamWatchdogS.
+  /// Returns true if a restart happened. Default: nothing.
+  Future<bool> restartIfSilent(int nowMs) async => false;
+  /// Number of restarts so far (diagnostics).
+  int get restartCount => 0;
 }
 
 abstract class BarometerSource {

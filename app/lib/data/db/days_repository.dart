@@ -91,8 +91,8 @@ class DaysRepository {
   }
 
   /// Most recent finished day at [resortId] that ended within [window] (restart merge).
-  Future<DayRecord?> recentFinishedDay({required String? resortId, required Duration window}) async {
-    final since = _now() - window.inMilliseconds;
+  Future<DayRecord?> recentFinishedDay({required int nowMs, required Duration window, String? resortId}) async {
+    final since = nowMs - window.inMilliseconds;
     final q = db.select(db.days)
       ..where((d) => d.status.equals(DayStatus.finished.dbValue) & d.deletedAt.isNull() & d.endedAt.isBiggerOrEqualValue(since))
       ..orderBy([(d) => OrderingTerm.desc(d.endedAt)])
