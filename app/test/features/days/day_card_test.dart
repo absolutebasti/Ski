@@ -16,7 +16,7 @@ void main() {
     );
     await tester.pump();
     expect(find.byType(Image), findsNothing);
-    expect(find.byIcon(Icons.downhill_skiing_rounded), findsOneWidget);
+    expect(find.byType(ContourPattern), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

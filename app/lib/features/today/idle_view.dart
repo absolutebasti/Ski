@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/l10n/app_locale.dart';
+import '../../app/router.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
@@ -9,14 +10,18 @@ import '../../core/core.dart';
 import '../../core/settings.dart';
 import '../../data/db/providers.dart';
 import '../../data/resorts/resort_repository.dart';
+import '../../data/weather/weather_provider.dart';
+import '../../data/weather/wmo.dart';
 import '../../platform/permission_service.dart';
+import '../days/day_card.dart';
 import '../recording/recording_controller.dart';
 import '../settings/settings_providers.dart';
 import '../weather/weather_line.dart';
+import 'season_card.dart';
 import 'today_strings.dart';
 
-/// Heute before a day is running: where you are, what you did last, and the
-/// one 72 pt button in the thumb zone (docs/PLAN.md §3 row "Heute — idle").
+/// Heute before a day is running (docs/DESIGN.md §5 "Heute — idle"):
+/// conditions strip · SAISON hero · Letzter Tag row · PB strip · dock with Start.
 class IdleView extends ConsumerWidget {
   const IdleView({
     super.key,
@@ -35,140 +40,132 @@ class IdleView extends ConsumerWidget {
   final bool busy;
   final Widget? recovery;
 
-  /// The card to show: a failed Start wins, otherwise the resting permission state.
   RecordingErrorKind? _cardFor(LocationPermissionState? status, bool? precise) {
     if (error != null) return error;
-    if (status == LocationPermissionState.denied || status == LocationPermissionState.deniedForever) {
-      return RecordingErrorKind.locationDenied;
-    }
+    if (status == LocationPermissionState.denied || status == LocationPermissionState.deniedForever) return RecordingErrorKind.locationDenied;
     if (precise == false) return RecordingErrorKind.reducedAccuracy;
     return null;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
+    final l = AppLocale.of(context);
     final s = TodayStrings.of(context);
     final days = ref.watch(daysListProvider).asData?.value ?? const <DaySummary>[];
     final totals = ref.watch(seasonTotalsProvider).asData?.value ?? const <SeasonTotals>[];
+    final bests = ref.watch(personalBestsProvider).asData?.value;
     final resortId = ref.watch(settingsProvider).lastResortId;
     final resort = resortId == null ? null : ref.watch(resortRepositoryProvider).asData?.value.byId(resortId);
     final status = ref.watch(locationStatusProvider).asData?.value;
     final precise = ref.watch(preciseLocationProvider).asData?.value;
     final card = _cardFor(status, precise);
     final startBlocked = card == RecordingErrorKind.reducedAccuracy;
+    final currentKey = seasonKey(DateTime.now());
+    final season = totals.where((t) => t.seasonKey == currentKey).firstOrNull ?? (totals.isNotEmpty ? totals.first : null);
+    final previous = season == null ? null : totals.where((t) => t.seasonKey.compareTo(season.seasonKey) < 0).firstOrNull;
+    final seasonDays = season == null ? const <DaySummary>[] : days.where((d) => seasonKeyFromMs(d.startedAt) == season.seasonKey).toList();
 
     return Column(
       children: [
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(Tokens.pad, 4, Tokens.pad, 8),
+            padding: const EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, 24),
             children: [
               if (resort != null) ...[
-                const SizedBox(height: 4),
-                WeatherLine(resort: resort),
-                const SizedBox(height: 20),
+                _ConditionsStrip(resort: resort),
+                const SizedBox(height: Tokens.cardGap),
               ],
               if (days.isEmpty) ...[
-                const SizedBox(height: 24),
-                EmptyState(line: s.emptyLine),
+                const SizedBox(height: 8),
+                EmptyState(headline: s.emptyHeadline, line: s.emptyLine),
               ] else ...[
-                _LastDayCard(day: days.first),
-                const SizedBox(height: 16),
-                _SeasonRow(totals: totals.isEmpty ? null : totals.first),
+                if (season != null) SeasonCard(totals: season, days: seasonDays, previous: previous),
+                SectionLabel(s.lastDay, padding: const EdgeInsets.fromLTRB(0, Tokens.sectionGap, 0, 10)),
+                DayCard(day: days.first, onTap: () => AppNav.openDay(context, days.first.id)),
+                if (bests != null && (bests.topSpeedMs != null || bests.biggestDayDropM != null || bests.longestRunDropM != null)) ...[
+                  SectionLabel(s.records, padding: const EdgeInsets.fromLTRB(0, 16, 0, 10)),
+                  _PbStrip(bests: bests),
+                ],
               ],
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, Tokens.pad),
+        BottomDock(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (recovery != null) ...[recovery!, const SizedBox(height: 12)],
               if (card != null) ...[
-                _StartBlockedCard(
-                  kind: card,
-                  onOpenSettings: onOpenSettings,
-                  onRequestPrecise: onRequestPrecise,
-                ),
+                _StartBlockedCard(kind: card, onOpenSettings: onOpenSettings, onRequestPrecise: onRequestPrecise),
                 const SizedBox(height: 12),
               ],
               PrimaryButton(
                 label: s.start,
                 height: Tokens.startButton,
-                icon: Icons.play_arrow_rounded,
+                glyph: Glyph.play,
                 onPressed: busy || startBlocked ? null : onStart,
               ),
+              const SizedBox(height: 8),
+              Text(s.startHint, style: AppText.caption(c.textTertiary, size: 12), textAlign: TextAlign.center),
             ],
           ),
         ),
       ],
-    );
+    ).also((_) => l);
   }
 }
 
-class _LastDayCard extends StatelessWidget {
-  const _LastDayCard({required this.day});
-  final DaySummary day;
+extension<T> on T {
+  T also(void Function(T) f) {
+    f(this);
+    return this;
+  }
+}
+
+/// Bedingungen: weather glyph, WeatherLine, right-aligned caption.
+class _ConditionsStrip extends ConsumerWidget {
+  const _ConditionsStrip({required this.resort});
+  final Resort resort;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = AppColors.of(context);
     final l = AppLocale.of(context);
-    final s = TodayStrings.of(context);
-    final st = day.stats;
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final w = ref.watch(weatherProvider(resort)).asData?.value;
+    return SurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
         children: [
-          Text(s.lastDay.toUpperCase(), style: AppText.label(c.textSecondary)),
-          const SizedBox(height: 8),
-          Text(
-            '${Fmt.dateShort(day.startedAt, locale: l.code)}${day.resortName == null ? '' : ' · ${day.resortName}'}',
-            style: AppText.title(c.textPrimary, size: 18),
+          Icon(wmoIcon(wmoBucket(w?.wmoCode)), size: 22, color: c.ice),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(WeatherLine.format(resort, w, de: l.isGerman), style: AppText.bodyText(c.textPrimary, size: 16, weight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
-          const SizedBox(height: 4),
-          Text(
-            s.dayLine(
-              runs: st.runCount,
-              dropM: Fmt.metres(st.dropM, locale: l.code),
-              kmh: Fmt.kmh(st.maxSpeedMs, locale: l.code),
-            ),
-            style: AppText.bodyText(c.textSecondary, size: 15),
-          ),
+          const SizedBox(width: 12),
+          Text(l.pick(de: 'Bergwetter', en: 'Summit').overline, style: AppText.label(c.textTertiary)),
         ],
       ),
     );
   }
 }
 
-class _SeasonRow extends StatelessWidget {
-  const _SeasonRow({required this.totals});
-  final SeasonTotals? totals;
+class _PbStrip extends StatelessWidget {
+  const _PbStrip({required this.bests});
+  final PersonalBests bests;
 
   @override
   Widget build(BuildContext context) {
-    final c = AppColors.of(context);
     final l = AppLocale.of(context);
     final s = TodayStrings.of(context);
-    final t = totals ?? SeasonTotals(seasonKey: seasonKey(DateTime.now()));
+    final tiles = <Widget>[
+      if (bests.topSpeedMs != null) PbTile(label: s.topSpeed, value: Fmt.kmh(bests.topSpeedMs!, locale: l.code), unit: s.unitKmh),
+      if (bests.biggestDayDropM != null) PbTile(label: s.biggestDay, value: Fmt.metres(bests.biggestDayDropM!, locale: l.code), unit: s.unitHm),
+      if (bests.longestRunDropM != null) PbTile(label: s.longestRun, value: Fmt.metres(bests.longestRunDropM!, locale: l.code), unit: s.unitHm),
+    ];
     return Row(
       children: [
-        Text(s.season.toUpperCase(), style: AppText.label(c.textSecondary)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            s.seasonLine(
-              season: t.seasonKey,
-              days: t.dayCount,
-              runs: t.runCount,
-              dropM: Fmt.metres(t.dropM, locale: l.code),
-            ),
-            style: AppText.bodyText(c.textSecondary, size: 15),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        for (final (i, t) in tiles.indexed) ...[if (i > 0) const SizedBox(width: 8), Expanded(child: t)],
       ],
     );
   }
@@ -193,21 +190,22 @@ class _StartBlockedCard extends StatelessWidget {
       RecordingErrorKind.alreadyRecording => (s.recording, '', s.openSettings, onOpenSettings),
     };
     return AppCard(
-      elevated: true,
+      tone: CardTone.danger,
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.location_off_rounded, size: 18, color: c.danger),
+              Icon(Icons.location_off_rounded, size: 20, color: c.danger),
               const SizedBox(width: 8),
-              Expanded(child: Text(title, style: AppText.bodyText(c.textPrimary, size: 16, weight: FontWeight.w600))),
+              Expanded(child: Text(title, style: AppText.bodyStrong(c.textPrimary))),
             ],
           ),
           const SizedBox(height: 6),
           Text(body, style: AppText.bodyText(c.textSecondary, size: 15)),
           const SizedBox(height: 12),
-          Row(children: [Expanded(child: SecondaryButton(label: action, onPressed: onTap))]),
+          Row(children: [Expanded(child: SecondaryButton(label: action, onPressed: onTap, height: 48))]),
         ],
       ),
     );

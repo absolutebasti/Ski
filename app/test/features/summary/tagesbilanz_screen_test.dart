@@ -67,6 +67,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Rekord · Top-Speed'), findsOneWidget);
+    await tester.scrollUntilVisible(find.byType(EmptyState), 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     expect(find.text('Neuer Rekord. Den musst du erst mal wieder schlagen.'), findsOneWidget);
   });
 

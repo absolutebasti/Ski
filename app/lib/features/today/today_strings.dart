@@ -20,6 +20,11 @@ class TodayStrings {
   String get start => l.pick(de: 'Tag starten', en: 'Start day');
   String get lastDay => l.pick(de: 'Zuletzt', en: 'Last day');
   String get season => l.pick(de: 'Saison', en: 'Season');
+  String get emptyHeadline => l.pick(de: 'Dein erster Skitag wartet.', en: 'Your first ski day is waiting.');
+  String get records => l.pick(de: 'Rekorde', en: 'Records');
+  String get biggestDay => l.pick(de: 'Größter Tag', en: 'Biggest day');
+  String get longestRun => l.pick(de: 'Längste Abfahrt', en: 'Longest run');
+  String get startHint => l.pick(de: 'Läuft weiter, auch wenn das Display gesperrt ist.', en: 'Keeps running with the screen locked.');
   String get emptyLine => l.pick(
         de: 'Noch kein Skitag. Ein Tipp auf Tag starten, und ich zähl mit.',
         en: 'No ski day yet. One tap on start day and I will count along.',

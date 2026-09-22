@@ -108,6 +108,7 @@ List<Override> todayOverrides({
   LiveState live = LiveState.empty,
   RecoveryInfo? recovery,
   Settings settings = const Settings(),
+  PersonalBests? bests,
 }) =>
     [
       recordingControllerProvider.overrideWith(() => controller),
@@ -115,6 +116,8 @@ List<Override> todayOverrides({
       daysListProvider.overrideWith((ref) => Stream.value(days)),
       seasonTotalsProvider.overrideWith((ref) => Stream.value(totals)),
       recoveryProvider.overrideWith((ref) async => recovery),
+      personalBestsProvider.overrideWith((ref) => Stream.value(bests ?? const PersonalBests())),
+      preciseLocationProvider.overrideWith((ref) async => true),
       settingsProvider.overrideWith(() => TestSettings(settings)),
       locationStatusProvider.overrideWith((ref) async => LocationPermissionState.always),
       appVersionProvider.overrideWith((ref) async => '0.1.0 (1)'),

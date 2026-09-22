@@ -31,7 +31,7 @@ class _SchwungAppState extends ConsumerState<SchwungApp> {
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark, // dark-first (docs/DESIGN.md); light stays valid for a later toggle
       locale: locale,
       supportedLocales: AppLocale.supported,
       localizationsDelegates: const [

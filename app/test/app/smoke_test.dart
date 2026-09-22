@@ -11,14 +11,15 @@ void main() {
   testWidgets('shell shows two tabs with the real screens', (tester) async {
     await pumpApp(tester, const RootShell(), overrides: screenOverrides());
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.byType(NavigationDestination), findsNWidgets(3));
+    expect(find.byType(AppTabBar), findsOneWidget);
     expect(find.text('Tage'), findsWidgets);
+    expect(find.text('Rangliste'), findsWidgets);
   });
 
   testWidgets('hold-to-confirm fires only after the hold duration', (tester) async {
     var fired = 0;
     await pumpApp(tester, Scaffold(body: Center(child: HoldToConfirmButton(label: 'Tag beenden', onConfirmed: () => fired++))));
-    final gesture = await tester.startGesture(tester.getCenter(find.text('Tag beenden')));
+    final gesture = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
     await tester.pump(); // ticker t0
     await tester.pump(const Duration(milliseconds: 400));
     expect(fired, 0);

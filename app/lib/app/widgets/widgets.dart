@@ -1,7 +1,13 @@
+export '../theme/surfaces.dart';
 export 'app_card.dart';
 export 'buttons.dart';
 export 'chips.dart';
 export 'empty_state.dart';
+export 'glyphs.dart';
+export 'header.dart';
 export 'mascot_card.dart';
 export 'numbers.dart';
 export 'sheet.dart';
+export 'sparkline.dart';
+export 'tab_bar.dart';
+export 'toast.dart';

@@ -52,12 +52,12 @@ void main() {
     // eight stat tiles, in the order of PLAN §3
     expect(find.byType(StatsGrid), findsOneWidget);
     expect(find.byType(StatTile), findsNWidgets(8));
-    expect(find.text('Ski-km'), findsOneWidget);
-    expect(find.text('Lift-km'), findsOneWidget);
-    expect(find.text('Aufstieg'), findsOneWidget);
-    expect(find.text('Ø Speed beim Skifahren'), findsOneWidget);
-    expect(find.text('Höchster/Tiefster Punkt'), findsOneWidget);
-    expect(find.text('Lifte'), findsOneWidget);
+    expect(find.text('SKI-KM'), findsOneWidget);
+    expect(find.text('LIFT-KM'), findsOneWidget);
+    expect(find.text('AUFSTIEG'), findsOneWidget);
+    expect(find.text('Ø SPEED BEIM SKIFAHREN'), findsOneWidget);
+    expect(find.text('HÖCHSTER/TIEFSTER PUNKT'), findsOneWidget);
+    expect(find.text('LIFTE'), findsOneWidget);
 
     // run rows: 'Abfahrt 1 · 09:21 · 312 hm · 2,1 km · 61 km/h · 14 %'
     expect(find.byType(RunList), findsOneWidget);
