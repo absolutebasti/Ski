@@ -21,7 +21,7 @@ interpretation. Everything below already exists and compiles.
 | `haversineM`, `bearingDeg` | core/geo/haversine.dart | |
 | `seasonKey`, `seasonKeyFromMs`, `seasonStart` | core/season.dart | Jul 1 – Jun 30, '2025/26' |
 | `Fmt` | core/units/format.dart | `kmh`, `metres`, `km`, `durationCompact`, `clock`, `timeOfDay`, `dateShort`, `dateLong`, `percent`, `temp` |
-| `settingsProvider`, `Settings`, `SettingsNotifier` | core/settings.dart | locale / onboardingDone / notificationsOptIn / lastResortId / diagnosticsUnlocked |
+| `settingsProvider`, `Settings`, `SettingsNotifier` | core/settings.dart | locale / onboardingDone / notificationsOptIn / lastResortId / diagnosticsUnlocked / seasonGoalHm / appearance (`system`\|`light`\|`dark`, `themeMode` getter, `setAppearance`) |
 | `isRecordingProvider` | core/settings.dart | `ref.read(isRecordingProvider.notifier).set(true/false)` — WP-05 must call this |
 
 ## App layer (`package:dropline/app/...`)

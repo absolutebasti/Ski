@@ -31,7 +31,7 @@ class _DroplineAppState extends ConsumerState<DroplineApp> {
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
-      themeMode: ThemeMode.dark, // dark-first (docs/DESIGN.md); light stays valid for a later toggle
+      themeMode: settings.themeMode, // dark by default (docs/DESIGN.md); Einstellungen › Erscheinungsbild
       locale: locale,
       supportedLocales: AppLocale.supported,
       localizationsDelegates: const [
