@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../core/settings.dart';
 import '../data/db/providers.dart';
@@ -9,34 +11,54 @@ import '../features/map/thumbnail_renderer.dart';
 import '../tracking/synthetic.dart';
 import '../tracking/tracking.dart';
 
-/// Debug-only launch switches (simulator QA and screenshots):
-///   SIMCTL_CHILD_DROPLINE_SKIP_ONBOARDING=1   → onboarding marked done
-///   SIMCTL_CHILD_DROPLINE_DEMO=1              → three synthetic ski days in the database
-///   SIMCTL_CHILD_DROPLINE_TAB=tage            → open the Tage tab first
-/// `xcrun simctl launch` forwards SIMCTL_CHILD_* as plain env vars.
+/// Debug-only launch switches (simulator QA and screenshots), in priority order:
+///   1. `<Documents>/demo.json` inside the app container, e.g.
+///      {"DROPLINE_SKIP_ONBOARDING":"1","DROPLINE_DEMO":"1","DROPLINE_TAB":"tage","DROPLINE_ROUTE":"/day/demo-0"}
+///      — written with `xcrun simctl get_app_container <udid> <bundle> data`, no rebuild needed (tools/shots.sh)
+///   2. `--dart-define=DROPLINE_SKIP_ONBOARDING=1` etc. at build time
+///   DROPLINE_ROUTE: a named route pushed after the first frame, or `settings` / `account` for the sheets.
 class Demo {
   const Demo._();
 
-  /// Runtime env (simctl launch) first, build-time --dart-define second.
+  static Map<String, String> _file = const {};
+
+  /// demo.json first, runtime env second, build-time --dart-define third.
   static String? _env(String key) {
     if (!kDebugMode) return null;
+    final fromFile = _file[key];
+    if (fromFile != null && fromFile.isNotEmpty) return fromFile;
     final runtime = Platform.environment[key];
     if (runtime != null && runtime.isNotEmpty) return runtime;
     final defined = switch (key) {
       'DROPLINE_SKIP_ONBOARDING' => const String.fromEnvironment('DROPLINE_SKIP_ONBOARDING'),
       'DROPLINE_DEMO' => const String.fromEnvironment('DROPLINE_DEMO'),
       'DROPLINE_TAB' => const String.fromEnvironment('DROPLINE_TAB'),
+      'DROPLINE_ROUTE' => const String.fromEnvironment('DROPLINE_ROUTE'),
       _ => '',
     };
     return defined.isEmpty ? null : defined;
   }
+
+  static Future<void> _loadFile() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final f = File('${dir.path}/demo.json');
+      if (!await f.exists()) return;
+      final m = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
+      _file = m.map((k, v) => MapEntry(k, '$v'));
+    } catch (e) {
+      debugPrint('demo: demo.json ignored ($e)');
+    }
+  }
   static bool get skipOnboarding => _env('DROPLINE_SKIP_ONBOARDING') == '1';
   static bool get seedDays => _env('DROPLINE_DEMO') == '1';
   static int get initialTab => switch (_env('DROPLINE_TAB')) { 'tage' => 1, 'rangliste' || 'social' => 2, _ => 0 };
+  static String? get initialRoute => _env('DROPLINE_ROUTE');
 
   static Future<void> apply(ProviderContainer container) async {
     if (!kDebugMode) return;
-    debugPrint('demo: skipOnboarding=$skipOnboarding seedDays=$seedDays tab=$initialTab env=${Platform.environment.keys.where((k) => k.startsWith('SCHWUNG')).toList()}');
+    await _loadFile();
+    debugPrint('demo: skipOnboarding=$skipOnboarding seedDays=$seedDays tab=$initialTab route=$initialRoute');
     if (skipOnboarding) await container.read(settingsProvider.notifier).setOnboardingDone();
     if (seedDays) await _seed(container);
   }
@@ -75,3 +97,6 @@ class Demo {
 
 /// Used by RootShell to pick the initial tab (debug only).
 int demoInitialTab() => Demo.initialTab;
+
+/// Used by RootShell to push a screen after the first frame (debug only).
+String? demoInitialRoute() => Demo.initialRoute;

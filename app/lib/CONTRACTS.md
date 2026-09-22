@@ -93,3 +93,22 @@ interpretation. Everything below already exists and compiles.
 | `groupBoardProvider` | `FutureProvider.family<List<GroupMemberStats>, String groupId>` via RPC `group_board(p_group_id)` | WP-16 | features/social/group_providers.dart |
 
 Rules for backend packages: never block the UI on the network; every remote call has a 10 s timeout and degrades to the local state; Sign in with Apple is the only provider (`supabase.auth.signInWithApple()` from supabase_flutter, iOS entitlement is configured); leaderboards need `profiles.share_leaderboards = true`, which the user switches on explicitly in the Account sheet (default off).
+
+### WP-16 Rangliste (done) — features/social
+| Symbol | Type | Notes |
+|---|---|---|
+| `SocialScreen({onOpenAccount, now})` | widget | third tab; `AppRouter.social()` passes `AccountSheet.show` |
+| `socialApiProvider` | `Provider<SocialApi?>` | null without Supabase → offline/signed-out states |
+| `leaderboardProvider` | `FutureProvider.family<List<LeaderboardEntry>, LeaderboardQuery>` | RPC `leaderboard` |
+| `groupBoardProvider` | `FutureProvider.family<List<GroupMemberStats>, String>` | RPC `group_board` |
+| `myDuelProvider`, `openChallengesProvider`, `challengeProgressProvider`, `shareLeaderboardsProvider` (`bool?`), `socialUserIdProvider` | providers | all `retry: noRetry` |
+| `duelPollIntervalProvider` | `Provider<Duration?>` | 60 s; override with null in tests |
+
+### WP-15 Konto (done) — features/account
+| Symbol | Type | Notes |
+|---|---|---|
+| `AccountSheet.show(context)`, `AccountRow({onTap})` | widgets | Konto row in SettingsSheet embeds `AccountRow` |
+| `profileProvider` | `FutureProvider<Profile?>` | local-first cache, never throws |
+| `profileServiceProvider`, `profileApiProvider` | providers | `FakeProfileApi` for tests |
+| `accountSyncStatusProvider`, `accountSyncTriggerProvider`, `accountSignInProvider`, `accountSignOutProvider`, `accountDeleteProvider` | providers | indirections so tests never build SyncService |
+
