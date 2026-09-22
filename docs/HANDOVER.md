@@ -1,4 +1,4 @@
-# Schwung — Handover (2026-09-22, 12:40)
+# Schwung — Handover (2026-09-22, 13:30)
 
 ## What this is
 The ski-day tracker rebuilt from the 2025 PWA as a Flutter app (iOS first, Android builds, native Apple Watch companion). One tap records the whole day; runs, lifts and stops are detected automatically; tracking keeps running with the phone locked. Brand: **Schwung**, bundle id `de.torchtechnology.schwung`, Team 5GDU97KSQU.
@@ -20,15 +20,14 @@ Read in this order: `docs/PLAN.md` (§0 amendments first), `docs/ANALYSIS.md`, `
 
 `cd app && flutter analyze && flutter test` → 0 issues, all green at the last lead commit. The app runs on the iPhone 17 Pro simulator (placeholder screens until WP-12 wiring).
 
-## In progress (agents, Opus) — not yet committed by the lead
-WP-10 altitude profile / share card / GPX / diagnostics, WP-06 onboarding, WP-08 Tage + Tag detail (done, awaiting review), WP-07 Heute + Tagesbilanz + Einstellungen, WP-13 Apple Watch companion (running). A review agent then checks analyzer, tests and contracts. The lead (WP-12) wires the real screens into `app/lib/app/router.dart`, runs the app, commits, merges.
+## Also done since 12:40 (merged in PR #2)
+Onboarding (3 steps, mascot hero + cards, two-step Always flow) · Heute idle/live · Tagesbilanz (count-up, PB chips, notification opt-in) · Tage list + Tag detail (map, altitude profile, stats grid, run list, share/delete) · altitude profile, share card PNG, GPX 1.1, diagnostics bundle · Settings sheet + hidden Diagnose page · Apple Watch SwiftUI app sources + WatchConnectivity bridge + heart-rate source (target is added with `python3 app/ios/SchwungWatch/tools/add_watch_target.py` once the watchOS SDK is installed; see docs/WATCH.md) · router/main wiring, thumbnail + weather written at End · review fixes (hold-button dispose, autoDispose day detail, resting-state permission cards) · debug launch switches for the simulator (`--dart-define=SCHWUNG_SKIP_ONBOARDING=1`, `SCHWUNG_DEMO=1`, `SCHWUNG_TAB=tage`). 150 tests, analyzer clean, `main` = ce6782b.
 
 ## Next steps, in order
-1. WP-12 integration + simulator run-through + screenshots.
-2. Founder: Xcode account for Team 5GDU97KSQU **or** App Store Connect API key; create the App Store Connect record "Schwung"; confirm the name. Then `tools/testflight.sh --upload`.
-3. Device QA (`docs/QA.md`): one locked-phone hour, one kill/resume, one mountain day → diagnostics bundle → engine fixture.
-4. TestFlight build 2: Watch app, Live Activity, `Gebiet` info card.
-5. Backend (Supabase, see `docs/BACKEND.md`): Sign in with Apple, cloud backup of days, opt-in leaderboards, group days ≤ 3, weekly challenges.
+1. Founder: Xcode account for Team 5GDU97KSQU **or** App Store Connect API key; create the App Store Connect record "Schwung"; confirm the name. Then `tools/testflight.sh --upload`.
+2. Device QA (`docs/QA.md`): one locked-phone hour, one kill/resume, one mountain day → diagnostics bundle → engine fixture.
+3. TestFlight build 2: Watch app, Live Activity, `Gebiet` info card.
+4. Backend (Supabase, see `docs/BACKEND.md`): Sign in with Apple, cloud backup of days, opt-in leaderboards, group days ≤ 3, weekly challenges.
 
 ## Decisions still open
 - Name "Schwung" (bundle id becomes permanent with the first upload).

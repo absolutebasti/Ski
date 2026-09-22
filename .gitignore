@@ -24,3 +24,7 @@ node_modules/
 dist/
 build/
 
+
+# per-environment dart-defines (keep example.json)
+env/*
+!env/example.json

@@ -7,7 +7,7 @@ import 'demo.dart';
 import 'router.dart';
 import 'theme/tokens.dart';
 
-/// Two tabs: Heute · Tage. The Heute icon carries a dot while a day is recording.
+/// Three tabs: Heute · Tage · Rangliste. The Heute icon carries a dot while a day is recording.
 class RootShell extends ConsumerStatefulWidget {
   const RootShell({super.key});
   @override
@@ -23,7 +23,7 @@ class _RootShellState extends ConsumerState<RootShell> {
     final recording = ref.watch(isRecordingProvider);
     final c = AppColors.of(context);
     return Scaffold(
-      body: IndexedStack(index: _index, children: [AppRouter.heute(), AppRouter.tage()]),
+      body: IndexedStack(index: _index, children: [AppRouter.heute(), AppRouter.tage(), AppRouter.social()]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
@@ -41,6 +41,10 @@ class _RootShellState extends ConsumerState<RootShell> {
           NavigationDestination(
             icon: const Icon(Icons.calendar_month_rounded),
             label: l.pick(de: 'Tage', en: 'Days'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.emoji_events_rounded),
+            label: l.pick(de: 'Rangliste', en: 'Ranks'),
           ),
         ],
       ),

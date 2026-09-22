@@ -12,6 +12,7 @@ import 'placeholders.dart';
 /// Contracts (constructors the router expects):
 ///   HeuteScreen()                      features/today
 ///   TageScreen()                       features/days
+///   SocialScreen()                     features/social (third tab: Rangliste / Duell / Challenge)
 ///   DayDetailScreen(dayId: String)     features/days
 ///   TagesbilanzScreen(dayId: String)   features/summary
 ///   OnboardingFlow()                   features/onboarding
@@ -30,6 +31,7 @@ class AppRouter {
 
   static Widget heute() => const HeuteScreen();
   static Widget tage() => const TageScreen();
+  static Widget social() => const PlaceholderScreen('Rangliste');
   static Widget onboarding() => const OnboardingFlow();
   static Widget dayDetail(String dayId) => DayDetailScreen(dayId: dayId);
   static Widget summary(String dayId) => TagesbilanzScreen(dayId: dayId);

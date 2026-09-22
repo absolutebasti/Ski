@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'app/demo.dart';
 import 'core/settings.dart';
+import 'data/supabase/supabase_client.dart';
 import 'features/recording/recording_controller.dart';
 import 'platform/providers.dart';
 import 'platform/watch/watch.dart';
@@ -14,6 +15,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final prefs = await SharedPreferences.getInstance();
+  await SupabaseBoot.init(); // backend is optional; the app is local-first
   final container = ProviderContainer(
     overrides: [
       settingsProvider.overrideWith(() => SettingsNotifier(prefs)),

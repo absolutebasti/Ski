@@ -16,13 +16,26 @@ import '../tracking/tracking.dart';
 class Demo {
   const Demo._();
 
-  static String? _env(String key) => kDebugMode ? Platform.environment[key] : null;
+  /// Runtime env (simctl launch) first, build-time --dart-define second.
+  static String? _env(String key) {
+    if (!kDebugMode) return null;
+    final runtime = Platform.environment[key];
+    if (runtime != null && runtime.isNotEmpty) return runtime;
+    final defined = switch (key) {
+      'SCHWUNG_SKIP_ONBOARDING' => const String.fromEnvironment('SCHWUNG_SKIP_ONBOARDING'),
+      'SCHWUNG_DEMO' => const String.fromEnvironment('SCHWUNG_DEMO'),
+      'SCHWUNG_TAB' => const String.fromEnvironment('SCHWUNG_TAB'),
+      _ => '',
+    };
+    return defined.isEmpty ? null : defined;
+  }
   static bool get skipOnboarding => _env('SCHWUNG_SKIP_ONBOARDING') == '1';
   static bool get seedDays => _env('SCHWUNG_DEMO') == '1';
-  static int get initialTab => _env('SCHWUNG_TAB') == 'tage' ? 1 : 0;
+  static int get initialTab => switch (_env('SCHWUNG_TAB')) { 'tage' => 1, 'rangliste' || 'social' => 2, _ => 0 };
 
   static Future<void> apply(ProviderContainer container) async {
     if (!kDebugMode) return;
+    debugPrint('demo: skipOnboarding=$skipOnboarding seedDays=$seedDays tab=$initialTab env=${Platform.environment.keys.where((k) => k.startsWith('SCHWUNG')).toList()}');
     if (skipOnboarding) await container.read(settingsProvider.notifier).setOnboardingDone();
     if (seedDays) await _seed(container);
   }

@@ -11,7 +11,7 @@ void main() {
   testWidgets('shell shows two tabs with the real screens', (tester) async {
     await pumpApp(tester, const RootShell(), overrides: screenOverrides());
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.byType(NavigationDestination), findsNWidgets(2));
+    expect(find.byType(NavigationDestination), findsNWidgets(3));
     expect(find.text('Tage'), findsWidgets);
   });
 
