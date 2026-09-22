@@ -32,7 +32,7 @@ class _SparkPainter extends CustomPainter {
     if (bars) {
       final n = values.length;
       final gap = 3.0;
-      final w = ((size.width - gap * (n - 1)) / n).clamp(2.0, 14.0);
+      final w = ((size.width - gap * (n - 1)) / n).clamp(2.0, 28.0);
       final p = Paint()..color = color.withValues(alpha: 0.35);
       final hi = Paint()..color = color;
       var maxI = 0;

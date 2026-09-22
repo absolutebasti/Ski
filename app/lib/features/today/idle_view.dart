@@ -142,8 +142,6 @@ class _ConditionsStrip extends ConsumerWidget {
           Expanded(
             child: Text(WeatherLine.format(resort, w, de: l.isGerman), style: AppText.bodyText(c.textPrimary, size: 16, weight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
-          const SizedBox(width: 12),
-          Text(l.pick(de: 'Bergwetter', en: 'Summit').overline, style: AppText.label(c.textTertiary)),
         ],
       ),
     );
