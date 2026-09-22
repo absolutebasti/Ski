@@ -48,9 +48,28 @@ class Days extends Table {
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
   IntColumn get deletedAt => integer().nullable()();
+  // sync (schema v2, WP-14)
+  /// When this row was last pushed to / pulled from the backend, ms epoch.
+  IntColumn get syncedAt => integer().nullable()();
+  /// `device_updated_at` of the remote row we last saw, ms epoch.
+  IntColumn get remoteUpdatedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Pending backend writes (schema v2, WP-14). Drained by SyncService; survives
+/// restarts so a day finished offline still reaches the backend later.
+@DataClassName('SyncOutboxRow')
+@TableIndex(name: 'sync_outbox_day', columns: {#dayId})
+class SyncOutbox extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get dayId => text()();
+  /// 'upsert' | 'delete'
+  TextColumn get op => text()();
+  IntColumn get createdAt => integer()();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  TextColumn get lastError => text().nullable()();
 }
 
 @DataClassName('SegmentRow')
