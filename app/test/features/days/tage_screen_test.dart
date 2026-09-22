@@ -66,7 +66,7 @@ void main() {
 
     expect(find.text('Kitzbühel'), findsOneWidget);
     expect(find.text('1.804'), findsWidgets); // day row vertical
-    expect(find.bySemanticsLabel('Rekord'), findsOneWidget);
+    expect(find.byWidgetPredicate((w) => w is GlyphIcon && w.glyph == Glyph.crest), findsOneWidget);
 
     // Last season is collapsed behind its header.
     expect(find.text('SAISON 2024/25'), findsOneWidget);
