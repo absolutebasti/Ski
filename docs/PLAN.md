@@ -285,6 +285,8 @@ Generation (`tools/fal_generate_mascot.py`, `FAL_KEY` from env, prompts + seeds 
 
 ## 15. Build sequence and work packages (file ownership is disjoint; see structured `work_packages`)
 
+**Status 2026-09-22 (lead):** done and committed — WP-00 scaffold/contracts/theme/widgets, WP-01 tracking engine (14 tests, live == offline), WP-02 drift data layer + 52 resorts, WP-03 platform sources/permissions/notifications/iOS+Android config, WP-04 icons/splash/fonts/mascot, WP-05 recording controller (5 tests incl. kill/resume), WP-11 weather. Running via agents — WP-09 map, WP-10 profile/share, WP-06 onboarding, WP-08 days, WP-07 Heute/Tagesbilanz/settings, WP-13 Watch. Then WP-12 integration + device QA (`docs/QA.md`) + `tools/testflight.sh`.
+
 | Wave | WP | Owner paths (under `app/` unless noted) | Depends on |
 |---|---|---|---|
 | 0 (serial, lead) | WP-00 Scaffold & contracts | pubspec.yaml, lib/main.dart, lib/app/**, lib/core/**, test/support/**, analysis_options.yaml, tools/ci.sh, tools/rename_app.sh, env/example.json | — |
