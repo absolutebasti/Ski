@@ -29,6 +29,7 @@ class TrackMap extends ConsumerStatefulWidget {
     this.scrubTs,
     this.tilesEnabled = true,
     this.locateSignal,
+    this.darkTiles = true,
   });
 
   final List<TrackPoint> points;
@@ -43,6 +44,10 @@ class TrackMap extends ConsumerStatefulWidget {
 
   /// Bump the value to re-centre on the latest point (the sheet's locate button).
   final ValueListenable<int>? locateSignal;
+
+  /// Desaturate + darken the raster and lay an ink veil under the track, so the
+  /// champagne route is the brightest thing on the map (docs/DESIGN.md §0.9).
+  final bool darkTiles;
 
   static const double followZoom = 15;
   static const double fitPadding = 48;
@@ -241,7 +246,7 @@ class _TrackMapState extends ConsumerState<TrackMap> {
         onPositionChanged: _onPositionChanged,
       ),
       children: [
-        if (tiles != null) ...TileConfig.layers(tiles),
+        if (tiles != null) ...TileConfig.layers(tiles, dark: widget.darkTiles),
         // Glow under the runs, then runs, then lifts — so lifts read as separate.
         PolylineLayer(
           polylines: [

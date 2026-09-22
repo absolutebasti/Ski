@@ -19,15 +19,17 @@ Future<DayMenuAction?> showDayMenu(BuildContext context) {
   final s = DaysStrings.of(context);
   return AppSheet.show<DayMenuAction>(
     context,
+    title: s.dayTitle,
     builder: (ctx) => _SheetBody(
       children: [
         SheetActionRow(
-          icon: Icons.ios_share_rounded,
+          glyph: Glyph.share,
           label: s.share,
           onTap: () => Navigator.of(ctx).pop(DayMenuAction.share),
         ),
+        const Hairline(inset: 38),
         SheetActionRow(
-          icon: Icons.delete_outline_rounded,
+          glyph: Glyph.trash,
           label: s.delete,
           danger: true,
           onTap: () => Navigator.of(ctx).pop(DayMenuAction.delete),
@@ -42,15 +44,17 @@ Future<DayShareAction?> showShareMenu(BuildContext context) {
   final s = DaysStrings.of(context);
   return AppSheet.show<DayShareAction>(
     context,
+    title: s.shareTitle,
     builder: (ctx) => _SheetBody(
       children: [
         SheetActionRow(
-          icon: Icons.image_outlined,
+          icon: Icons.image_rounded,
           label: s.shareCard,
           onTap: () => Navigator.of(ctx).pop(DayShareAction.card),
         ),
+        const Hairline(inset: 38),
         SheetActionRow(
-          icon: Icons.route_outlined,
+          icon: Icons.route_rounded,
           label: s.shareGpx,
           onTap: () => Navigator.of(ctx).pop(DayShareAction.gpx),
         ),
@@ -64,12 +68,11 @@ Future<bool> confirmDeleteDay(BuildContext context) async {
   final s = DaysStrings.of(context);
   final ok = await AppSheet.show<bool>(
     context,
+    title: s.deleteTitle,
     builder: (ctx) {
       final c = AppColors.of(ctx);
       return _SheetBody(
         children: [
-          Text(s.deleteTitle, style: AppText.title(c.textPrimary)),
-          const SizedBox(height: 8),
           Text(s.deleteBody, style: AppText.bodyText(c.textSecondary, size: 15)),
           const SizedBox(height: 20),
           Row(
@@ -79,7 +82,8 @@ Future<bool> confirmDeleteDay(BuildContext context) async {
               Expanded(
                 child: SecondaryButton(
                   label: s.delete,
-                  icon: Icons.delete_outline_rounded,
+                  glyph: Glyph.trash,
+                  danger: true,
                   onPressed: () => Navigator.of(ctx).pop(true),
                 ),
               ),
@@ -108,9 +112,11 @@ Future<void> shareDayGpxById(WidgetRef ref, String dayId) async {
 /// Soft delete — the row stays on disk with `deletedAt` set.
 Future<void> deleteDayById(WidgetRef ref, String dayId) => ref.read(daysRepositoryProvider).softDeleteDay(dayId);
 
+/// A 56 pt sheet row: glyph (or icon) + label, press scale, no ripple.
 class SheetActionRow extends StatelessWidget {
-  const SheetActionRow({super.key, required this.icon, required this.label, required this.onTap, this.danger = false});
-  final IconData icon;
+  const SheetActionRow({super.key, this.icon, this.glyph, required this.label, required this.onTap, this.danger = false});
+  final IconData? icon;
+  final Glyph? glyph;
   final String label;
   final VoidCallback onTap;
   final bool danger;
@@ -119,16 +125,19 @@ class SheetActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final color = danger ? c.danger : c.textPrimary;
-    return InkWell(
-      borderRadius: BorderRadius.circular(Tokens.radius),
+    return Pressable(
       onTap: onTap,
       child: SizedBox(
         height: Tokens.minTarget,
         child: Row(
           children: [
-            Icon(icon, size: 22, color: color),
-            const SizedBox(width: 14),
-            Text(label, style: AppText.bodyText(color, size: 17, weight: FontWeight.w600)),
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: glyph != null ? GlyphIcon(glyph!, size: 22, color: color) : Icon(icon, size: 22, color: color),
+            ),
+            const SizedBox(width: 16),
+            Expanded(child: Text(label, style: AppText.bodyStrong(color, size: 17))),
           ],
         ),
       ),
@@ -141,23 +150,9 @@ class _SheetBody extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 10),
-        Center(
-          child: Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(color: c.hairline, borderRadius: BorderRadius.circular(2)),
-          ),
-        ),
-        const SizedBox(height: 14),
-        ...children,
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      );
 }

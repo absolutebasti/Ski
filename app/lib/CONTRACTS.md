@@ -65,7 +65,7 @@ interpretation. Everything below already exists and compiles.
 | `HeuteScreen`, `TagesbilanzScreen(dayId:)`, `SettingsSheet.show(context)`, `DiagnosticsPage` | widgets | WP-07 (done) | features/today, features/summary, features/settings |
 | `locationStatusProvider`, `preciseLocationProvider`, `barometerAvailableProvider`, `appVersionProvider`, `settingsRefreshProvider` | FutureProviders for the settings sheet / idle cards | WP-07 (done) | features/settings/settings_providers.dart |
 | `watchBridgeProvider`, `watchTransportProvider`, `watchClockProvider`, `watchHeartRateSourceProvider` | Apple Watch bridge (attach() in main.dart, self-seeding) | WP-13 (done) | platform/watch/** |
-| `TageScreen`, `DayDetailScreen({dayId, tilesEnabled = true, mapHeight = 240})` | widgets | WP-08 (done) | features/days |
+| `TageScreen`, `DayDetailScreen({dayId, tilesEnabled = true, heroHeight = 320})` | widgets | WP-08 (done) | features/days |
 | `OnboardingFlow` | widget; on finish calls `settingsProvider.notifier.setOnboardingDone()` and `Navigator.pushAndRemoveUntil` to `RootShell` (app.dart freezes the initial onboarding decision) | WP-06 (done) | features/onboarding/onboarding_flow.dart |
 
 ## Rules

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -8,6 +10,7 @@ import 'package:dropline/data/db/providers.dart';
 import 'package:dropline/features/days/day_detail_screen.dart';
 import 'package:dropline/features/days/run_list.dart';
 import 'package:dropline/features/days/stats_grid.dart';
+import 'package:dropline/features/map/thumbnail_renderer.dart';
 import 'package:dropline/features/map/track_map.dart';
 import 'package:dropline/features/profile/altitude_profile.dart';
 
@@ -28,8 +31,15 @@ void useTallSurface(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
+/// A phone-sized surface, so the map hero can actually collapse.
+void usePhoneSurface(WidgetTester tester) {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
 void main() {
-  testWidgets('renders header, map, profile, time bar, stats grid and run rows', (tester) async {
+  testWidgets('renders the map hero, the 3-up, profile, time bar, stat grid and run rows', (tester) async {
     useTallSurface(tester);
     final detail = syntheticDayDetail();
     await pumpApp(
@@ -40,35 +50,125 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
+    // hero plate: date 22 + resort
     expect(find.text('Kitzbühel'), findsOneWidget);
     expect(find.text(Fmt.dateLong(detail.day.startedAt, locale: 'de')), findsOneWidget);
 
     expect(find.byType(FlutterMap), findsOneWidget);
     expect(find.byType(TileLayer), findsNothing);
     expect(find.byType(AltitudeProfile), findsOneWidget);
-    expect(find.byType(StackedTimeBar), findsOneWidget);
-    expect(find.textContaining('Gesamt '), findsOneWidget);
+    expect(find.text('HÖHENPROFIL'), findsOneWidget);
 
-    // eight stat tiles, in the order of PLAN §3
+    // time card: overline left, total tabular right
+    expect(find.byType(StackedTimeBar), findsOneWidget);
+    expect(find.text('ZEIT'), findsOneWidget);
+    expect(find.text(Fmt.durationCompact(detail.day.stats.elapsedMs, locale: 'de')), findsOneWidget);
+
+    // 3-up hero numbers at 44
+    expect(find.text('HÖHENMETER'), findsOneWidget);
+    expect(find.text('TOP-SPEED'), findsOneWidget);
+
+    // eight stat tiles, in the order of DESIGN §5
     expect(find.byType(StatsGrid), findsOneWidget);
     expect(find.byType(StatTile), findsNWidgets(8));
     expect(find.text('SKI-KM'), findsOneWidget);
     expect(find.text('LIFT-KM'), findsOneWidget);
     expect(find.text('AUFSTIEG'), findsOneWidget);
-    expect(find.text('Ø SPEED BEIM SKIFAHREN'), findsOneWidget);
-    expect(find.text('HÖCHSTER/TIEFSTER PUNKT'), findsOneWidget);
+    expect(find.text('Ø SPEED'), findsOneWidget);
+    expect(find.text('HOCH/TIEF'), findsOneWidget);
     expect(find.text('LIFTE'), findsOneWidget);
 
-    // run rows: 'Abfahrt 1 · 09:21 · 312 hm · 2,1 km · 61 km/h · 14 %'
+    // run table: '#1' + clock, then three tabular columns
     expect(find.byType(RunList), findsOneWidget);
     final runs = detail.runs.toList();
     expect(runs, isNotEmpty);
-    expect(find.textContaining('Abfahrt 1 · '), findsOneWidget);
+    expect(find.text('#1'), findsOneWidget);
     for (final r in runs) {
-      expect(find.textContaining('${r.runNumber} · ${Fmt.timeOfDay(r.startTs, locale: 'de')} · '), findsOneWidget);
+      expect(find.text('#${r.runNumber}'), findsOneWidget);
+      expect(find.text(Fmt.timeOfDay(r.startTs, locale: 'de')), findsWidgets);
     }
     expect(find.text('Teilen'), findsOneWidget);
     expect(find.text('Löschen'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the map hero collapses into the 52 pt bar on scroll', (tester) async {
+    usePhoneSurface(tester);
+    final detail = syntheticDayDetail();
+    await pumpApp(
+      tester,
+      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      overrides: overrides(detail),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final date = Fmt.dateLong(detail.day.startedAt, locale: 'de');
+    // expanded: the glass plate carries the date at 22
+    expect(tester.widget<Text>(find.text(date)).style!.fontSize, 22);
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+    await tester.pump();
+
+    // collapsed: the plate is gone, the bar title is the 19 pt displayS
+    expect(tester.widget<Text>(find.text(date)).style!.fontSize, 19);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the Tage row thumbnail flies into the map hero (tag route-<dayId>)', (tester) async {
+    usePhoneSurface(tester);
+    final detail = syntheticDayDetail();
+    final nav = GlobalKey<NavigatorState>();
+    await pumpApp(
+      tester,
+      Navigator(
+        key: nav,
+        // MaterialApp installs one for its own navigator; a nested one needs it too.
+        observers: [HeroController()],
+        onGenerateRoute: (settings) => MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => Scaffold(
+            body: Center(
+              child: Hero(tag: 'route-$_dayId', child: const SizedBox(width: 84, height: 84)),
+            ),
+          ),
+        ),
+      ),
+      overrides: overrides(detail),
+    );
+    await tester.pump();
+
+    unawaited(nav.currentState!.push(MaterialPageRoute<void>(
+      builder: (_) => const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+    )));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+
+    // mid-flight the shuttle draws the route itself instead of flying a map
+    expect(
+      find.byWidgetPredicate((w) => w is CustomPaint && w.painter is TrackThumbnailPainter),
+      findsWidgets,
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.byType(TrackMap), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a day without points falls back to the typeset contour hero', (tester) async {
+    useTallSurface(tester);
+    final full = syntheticDayDetail();
+    final detail = DayDetail(day: full.day, segments: full.segments, points: const []);
+    await pumpApp(
+      tester,
+      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      overrides: overrides(detail),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(FlutterMap), findsNothing);
+    expect(find.text('OHNE TRACK'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -106,6 +206,7 @@ void main() {
 
     await tester.tap(find.text('Teilen'));
     await tester.pumpAndSettle();
+    expect(find.text('Tag teilen'), findsOneWidget);
     expect(find.text('Bild teilen'), findsOneWidget);
     expect(find.text('GPX teilen'), findsOneWidget);
   });

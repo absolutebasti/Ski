@@ -30,6 +30,8 @@ class DaysStrings {
 
   // --- actions -------------------------------------------------------------
   String get share => l.pick(de: 'Teilen', en: 'Share');
+  String get shareTitle => l.pick(de: 'Tag teilen', en: 'Share day');
+  String get back => l.pick(de: 'Zurück', en: 'Back');
   String get shareCard => l.pick(de: 'Bild teilen', en: 'Share image');
   String get shareGpx => l.pick(de: 'GPX teilen', en: 'Share GPX');
   String get delete => l.pick(de: 'Löschen', en: 'Delete');
@@ -48,6 +50,18 @@ class DaysStrings {
   String get avgSkiSpeed => l.pick(de: 'Ø Speed beim Skifahren', en: 'Avg speed while skiing');
   String get highLow => l.pick(de: 'Höchster/Tiefster Punkt', en: 'Highest/lowest point');
   String get lifts => l.pick(de: 'Lifte', en: 'Lifts');
+
+  /// Short overlines for the 2×4 tile grid — a tile is ~160 pt wide.
+  String get avgSkiSpeedShort => l.pick(de: 'Ø Speed', en: 'Avg speed');
+  String get highLowShort => l.pick(de: 'Hoch/Tief', en: 'High/low');
+
+  // --- tag detail ----------------------------------------------------------
+  String get altitudeProfile => l.pick(de: 'Höhenprofil', en: 'Altitude profile');
+  String get timeSection => l.pick(de: 'Zeit', en: 'Time');
+  /// Typeset fallback when a day has no track — never a pictogram.
+  String get withoutTrack => l.pick(de: 'Ohne Track', en: 'No track');
+  /// '#7' — first column of a run row.
+  String runNo(int number) => '#$number';
 
   // --- time bar ------------------------------------------------------------
   String get ski => l.pick(de: 'Ski', en: 'Ski');
