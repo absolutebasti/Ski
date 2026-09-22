@@ -45,6 +45,8 @@ class TodayStrings {
   String get runs => l.pick(de: 'Abfahrten', en: 'Runs');
   String get topSpeed => l.pick(de: 'Top-Speed', en: 'Top speed');
   String get speed => l.pick(de: 'Geschwindigkeit', en: 'Speed');
+  /// Overline of the live tempo strip.
+  String get tempo => l.pick(de: 'Tempo', en: 'Speed');
   String get altitude => l.pick(de: 'Höhe', en: 'Altitude');
   String get time => l.pick(de: 'Zeit', en: 'Time');
 
@@ -87,7 +89,10 @@ class TodayStrings {
 
   /// 'Abfahrt 7 · 312 hm · 61 km/h'
   String runBanner({required int number, required String dropM, required String kmh}) =>
-      '${runLabel(number)} · $dropM $unitHm · $kmh $unitKmh';
+      '${runLabel(number)} · ${runBannerMetrics(dropM: dropM, kmh: kmh)}';
+
+  /// '312 hm · 61 km/h' — the metric half of the run banner.
+  String runBannerMetrics({required String dropM, required String kmh}) => '$dropM $unitHm · $kmh $unitKmh';
 
   // --- blocking states -----------------------------------------------------
   String get deniedTitle => l.pick(de: 'Standort ist aus', en: 'Location is off');

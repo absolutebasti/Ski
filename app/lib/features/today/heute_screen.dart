@@ -36,6 +36,7 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
 
   /// Run-committed banner: shown for 3 s after the engine closes a run.
   String? _banner;
+  Segment? _bannerRun;
   Timer? _bannerTimer;
   String? _lastRunId;
 
@@ -100,11 +101,14 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
     final s = TodayStrings.of(context);
     final locale = Localizations.localeOf(context).languageCode;
     _bannerTimer?.cancel();
-    setState(() => _banner = s.runBanner(
-          number: run.runNumber ?? next.stats.runCount,
-          dropM: Fmt.metres(run.dropM, locale: locale),
-          kmh: Fmt.kmh(run.maxSpeedMs, locale: locale),
-        ));
+    setState(() {
+      _banner = s.runBanner(
+        number: run.runNumber ?? next.stats.runCount,
+        dropM: Fmt.metres(run.dropM, locale: locale),
+        kmh: Fmt.kmh(run.maxSpeedMs, locale: locale),
+      );
+      _bannerRun = run;
+    });
     _bannerTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) setState(() => _banner = null);
     });
@@ -123,11 +127,11 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
     final caption = [Fmt.dateShort(DateTime.now().millisecondsSinceEpoch, locale: l.code), if (resortName != null) ref.watch(resortRepositoryProvider).asData?.value.byId(resortName)?.name].whereType<String>().join(' · ');
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        bottom: false,
-        child: recording.isRecording
-            ? LiveView(banner: _banner, busy: _busy, onEnd: _end)
-            : Column(
+      body: recording.isRecording
+          ? LiveView(banner: _banner, bannerRun: _bannerRun, busy: _busy, onEnd: _end)
+          : SafeArea(
+              bottom: false,
+              child: Column(
                 children: [
                   ScreenHeader(title: s.title, caption: caption, trailing: [HeaderButton(glyph: Glyph.gear, tooltip: s.settings, onTap: () => SettingsSheet.show(context))]),
                   Expanded(

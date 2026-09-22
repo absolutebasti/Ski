@@ -12,14 +12,17 @@ import '../../core/core.dart';
 import '../../core/settings.dart';
 import '../../data/db/providers.dart';
 import '../../platform/providers.dart';
+import '../onboarding/mascot_hero.dart';
 import '../share/share_service.dart';
 import 'count_up.dart';
 import 'mascot_line.dart';
 import 'notifications_sheet.dart';
+import 'route_block.dart';
 import 'summary_strings.dart';
 
-/// Full-screen route right after "Tag beenden" (docs/PLAN.md §3 row
-/// "Tagesbilanz"): four numbers count up, then the day explains itself.
+/// Full-screen route right after "Tag beenden" (docs/DESIGN.md §5
+/// "Tagesbilanz"): the route draws itself, the numbers count up, a record gets
+/// one solid champagne moment and Leo has the last word.
 class TagesbilanzScreen extends ConsumerStatefulWidget {
   const TagesbilanzScreen({super.key, required this.dayId});
   final String dayId;
@@ -88,14 +91,20 @@ class _TagesbilanzScreenState extends ConsumerState<TagesbilanzScreen> with Sing
 
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(title: Text(s.title), automaticallyImplyLeading: false),
       body: detail.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(Tokens.pad),
-            child: Text(s.loadFailed, style: AppText.bodyText(c.textSecondary), textAlign: TextAlign.center),
-          ),
+        loading: () => Center(child: CircularProgressIndicator(color: c.accent)),
+        error: (e, _) => Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(Tokens.pad),
+                  child: Text(s.loadFailed, style: AppText.bodyText(c.textSecondary), textAlign: TextAlign.center),
+                ),
+              ),
+            ),
+            BottomDock(child: PrimaryButton(label: s.done, onPressed: _done)),
+          ],
         ),
         data: (d) {
           final pbs = _personalBests(d.day.id, bests);
@@ -115,17 +124,18 @@ class _TagesbilanzScreenState extends ConsumerState<TagesbilanzScreen> with Sing
   }
 
   /// Which records this day holds right now.
-  List<_Pb> _personalBests(String dayId, PersonalBests? b) {
+  List<Pb> _personalBests(String dayId, PersonalBests? b) {
     if (b == null) return const [];
     return [
-      if (b.topSpeedDayId == dayId && b.topSpeedMs != null) _Pb.topSpeed,
-      if (b.biggestDayId == dayId && b.biggestDayDropM != null) _Pb.biggestDay,
-      if (b.longestRunDayId == dayId && b.longestRunDropM != null) _Pb.longestRun,
+      if (b.topSpeedDayId == dayId && b.topSpeedMs != null) Pb.topSpeed,
+      if (b.biggestDayId == dayId && b.biggestDayDropM != null) Pb.biggestDay,
+      if (b.longestRunDayId == dayId && b.longestRunDropM != null) Pb.longestRun,
     ];
   }
 }
 
-enum _Pb { topSpeed, biggestDay, longestRun }
+/// The three records a single day can hold.
+enum Pb { topSpeed, biggestDay, longestRun }
 
 class _Body extends StatelessWidget {
   const _Body({
@@ -141,14 +151,13 @@ class _Body extends StatelessWidget {
   final DayDetail detail;
   final AnimationController controller;
   final int steps;
-  final List<_Pb> pbs;
+  final List<Pb> pbs;
   final bool isFirstDay;
   final VoidCallback onShare;
   final VoidCallback onDone;
 
   @override
   Widget build(BuildContext context) {
-    final c = AppColors.of(context);
     final l = AppLocale.of(context);
     final s = SummaryStrings.of(context);
     final st = detail.day.stats;
@@ -158,91 +167,93 @@ class _Body extends StatelessWidget {
       children: [
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(Tokens.pad, 8, Tokens.pad, 16),
+            padding: EdgeInsets.zero,
             children: [
-              Text(
-                '${Fmt.dateLong(detail.day.startedAt, locale: locale)}'
-                '${detail.day.resortName == null ? '' : ' · ${detail.day.resortName}'}',
-                style: AppText.bodyText(c.textSecondary, size: 15),
-              ),
-              const SizedBox(height: 16),
-              CountUpNumber(
-                animation: countUpStep(controller, 0, steps),
-                value: st.dropM,
-                format: (v) => Fmt.metres(v, locale: locale),
-                unit: s.unitHm,
-                label: s.vertical,
-                size: 64,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: CountUpNumber(
-                      animation: countUpStep(controller, 1, steps),
-                      value: st.runCount.toDouble(),
-                      format: (v) => '${v.round()}',
-                      label: s.runs,
-                      size: 40,
-                    ),
-                  ),
-                  Expanded(
-                    child: CountUpNumber(
-                      animation: countUpStep(controller, 2, steps),
-                      value: st.maxSpeedMs,
-                      format: (v) => Fmt.kmh(v, locale: locale),
-                      unit: s.unitKmh,
-                      label: s.topSpeed,
-                      size: 40,
-                    ),
-                  ),
-                  Expanded(
-                    child: CountUpNumber(
-                      animation: countUpStep(controller, 3, steps),
-                      value: st.skiDistanceM,
-                      format: (v) => Fmt.km(v, locale: locale),
-                      unit: s.unitKm,
-                      label: s.skiKm,
-                      size: 40,
-                    ),
-                  ),
-                ],
+              RouteBlock(
+                detail: detail,
+                title: s.title,
+                date: Fmt.dateLong(detail.day.startedAt, locale: locale),
+                resort: detail.day.resortName,
+                noTrackLabel: s.noTrack,
               ),
               const SizedBox(height: 28),
-              StackedTimeBar(
-                skiMs: st.skiMs,
-                liftMs: st.liftMs,
-                pauseMs: st.pauseMs,
-                signalLossMs: st.signalLossMs,
-                otherMs: st.otherMs,
-                labels: s.timeBarLabels,
-              ),
-              const SizedBox(height: 24),
-              _BestRunCard(detail: detail),
-              if (pbs.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Wrap(spacing: 8, runSpacing: 8, children: [for (final p in pbs) _PbChip(pb: p)]),
-              ],
-              const SizedBox(height: 28),
-              EmptyState(
-                line: mascotLineFor(
-                  day: detail.day,
-                  s: s,
-                  isFirstDay: isFirstDay,
-                  isPb: pbs.isNotEmpty,
-                  dropMFormatted: Fmt.metres(st.dropM, locale: locale),
+              _Gutter(
+                child: CountUpNumber(
+                  animation: countUpStep(controller, 0, steps),
+                  value: st.dropM,
+                  format: (v) => Fmt.metres(v, locale: locale),
+                  unit: s.unitHm,
+                  label: s.vertical,
+                  size: 92,
+                  color: AppColors.of(context).accent,
                 ),
-                size: 96,
               ),
+              const SizedBox(height: 20),
+              _Gutter(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: CountUpNumber(
+                        animation: countUpStep(controller, 1, steps),
+                        value: st.runCount.toDouble(),
+                        format: (v) => '${v.round()}',
+                        label: s.runs,
+                        size: 40,
+                      ),
+                    ),
+                    Expanded(
+                      child: CountUpNumber(
+                        animation: countUpStep(controller, 2, steps),
+                        value: st.maxSpeedMs,
+                        format: (v) => Fmt.kmh(v, locale: locale),
+                        unit: s.unitKmh,
+                        label: s.topSpeed,
+                        size: 40,
+                      ),
+                    ),
+                    Expanded(
+                      child: CountUpNumber(
+                        animation: countUpStep(controller, 3, steps),
+                        value: st.skiDistanceM,
+                        format: (v) => Fmt.km(v, locale: locale),
+                        unit: s.unitKm,
+                        label: s.skiKm,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (pbs.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                _Gutter(child: RecordCard(pbs: pbs)),
+              ],
+              const SizedBox(height: 24),
+              _Gutter(child: _BestRunCard(detail: detail)),
+              const SizedBox(height: 20),
+              _Gutter(child: _TimeCard(stats: st)),
+              const SizedBox(height: 24),
+              _Gutter(
+                child: _MascotBlock(
+                  line: mascotLineFor(
+                    day: detail.day,
+                    s: s,
+                    isFirstDay: isFirstDay,
+                    isPb: pbs.isNotEmpty,
+                    dropMFormatted: Fmt.metres(st.dropM, locale: locale),
+                  ),
+                  celebrate: isFirstDay || pbs.isNotEmpty,
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, Tokens.pad),
+        BottomDock(
           child: Row(
             children: [
-              Expanded(child: SecondaryButton(label: s.share, icon: Icons.ios_share_rounded, onPressed: onShare)),
+              Expanded(child: SecondaryButton(label: s.share, glyph: Glyph.share, onPressed: onShare)),
               const SizedBox(width: 12),
               Expanded(child: PrimaryButton(label: s.done, onPressed: onDone)),
             ],
@@ -253,6 +264,63 @@ class _Body extends StatelessWidget {
   }
 }
 
+class _Gutter extends StatelessWidget {
+  const _Gutter({required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) =>
+      Padding(padding: const EdgeInsets.symmetric(horizontal: Tokens.pad), child: child);
+}
+
+/// The one real moment: a solid champagne card with ink text (docs/DESIGN.md §5).
+class RecordCard extends StatelessWidget {
+  const RecordCard({super.key, required this.pbs});
+  final List<Pb> pbs;
+
+  static String lineFor(SummaryStrings s, List<Pb> pbs) {
+    if (pbs.length == 1) {
+      return switch (pbs.first) {
+        Pb.topSpeed => s.recordFastestDay,
+        Pb.biggestDay => s.recordBiggestDay,
+        Pb.longestRun => s.recordLongestRun,
+      };
+    }
+    return [
+      for (final p in pbs)
+        switch (p) { Pb.topSpeed => s.topSpeed, Pb.biggestDay => s.biggestDay, Pb.longestRun => s.longestRun },
+    ].join(' · ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final s = SummaryStrings.of(context);
+    return Container(
+      height: 76,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: ShapeDecoration(color: c.accent, shape: Squircle.plain(Tokens.r20)),
+      child: Row(
+        children: [
+          GlyphIcon(Glyph.crest, size: 22, color: c.onAccent),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(s.record.overline, style: AppText.label(c.onAccent.withValues(alpha: 0.72))),
+                const SizedBox(height: 5),
+                Text(lineFor(s, pbs), style: AppText.title(c.onAccent), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Beste Abfahrt: title line plus a 3-up metric strip.
 class _BestRunCard extends StatelessWidget {
   const _BestRunCard({required this.detail});
   final DayDetail detail;
@@ -275,41 +343,72 @@ class _BestRunCard extends StatelessWidget {
     final s = SummaryStrings.of(context);
     final run = _best;
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(s.bestRun.toUpperCase(), style: AppText.label(c.textSecondary)),
-          const SizedBox(height: 8),
-          Text(
-            run == null
-                ? s.noRuns
-                : s.bestRunLine(
-                    number: run.runNumber ?? 1,
-                    clock: Fmt.timeOfDay(run.startTs, locale: l.code),
-                    dropM: Fmt.metres(run.dropM, locale: l.code),
-                    km: Fmt.km(run.distanceM, locale: l.code),
-                    kmh: Fmt.kmh(run.maxSpeedMs, locale: l.code),
-                  ),
-            style: AppText.bodyText(c.textPrimary, size: 16),
-          ),
-        ],
+      header: s.bestRun,
+      child: run == null
+          ? Text(s.noRuns, style: AppText.bodyText(c.textSecondary, size: 15))
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  s.bestRunTitle(number: run.runNumber ?? 1, clock: Fmt.timeOfDay(run.startTs, locale: l.code)),
+                  style: AppText.title(c.textPrimary),
+                ),
+                const SizedBox(height: 14),
+                MetricStrip(
+                  size: 22,
+                  items: [
+                    (Fmt.metres(run.dropM, locale: l.code), s.unitHm),
+                    (Fmt.km(run.distanceM, locale: l.code), s.unitKm),
+                    (Fmt.kmh(run.maxSpeedMs, locale: l.code), s.unitKmh),
+                  ],
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+/// Ski · Lift · Pause with the day's total on the header line.
+class _TimeCard extends StatelessWidget {
+  const _TimeCard({required this.stats});
+  final DayStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final s = SummaryStrings.of(context);
+    return AppCard(
+      header: s.timeOnSnow,
+      trailing: Text(Fmt.clock(stats.elapsedMs), style: AppText.numXs(c.textPrimary)),
+      child: StackedTimeBar(
+        skiMs: stats.skiMs,
+        liftMs: stats.liftMs,
+        pauseMs: stats.pauseMs,
+        signalLossMs: stats.signalLossMs,
+        otherMs: stats.otherMs,
+        labels: s.timeBarLabels,
       ),
     );
   }
 }
 
-class _PbChip extends StatelessWidget {
-  const _PbChip({required this.pb});
-  final _Pb pb;
+/// Leo plus one rule-based sentence — no floating circle (docs/DESIGN.md §5).
+class _MascotBlock extends StatelessWidget {
+  const _MascotBlock({required this.line, required this.celebrate});
+  final String line;
+  final bool celebrate;
 
   @override
-  Widget build(BuildContext context) {
-    final s = SummaryStrings.of(context);
-    final (label, icon) = switch (pb) {
-      _Pb.topSpeed => (s.topSpeed, Icons.speed_rounded),
-      _Pb.biggestDay => (s.biggestDay, Icons.landscape_rounded),
-      _Pb.longestRun => (s.longestRun, Icons.timeline_rounded),
-    };
-    return StateChip(text: '${s.record} · $label', tone: ChipTone.accent, icon: icon);
-  }
+  Widget build(BuildContext context) => SurfaceCard(
+        padding: const EdgeInsets.fromLTRB(12, 14, 18, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Leo(pose: celebrate ? 'celebrate' : 'thumbs', size: 84),
+            const SizedBox(width: 6),
+            Expanded(child: MascotLine(line)),
+          ],
+        ),
+      );
 }

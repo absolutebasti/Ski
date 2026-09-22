@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:dropline/core/core.dart';
 
 /// 2026-01-15 09:00 — inside season 2025/26.
@@ -37,11 +39,28 @@ Segment _run({required String id, required int number, required double dropM, re
       avgGradientPct: 14,
     );
 
-/// A finished day without points — everything the Tagesbilanz renders.
+/// A one-hour synthetic track around Kitzbühel so the route block has
+/// something to draw. Points inside the run segments become champagne strokes,
+/// everything between them a dashed lift.
+List<TrackPoint> trackPoints({int count = 60}) => [
+      for (var i = 0; i < count; i++)
+        TrackPoint(
+          ts: tsDay + i * 60000,
+          lat: 47.44 + math.sin(i / 7) * 0.004 + i * 0.00012,
+          lon: 12.39 + math.cos(i / 5) * 0.005 + i * 0.00010,
+          fusedAltM: 1900 - math.sin(i / 7) * 300,
+          speedMs: 8,
+          accepted: true,
+        ),
+    ];
+
+/// A finished day — everything the Tagesbilanz renders. [points] is empty by
+/// default so most tests exercise the "Ohne Track" fallback.
 DayDetail summaryDetail({
   String id = 'day-1',
   String? resortName = 'Kitzbühel',
   DayStats stats = _stats,
+  List<TrackPoint> points = const [],
 }) =>
     DayDetail(
       day: DayRecord(
@@ -58,5 +77,5 @@ DayDetail summaryDetail({
         _run(id: 'seg-1', number: 1, dropM: 210, maxSpeedMs: 14),
         _run(id: 'seg-3', number: 3, dropM: 312, maxSpeedMs: 17),
       ],
-      points: const [],
+      points: points,
     );

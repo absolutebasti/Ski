@@ -40,6 +40,18 @@ class SummaryStrings {
   String bestRunLine({required int number, required String clock, required String dropM, required String km, required String kmh}) =>
       '${runLabel(number)} · $clock · $dropM $unitHm · $km $unitKm · $kmh $unitKmh';
 
+  String get noTrack => l.pick(de: 'Ohne Track', en: 'No track');
+  String get timeOnSnow => l.pick(de: 'Zeit', en: 'Time');
+  String get total => l.pick(de: 'Gesamt', en: 'Total');
+
+  /// The line on the solid champagne record card.
+  String get recordFastestDay => l.pick(de: 'Schnellster Tag der Saison', en: 'Fastest day of the season');
+  String get recordBiggestDay => l.pick(de: 'Größter Tag der Saison', en: 'Biggest day of the season');
+  String get recordLongestRun => l.pick(de: 'Längste Abfahrt der Saison', en: 'Longest run of the season');
+
+  /// 'Abfahrt 7 · 10:42'
+  String bestRunTitle({required int number, required String clock}) => '${runLabel(number)} · $clock';
+
   // --- notification opt-in -------------------------------------------------
   String get notifyTitle => l.pick(de: 'Soll ich mich melden?', en: 'Should I check in?');
   String get notifyBody => l.pick(

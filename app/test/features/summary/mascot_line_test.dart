@@ -43,8 +43,8 @@ void main() {
     expect(_line(const DayStats(dropM: 900, runCount: 6, elapsedMs: 4 * 3600 * 1000)), _de.mascotDefault);
   });
 
-  test('the count-up stagger is 80 ms with a 400 ms ramp', () {
-    expect(countUpTotal(4), const Duration(milliseconds: 640));
+  test('the count-up stagger is 90 ms with a 400 ms ramp', () {
+    expect(countUpTotal(4), const Duration(milliseconds: 670));
     expect(countUpTotal(1), const Duration(milliseconds: 400));
   });
 }

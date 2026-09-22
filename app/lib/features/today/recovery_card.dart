@@ -11,8 +11,8 @@ import '../recording/recording_controller.dart';
 import '../recording/recovery_service.dart';
 import 'today_strings.dart';
 
-/// Inline card on Heute when an active day was interrupted for > 30 min
-/// (docs/PLAN.md §3 row "Recovery card"). Three ways out, no silent choice.
+/// Card in the Heute dock when an active day was interrupted for > 30 min
+/// (docs/DESIGN.md §5 "Heute — idle"). Three ways out, no silent choice.
 class RecoveryCard extends ConsumerStatefulWidget {
   const RecoveryCard({super.key, required this.info});
   final RecoveryInfo info;
@@ -51,43 +51,56 @@ class _RecoveryCardState extends ConsumerState<RecoveryCard> {
     final s = TodayStrings.of(context);
     final info = widget.info;
     return AppCard(
-      elevated: true,
+      tone: CardTone.ice,
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.history_rounded, size: 18, color: c.ice),
-              const SizedBox(width: 8),
+              Icon(Icons.history_rounded, size: 20, color: c.ice),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  s.interrupted(Fmt.dateShort(info.startedAt, locale: l.code)),
-                  style: AppText.bodyText(c.textPrimary, size: 16, weight: FontWeight.w600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(s.interrupted(Fmt.dateShort(info.startedAt, locale: l.code)), style: AppText.bodyStrong(c.textPrimary)),
+                    if (info.resortName != null) ...[
+                      const SizedBox(height: 2),
+                      Text(info.resortName!, style: AppText.caption(c.textSecondary)),
+                    ],
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            '${s.runCount(info.runCount)} · ${Fmt.metres(info.dropM, locale: l.code)} ${s.unitHm}'
-            '${info.resortName == null ? '' : ' · ${info.resortName}'}',
-            style: AppText.bodyText(c.textSecondary, size: 15),
-          ),
           const SizedBox(height: 14),
+          MetricStrip(
+            size: 22,
+            items: [
+              ('${info.runCount}', s.runs),
+              (Fmt.metres(info.dropM, locale: l.code), s.unitHm),
+            ],
+          ),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: SecondaryButton(
               label: s.finishAndSave,
               icon: Icons.save_alt_rounded,
+              height: 48,
               onPressed: _busy ? null : _finish,
             ),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: SecondaryButton(label: s.resume, onPressed: _busy ? null : _resume)),
+              Expanded(child: SecondaryButton(label: s.resume, height: 48, onPressed: _busy ? null : _resume)),
               const SizedBox(width: 8),
-              Expanded(child: SecondaryButton(label: s.discard, onPressed: _busy ? null : _discard)),
+              Expanded(child: SecondaryButton(label: s.discard, height: 48, danger: true, onPressed: _busy ? null : _discard)),
             ],
           ),
         ],

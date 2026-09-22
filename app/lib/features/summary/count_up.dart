@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/widgets/widgets.dart';
 
-/// Staggered count-up of the four Tagesbilanz numbers (docs/PLAN.md §11):
-/// 400 ms easeOutCubic each, 80 ms apart, driven by one controller so the
+/// Staggered count-up of the Tagesbilanz numbers (docs/DESIGN.md §6):
+/// 400 ms easeOutCubic each, 90 ms apart, driven by one controller so the
 /// whole thing settles in tests and honours reduce-motion.
-const Duration kCountUpStagger = Duration(milliseconds: 80);
+const Duration kCountUpStagger = Duration(milliseconds: 90);
 
 Duration countUpTotal(int steps) =>
     Tokens.countUp + kCountUpStagger * (steps - 1 < 0 ? 0 : steps - 1);
