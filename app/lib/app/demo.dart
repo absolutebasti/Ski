@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/settings.dart';
 import '../data/db/providers.dart';
+import '../features/map/thumbnail_renderer.dart';
 import '../tracking/synthetic.dart';
 import '../tracking/tracking.dart';
 
@@ -63,6 +64,10 @@ class Demo {
       await repo.createActiveDay(id: 'demo-$i', startedAt: start, resortId: resorts[i].$1, resortName: resorts[i].$2);
       await repo.appendPoints('demo-$i', r.points, stats: r.stats);
       await repo.finishDay('demo-$i', endedAt: r.points.last.ts, stats: r.stats, segments: r.segments);
+      try {
+        final detail = await repo.dayDetail('demo-$i');
+        if (detail != null) await repo.updateMapThumb('demo-$i', await ThumbnailRenderer.render(detail));
+      } catch (_) {}
     }
     await container.read(settingsProvider.notifier).update((s) => s.copyWith(lastResortId: 'kitzbuehel'));
   }
