@@ -18,6 +18,7 @@ List<Override> screenOverrides({
   PersonalBests bests = const PersonalBests(),
   Settings settings = const Settings(onboardingDone: true),
   PermissionService? permissions,
+  List<Resort> resorts = const [],
 }) =>
     [
       locationStatusProvider.overrideWith((ref) async => LocationPermissionState.always),
@@ -29,7 +30,7 @@ List<Override> screenOverrides({
       seasonTotalsProvider.overrideWith((ref) => Stream.value(seasons)),
       personalBestsProvider.overrideWith((ref) => Stream.value(bests)),
       recoveryProvider.overrideWith((ref) async => null),
-      resortRepositoryProvider.overrideWith((ref) async => ResortRepository(const [])),
+      resortRepositoryProvider.overrideWith((ref) async => ResortRepository(resorts)),
       permissionServiceProvider.overrideWithValue(permissions ?? FakePermissionService()),
       barometerSourceProvider.overrideWithValue(FakeBarometerSource(const [])),
       locationSourceProvider.overrideWithValue(ManualLocationSource()),

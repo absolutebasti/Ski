@@ -1,79 +1,54 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../app/theme/tokens.dart';
+import '../../app/theme/typography.dart';
 
-/// Full-bleed, muted, looping mascot clip with a graphite scrim — the welcome page.
-/// Falls back to the still while the clip initialises or when playback is unavailable
-/// (tests, missing codec), so the page always renders.
-class MascotHero extends StatefulWidget {
-  const MascotHero({
-    super.key,
-    this.video = 'assets/mascot/toni-hero.mp4',
-    this.poster = 'assets/mascot/toni-still.jpg',
-  });
+/// The snow leopard. PNGs carry the graphite field, so edges are faded with a
+/// radial mask until transparent cut-outs land in assets/mascot.
+class Leo extends StatelessWidget {
+  const Leo({super.key, this.pose = 'head', this.size = 160});
+  final String pose;
+  final double size;
 
-  final String video;
-  final String poster;
-
-  @override
-  State<MascotHero> createState() => _MascotHeroState();
-}
-
-class _MascotHeroState extends State<MascotHero> {
-  VideoPlayerController? _ctrl;
-  bool _ready = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final ctrl = VideoPlayerController.asset(widget.video);
-    _ctrl = ctrl;
-    ctrl.setVolume(0);
-    ctrl.setLooping(true);
-    ctrl.initialize().then((_) {
-      if (!mounted) return;
-      setState(() => _ready = true);
-      ctrl.play();
-    }).catchError((_) {});
-  }
-
-  @override
-  void dispose() {
-    _ctrl?.dispose();
-    super.dispose();
-  }
+  String get _asset => 'assets/mascot/leo-$pose.png';
 
   @override
   Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ShaderMask(
+        shaderCallback: (r) => const RadialGradient(
+          colors: [Colors.white, Colors.white, Colors.transparent],
+          stops: [0, 0.68, 1],
+        ).createShader(r),
+        blendMode: BlendMode.dstIn,
+        child: Image.asset(
+          _asset,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Image.asset('assets/mascot/leo-head.png', fit: BoxFit.cover),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mascot speech line: waveform glyph + one sentence.
+class MascotLine extends StatelessWidget {
+  const MascotLine(this.text, {super.key});
+  final String text;
+  @override
+  Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final ctrl = _ctrl;
-    return Stack(
-      fit: StackFit.expand,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Image.asset(widget.poster, fit: BoxFit.cover),
-        if (_ready && ctrl != null)
-          FittedBox(
-            fit: BoxFit.cover,
-            clipBehavior: Clip.hardEdge,
-            child: SizedBox(
-              width: ctrl.value.size.width,
-              height: ctrl.value.size.height,
-              child: VideoPlayer(ctrl),
-            ),
-          ),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                c.bg.withValues(alpha: 0.10),
-                c.bg.withValues(alpha: 0.72),
-                c.bg,
-              ],
-              stops: const [0.0, 0.55, 0.92],
-            ),
+        Padding(padding: const EdgeInsets.only(top: 2), child: Icon(Icons.graphic_eq_rounded, size: 16, color: c.accent)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: Tokens.medium,
+            child: Text(text, key: ValueKey(text), style: AppText.bodyStrong(c.textPrimary, size: 15)),
           ),
         ),
       ],

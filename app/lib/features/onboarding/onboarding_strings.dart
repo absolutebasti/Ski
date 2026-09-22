@@ -3,74 +3,68 @@ import 'package:flutter/widgets.dart';
 import '../../app/brand.dart';
 import '../../app/l10n/app_locale.dart';
 
-/// Copy for onboarding (docs/PLAN.md §4). German first, English second.
+/// Onboarding copy (docs/ONBOARDING-SOCIAL.md). German first.
 class OnboardingStrings {
   const OnboardingStrings(this._l);
   final AppLocale _l;
-
   static OnboardingStrings of(BuildContext context) => OnboardingStrings(AppLocale.of(context));
 
-  // Page 1 — Willkommen
-  String get p1Headline => _l.pick(de: 'Ein Knopf. Ein Skitag.', en: 'One button. One ski day.');
+  // Page 1 — hook
+  String get p1Headline => _l.pick(de: 'Fahr. Zähl. Gewinn.', en: 'Ride. Count. Win.');
   String get p1Body => _l.pick(
-        de: '$kAppName zählt deine Abfahrten, Höhenmeter und Top-Speed — automatisch, auch wenn das Handy in der Jacke steckt.',
-        en: '$kAppName counts your runs, vertical metres and top speed — automatically, even with the phone in your jacket.',
+        de: 'Ein Knopf zeichnet deinen Skitag auf – Abfahrten, Höhenmeter, Top-Speed. Und du siehst sofort, wo du stehst.',
+        en: 'One button records your ski day – runs, vertical, top speed. And you see right away where you stand.',
       );
-  String get p1Mascot => _l.pick(
-        de: 'Servus, ich bin $kMascotName. Ich zähl’ mit — du fährst.',
-        en: 'Hi, I’m $kMascotName. I do the counting — you ski.',
-      );
+  String get p1Slider => _l.pick(de: 'Wie viele Höhenmeter schaffst du an einem Tag?', en: 'How much vertical can you do in a day?');
+  String get p1ChipRuns => _l.pick(de: '7 Abfahrten', en: '7 runs');
+  String get p1ChipSpeed => '61 km/h';
+  String get p1ChipRank => _l.pick(de: 'Platz 3 in Kitzbühel', en: '#3 in Kitzbühel');
+  String p1Mascot(int hm) => hm >= 6000
+      ? _l.pick(de: 'Respekt. Das will ich sehen.', en: 'Respect. Show me.')
+      : hm >= 3000
+          ? _l.pick(de: 'Solide. Da geht noch was.', en: 'Solid. Room to grow.')
+          : _l.pick(de: 'Entspannt. Auch gut.', en: 'Relaxed. Fine by me.');
 
-  // Page 2 — So funktioniert's
-  String get p2Headline => _l.pick(de: 'So funktioniert’s', en: 'How it works');
-  String get p2Row1 => _l.pick(de: 'Tippe auf Start', en: 'Tap start');
-  String get p2Row2 => _l.pick(de: 'Handy weg, Sperre an — die Aufnahme läuft', en: 'Phone away, screen locked — recording keeps running');
-  String get p2Row3 => _l.pick(de: 'Am Abend: Beenden, fertig.', en: 'In the evening: end the day, done.');
-  String get p2Pill => _l.pick(de: 'Dieses blaue Symbol heißt: es läuft.', en: 'This blue badge means: it is running.');
-  String get p2Body => _l.pick(de: 'Lift, Pause, Abfahrt erkennen wir selbst.', en: 'Lift, pause and run are detected for you.');
-  String get p2Mascot => _l.pick(
-        de: 'Liftfahrt, Pause, Abfahrt — das erkenn’ ich selbst. Du musst nichts drücken.',
-        en: 'Lift ride, pause, run — I spot those myself. You never have to press a thing.',
-      );
+  // Page 2 — home resort + season goal
+  String get p2Headline => _l.pick(de: 'Wo fährst du meistens?', en: 'Where do you ski most?');
+  String get p2Body => _l.pick(de: 'Dein Heimatgebiet für die Rangliste. Ändern geht jederzeit.', en: 'Your home resort for the rankings. Change it any time.');
+  String get p2Search => _l.pick(de: 'Skigebiet suchen', en: 'Search resort');
+  String get p2Goal => _l.pick(de: 'Saisonziel', en: 'Season goal');
+  String get p2GoalUnit => _l.pick(de: 'hm', en: 'm');
+  String p2Teaser(String resort) => _l.pick(de: 'Sei der Erste in $resort.', en: 'Be the first in $resort.');
+  String get p2TeaserBody => _l.pick(de: 'Die Rangliste startet mit deinem ersten Skitag.', en: 'The ranking starts with your first ski day.');
+  String p2Mascot(int goalHm) => goalHm >= 40000
+      ? _l.pick(de: 'Mutig. Gefällt mir.', en: 'Bold. I like it.')
+      : _l.pick(de: 'Machbar. Los.', en: 'Doable. Go.');
 
-  // Page 3 — Standort & Sensoren
-  String get p3Headline => _l.pick(de: 'Standort & Sensoren', en: 'Location & sensors');
-  String get p3Body => _l.pick(de: 'Gleich fragt dich das iPhone dreimal:', en: 'In a moment your iPhone asks you three times:');
-  String get p3ItemA => _l.pick(
-        de: 'Standort → «Beim Verwenden» erlauben',
-        en: 'Location → allow «While using the app»',
+  // Page 3 — sign in
+  String get p3Headline => _l.pick(de: 'Fordere Freunde heraus', en: 'Challenge your friends');
+  String get p3Body => _l.pick(
+        de: 'Rangliste und Duelle brauchen einen Namen. Kein Passwort, kein Spam – Anmeldung mit Apple.',
+        en: 'Rankings and duels need a name. No password, no spam – sign in with Apple.',
       );
-  String get p3ItemB => _l.pick(
-        de: 'Direkt danach «Auf Immer erlauben ändern» — damit die Aufnahme nach einem Neustart weiterläuft',
-        en: 'Right after that «Change to Always Allow» — so recording continues after a restart',
-      );
-  String get p3ItemC => _l.pick(
-        de: 'Bewegung & Fitness → für den Luftdrucksensor (Höhenmeter auf den Meter)',
-        en: 'Motion & fitness → for the barometer (vertical metres to the metre)',
-      );
-  String get p3Mascot => _l.pick(
-        de: 'Drei Fragen vom iPhone, dann sind wir startklar.',
-        en: 'Three questions from your iPhone, then we are ready to go.',
-      );
+  String get p3SignIn => _l.pick(de: 'Mit Apple anmelden', en: 'Sign in with Apple');
+  String p3SignedIn(String name) => _l.pick(de: 'Angemeldet als $name', en: 'Signed in as $name');
+  String get p3SignedInBody => _l.pick(de: 'Duelle und Ranglisten sind freigeschaltet.', en: 'Duels and rankings are unlocked.');
+  String get p3Failed => _l.pick(de: 'Das hat nicht geklappt. Du kannst es später in den Einstellungen versuchen.', en: 'That did not work. You can try again later in settings.');
+  String get p3Mascot => _l.pick(de: 'Ohne Namen kein Podium.', en: 'No name, no podium.');
 
-  // Actions
+  // Page 4 — permissions
+  String get p4Headline => _l.pick(de: 'Startklar', en: 'Ready');
+  String get p4Body => _l.pick(de: 'Zwei Fragen vom iPhone, dann geht’s los.', en: 'Two questions from your iPhone, then we go.');
+  String get p4ItemA => _l.pick(de: 'Standort „Immer“ – damit die Aufnahme auch weiterläuft, wenn das Handy in der Jacke steckt.', en: 'Location “Always” – so recording keeps running with the phone in your jacket.');
+  String get p4ItemB => _l.pick(de: 'Bewegung & Fitness – der Luftdrucksensor macht Höhenmeter auf den Meter genau.', en: 'Motion & Fitness – the barometer makes vertical accurate to the metre.');
+  String get p4Mascot => _l.pick(de: 'Ich zähl’ mit. Du fährst.', en: 'I do the counting. You ski.');
+  String get denied => _l.pick(de: 'Ohne Standort kann $kAppName keinen Skitag aufzeichnen. Du kannst das in den Einstellungen nachholen.', en: 'Without location $kAppName cannot record a ski day. You can fix that in Settings.');
+  String get openSettings => _l.pick(de: 'In Einstellungen öffnen', en: 'Open settings');
+  String get grantedWhileInUse => _l.pick(de: 'Passt. Für die Aufnahme im Hintergrund später auf „Immer“ stellen.', en: 'Good. Switch to “Always” later for background recording.');
+  String get grantedAlways => _l.pick(de: 'Passt. Wir sind startklar.', en: 'All set. We are ready to go.');
+
+  // Buttons
   String get next => _l.pick(de: 'Weiter', en: 'Next');
   String get allow => _l.pick(de: 'Erlauben', en: 'Allow');
   String get finish => _l.pick(de: 'Los geht’s', en: 'Let’s go');
   String get skip => _l.pick(de: 'Später', en: 'Later');
   String get back => _l.pick(de: 'Zurück', en: 'Back');
-
-  // Permission outcome
-  String get denied => _l.pick(
-        de: 'Ohne Standort kann $kAppName keine Abfahrten zählen. Du kannst das in den Einstellungen jederzeit ändern.',
-        en: '$kAppName cannot count runs without location. You can change this in Settings at any time.',
-      );
-  String get openSettings => _l.pick(de: 'In Einstellungen öffnen', en: 'Open settings');
-  String get grantedWhileInUse => _l.pick(
-        de: 'Passt. «Beim Verwenden» reicht für den Start — «Immer» hält die Aufnahme auch nach einem Neustart am Laufen.',
-        en: 'All good. «While using» is enough to start — «Always» keeps recording alive after a restart.',
-      );
-  String get grantedAlways => _l.pick(de: 'Passt. Wir sind startklar.', en: 'All set. We are ready to go.');
-
-  String stepOf(int step, int total) => _l.pick(de: 'Schritt $step von $total', en: 'Step $step of $total');
+  String stepOf(int i, int n) => _l.pick(de: 'Schritt $i von $n', en: 'Step $i of $n');
 }
