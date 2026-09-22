@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/app/widgets/widgets.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/core/settings.dart';
-import 'package:schwung/data/db/providers.dart';
-import 'package:schwung/features/summary/tagesbilanz_screen.dart';
-import 'package:schwung/platform/providers.dart';
+import 'package:dropline/app/widgets/widgets.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/core/settings.dart';
+import 'package:dropline/data/db/providers.dart';
+import 'package:dropline/features/summary/tagesbilanz_screen.dart';
+import 'package:dropline/platform/providers.dart';
 
 import '../../support/fakes.dart';
 import '../../support/pump.dart';

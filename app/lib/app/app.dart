@@ -10,14 +10,14 @@ import 'router.dart';
 import 'shell.dart';
 import 'theme/theme.dart';
 
-class SchwungApp extends ConsumerStatefulWidget {
-  const SchwungApp({super.key});
+class DroplineApp extends ConsumerStatefulWidget {
+  const DroplineApp({super.key});
 
   @override
-  ConsumerState<SchwungApp> createState() => _SchwungAppState();
+  ConsumerState<DroplineApp> createState() => _DroplineAppState();
 }
 
-class _SchwungAppState extends ConsumerState<SchwungApp> {
+class _DroplineAppState extends ConsumerState<DroplineApp> {
   /// Read once: OnboardingFlow navigates to RootShell itself, so `home` must
   /// not flip underneath it when the flag is written.
   late final bool _onboardingDone = ref.read(settingsProvider).onboardingDone;

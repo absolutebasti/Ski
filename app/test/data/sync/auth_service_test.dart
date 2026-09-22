@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:schwung/data/supabase/supabase_client.dart';
-import 'package:schwung/data/sync/auth_service.dart';
-import 'package:schwung/data/sync/sync_api.dart';
-import 'package:schwung/data/sync/sync_service.dart';
+import 'package:dropline/data/supabase/supabase_client.dart';
+import 'package:dropline/data/sync/auth_service.dart';
+import 'package:dropline/data/sync/sync_api.dart';
+import 'package:dropline/data/sync/sync_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 User user({Map<String, dynamic>? meta, String? email}) => User(

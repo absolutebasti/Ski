@@ -12,7 +12,7 @@ abstract class WatchdogChannel {
 }
 
 class MethodChannelWatchdog implements WatchdogChannel {
-  static const _channel = MethodChannel('de.torchtechnology.schwung/watchdog');
+  static const _channel = MethodChannel('de.torchtechnology.dropline/watchdog');
 
   @override
   Future<void> start() async {

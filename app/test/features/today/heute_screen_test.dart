@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/app/widgets/widgets.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/features/recording/live_state_provider.dart';
-import 'package:schwung/features/recording/recording_controller.dart';
-import 'package:schwung/features/recording/recovery_service.dart';
-import 'package:schwung/features/today/heute_screen.dart';
+import 'package:dropline/app/widgets/widgets.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/features/recording/live_state_provider.dart';
+import 'package:dropline/features/recording/recording_controller.dart';
+import 'package:dropline/features/recording/recovery_service.dart';
+import 'package:dropline/features/today/heute_screen.dart';
 
 import '../../support/pump.dart';
 import 'today_fixtures.dart';

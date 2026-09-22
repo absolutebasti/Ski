@@ -4,7 +4,7 @@ Lead-owned files: `pubspec.yaml`, `lib/main.dart`, `lib/app/**`, `lib/core/**`, 
 Do **not** edit them; if a contract is missing, add a note to your final report and code against your best
 interpretation. Everything below already exists and compiles.
 
-## Core (`package:schwung/core/core.dart`)
+## Core (`package:dropline/core/core.dart`)
 
 | Symbol | File | Notes |
 |---|---|---|
@@ -24,7 +24,7 @@ interpretation. Everything below already exists and compiles.
 | `settingsProvider`, `Settings`, `SettingsNotifier` | core/settings.dart | locale / onboardingDone / notificationsOptIn / lastResortId / diagnosticsUnlocked |
 | `isRecordingProvider` | core/settings.dart | `ref.read(isRecordingProvider.notifier).set(true/false)` — WP-05 must call this |
 
-## App layer (`package:schwung/app/...`)
+## App layer (`package:dropline/app/...`)
 
 | Symbol | File | Notes |
 |---|---|---|
@@ -78,7 +78,7 @@ interpretation. Everything below already exists and compiles.
 6. Run `flutter analyze` and `flutter test test/<your package>` before reporting; zero analyzer issues.
 7. Widget tests that mount `RootShell`, `HeuteScreen` or `TageScreen` use `test/support/screen_overrides.dart` so no database or plugin is touched.
 
-## Backend (v1.5, Supabase project `svzmmpzevmpodcelzvit`, schema in `supabase/migrations/0001_schwung.sql`)
+## Backend (v1.5, Supabase project `svzmmpzevmpodcelzvit`, schema in `supabase/migrations/0001_dropline.sql`)
 
 | Symbol | Type / signature | Owner | File |
 |---|---|---|---|

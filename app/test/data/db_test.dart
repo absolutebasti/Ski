@@ -1,11 +1,11 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/data/db/database.dart';
-import 'package:schwung/data/db/days_repository.dart';
-import 'package:schwung/data/resorts/resort_repository.dart';
-import 'package:schwung/tracking/synthetic.dart';
-import 'package:schwung/tracking/tracking.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/data/db/database.dart';
+import 'package:dropline/data/db/days_repository.dart';
+import 'package:dropline/data/resorts/resort_repository.dart';
+import 'package:dropline/tracking/synthetic.dart';
+import 'package:dropline/tracking/tracking.dart';
 
 void main() {
   late AppDatabase db;

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/app/widgets/widgets.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/data/db/providers.dart';
-import 'package:schwung/features/days/day_card.dart';
-import 'package:schwung/features/days/tage_screen.dart';
+import 'package:dropline/app/widgets/widgets.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/data/db/providers.dart';
+import 'package:dropline/features/days/day_card.dart';
+import 'package:dropline/features/days/tage_screen.dart';
 
 import '../../support/pump.dart';
 import 'day_fixtures.dart';

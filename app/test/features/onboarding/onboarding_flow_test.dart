@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/app/l10n/app_locale.dart';
-import 'package:schwung/app/shell.dart';
-import 'package:schwung/app/widgets/widgets.dart';
-import 'package:schwung/core/settings.dart';
-import 'package:schwung/features/onboarding/onboarding.dart';
-import 'package:schwung/platform/permission_service.dart';
+import 'package:dropline/app/l10n/app_locale.dart';
+import 'package:dropline/app/shell.dart';
+import 'package:dropline/app/widgets/widgets.dart';
+import 'package:dropline/core/settings.dart';
+import 'package:dropline/features/onboarding/onboarding.dart';
+import 'package:dropline/platform/permission_service.dart';
 
 import '../../support/fakes.dart';
 import '../../support/pump.dart';

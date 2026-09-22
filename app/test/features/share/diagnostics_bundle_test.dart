@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/features/share/diagnostics_bundle.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/features/share/diagnostics_bundle.dart';
 
 import 'synthetic_detail.dart';
 
@@ -32,6 +32,6 @@ void main() {
   });
 
   test('file name uses six id characters', () {
-    expect(DiagnosticsBundle.fileName('0192abcd-1111-7000-8000-000000000001'), 'schwung-diag-0192ab.json.gz');
+    expect(DiagnosticsBundle.fileName('0192abcd-1111-7000-8000-000000000001'), 'dropline-diag-0192ab.json.gz');
   });
 }

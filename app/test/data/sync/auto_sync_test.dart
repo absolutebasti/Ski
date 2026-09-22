@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/data/db/days_repository.dart';
-import 'package:schwung/data/db/providers.dart';
-import 'package:schwung/data/supabase/supabase_client.dart';
-import 'package:schwung/data/sync/sync_service.dart';
+import 'package:dropline/data/db/days_repository.dart';
+import 'package:dropline/data/db/providers.dart';
+import 'package:dropline/data/supabase/supabase_client.dart';
+import 'package:dropline/data/sync/sync_service.dart';
 
 import 'sync_fixtures.dart';
 

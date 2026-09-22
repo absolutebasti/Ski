@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/features/days/season_groups.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/features/days/season_groups.dart';
 
 import 'day_fixtures.dart';
 

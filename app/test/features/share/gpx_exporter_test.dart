@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/features/share/gpx_exporter.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/features/share/gpx_exporter.dart';
 import 'package:xml/xml.dart';
 
 import 'synthetic_detail.dart';
@@ -20,7 +20,7 @@ void main() {
       expect(gpx.name.local, 'gpx');
       expect(gpx.name.namespaceUri, GpxExporter.nsGpx);
       expect(gpx.getAttribute('version'), '1.1');
-      expect(gpx.getAttribute('creator'), 'Schwung');
+      expect(gpx.getAttribute('creator'), 'Dropline');
       expect(gpx.getAttribute('xmlns:xsi'), GpxExporter.nsXsi);
       expect(gpx.getAttribute('xmlns:gpxtpx'), GpxExporter.nsGpxtpx);
       expect(gpx.getAttribute('schemaLocation', namespaceUri: GpxExporter.nsXsi), contains('gpx.xsd'));
@@ -96,8 +96,8 @@ void main() {
       expect(x.rootElement.getElement('trk', namespaceUri: GpxExporter.nsGpx)!.getElement('name', namespaceUri: GpxExporter.nsGpx)!.innerText, endsWith('· Freies Gelände'));
     });
 
-    test('file name is schwung-YYYY-MM-DD-<id6>.gpx', () {
-      expect(GpxExporter.fileName(detail), matches(RegExp(r'^schwung-\d{4}-\d{2}-\d{2}-0192ab\.gpx$')));
+    test('file name is dropline-YYYY-MM-DD-<id6>.gpx', () {
+      expect(GpxExporter.fileName(detail), matches(RegExp(r'^dropline-\d{4}-\d{2}-\d{2}-0192ab\.gpx$')));
       expect(GpxExporter.shortId('abc'), 'abc');
     });
   });

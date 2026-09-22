@@ -1,8 +1,8 @@
 import 'package:drift/native.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/data/db/database.dart';
-import 'package:schwung/data/db/days_repository.dart';
-import 'package:schwung/data/sync/sync_api.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/data/db/database.dart';
+import 'package:dropline/data/db/days_repository.dart';
+import 'package:dropline/data/sync/sync_api.dart';
 
 AppDatabase memoryDb() => AppDatabase(NativeDatabase.memory());
 

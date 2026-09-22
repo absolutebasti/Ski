@@ -29,7 +29,7 @@ class LocalNotificationService implements NotificationService {
 
   static const _details = NotificationDetails(
     iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true, presentBanner: true),
-    android: AndroidNotificationDetails('schwung_tracking', 'Aufnahme', channelDescription: 'Hinweise während eines Skitags', importance: Importance.high, priority: Priority.high),
+    android: AndroidNotificationDetails('dropline_tracking', 'Aufnahme', channelDescription: 'Hinweise während eines Skitags', importance: Importance.high, priority: Priority.high),
   );
 
   @override

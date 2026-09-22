@@ -36,5 +36,5 @@ Future<void> main() async {
   } catch (_) {
     // never block launch on recovery problems
   }
-  runApp(UncontrolledProviderScope(container: container, child: const SchwungApp()));
+  runApp(UncontrolledProviderScope(container: container, child: const DroplineApp()));
 }

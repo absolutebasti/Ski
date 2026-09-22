@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/features/recording/live_state_provider.dart';
-import 'package:schwung/platform/watch/watch.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/features/recording/live_state_provider.dart';
+import 'package:dropline/platform/watch/watch.dart';
 
 import 'fake_watch_transport.dart';
 

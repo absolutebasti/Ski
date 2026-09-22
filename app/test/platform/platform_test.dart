@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:schwung/platform/location_source.dart';
+import 'package:dropline/platform/location_source.dart';
 
 void main() {
   test('Position maps to RawFix', () {

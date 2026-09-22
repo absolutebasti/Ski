@@ -10,9 +10,9 @@ import '../tracking/synthetic.dart';
 import '../tracking/tracking.dart';
 
 /// Debug-only launch switches (simulator QA and screenshots):
-///   SIMCTL_CHILD_SCHWUNG_SKIP_ONBOARDING=1   → onboarding marked done
-///   SIMCTL_CHILD_SCHWUNG_DEMO=1              → three synthetic ski days in the database
-///   SIMCTL_CHILD_SCHWUNG_TAB=tage            → open the Tage tab first
+///   SIMCTL_CHILD_DROPLINE_SKIP_ONBOARDING=1   → onboarding marked done
+///   SIMCTL_CHILD_DROPLINE_DEMO=1              → three synthetic ski days in the database
+///   SIMCTL_CHILD_DROPLINE_TAB=tage            → open the Tage tab first
 /// `xcrun simctl launch` forwards SIMCTL_CHILD_* as plain env vars.
 class Demo {
   const Demo._();
@@ -23,16 +23,16 @@ class Demo {
     final runtime = Platform.environment[key];
     if (runtime != null && runtime.isNotEmpty) return runtime;
     final defined = switch (key) {
-      'SCHWUNG_SKIP_ONBOARDING' => const String.fromEnvironment('SCHWUNG_SKIP_ONBOARDING'),
-      'SCHWUNG_DEMO' => const String.fromEnvironment('SCHWUNG_DEMO'),
-      'SCHWUNG_TAB' => const String.fromEnvironment('SCHWUNG_TAB'),
+      'DROPLINE_SKIP_ONBOARDING' => const String.fromEnvironment('DROPLINE_SKIP_ONBOARDING'),
+      'DROPLINE_DEMO' => const String.fromEnvironment('DROPLINE_DEMO'),
+      'DROPLINE_TAB' => const String.fromEnvironment('DROPLINE_TAB'),
       _ => '',
     };
     return defined.isEmpty ? null : defined;
   }
-  static bool get skipOnboarding => _env('SCHWUNG_SKIP_ONBOARDING') == '1';
-  static bool get seedDays => _env('SCHWUNG_DEMO') == '1';
-  static int get initialTab => switch (_env('SCHWUNG_TAB')) { 'tage' => 1, 'rangliste' || 'social' => 2, _ => 0 };
+  static bool get skipOnboarding => _env('DROPLINE_SKIP_ONBOARDING') == '1';
+  static bool get seedDays => _env('DROPLINE_DEMO') == '1';
+  static int get initialTab => switch (_env('DROPLINE_TAB')) { 'tage' => 1, 'rangliste' || 'social' => 2, _ => 0 };
 
   static Future<void> apply(ProviderContainer container) async {
     if (!kDebugMode) return;

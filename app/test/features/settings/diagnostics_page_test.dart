@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/data/db/providers.dart';
-import 'package:schwung/features/recording/live_state_provider.dart';
-import 'package:schwung/features/recording/recording_controller.dart';
-import 'package:schwung/features/settings/diagnostics_page.dart';
-import 'package:schwung/features/settings/settings_providers.dart';
-import 'package:schwung/platform/permission_service.dart';
-import 'package:schwung/platform/providers.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/data/db/providers.dart';
+import 'package:dropline/features/recording/live_state_provider.dart';
+import 'package:dropline/features/recording/recording_controller.dart';
+import 'package:dropline/features/settings/diagnostics_page.dart';
+import 'package:dropline/features/settings/settings_providers.dart';
+import 'package:dropline/platform/permission_service.dart';
+import 'package:dropline/platform/providers.dart';
 
 import '../../support/fakes.dart';
 import '../../support/pump.dart';

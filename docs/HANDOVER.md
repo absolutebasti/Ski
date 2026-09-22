@@ -1,7 +1,7 @@
-# Schwung — Handover (2026-09-22, 14:00)
+# Dropline — Handover (2026-09-22, 14:00)
 
 ## What this is
-The ski-day tracker rebuilt from the 2025 PWA as a Flutter app (iOS first, Android builds, native Apple Watch companion). One tap records the whole day; runs, lifts and stops are detected automatically; tracking keeps running with the phone locked. Brand: **Schwung**, bundle id `de.torchtechnology.schwung`, Team 5GDU97KSQU.
+The ski-day tracker rebuilt from the 2025 PWA as a Flutter app (iOS first, Android builds, native Apple Watch companion). One tap records the whole day; runs, lifts and stops are detected automatically; tracking keeps running with the phone locked. Brand: **Dropline**, bundle id `de.torchtechnology.dropline`, Team 5GDU97KSQU.
 
 Read in this order: `docs/PLAN.md` (§0 amendments first), `docs/ANALYSIS.md`, `app/lib/CONTRACTS.md`, `docs/QA.md`, `docs/APP-STORE.md`.
 
@@ -21,16 +21,16 @@ Read in this order: `docs/PLAN.md` (§0 amendments first), `docs/ANALYSIS.md`, `
 `cd app && flutter analyze && flutter test` → 0 issues, all green at the last lead commit. The app runs on the iPhone 17 Pro simulator (placeholder screens until WP-12 wiring).
 
 ## Also done since 12:40 (merged in PR #2)
-Onboarding (3 steps, mascot hero + cards, two-step Always flow) · Heute idle/live · Tagesbilanz (count-up, PB chips, notification opt-in) · Tage list + Tag detail (map, altitude profile, stats grid, run list, share/delete) · altitude profile, share card PNG, GPX 1.1, diagnostics bundle · Settings sheet + hidden Diagnose page · Apple Watch SwiftUI app sources + WatchConnectivity bridge + heart-rate source (target is added with `python3 app/ios/SchwungWatch/tools/add_watch_target.py` once the watchOS SDK is installed; see docs/WATCH.md) · router/main wiring, thumbnail + weather written at End · review fixes (hold-button dispose, autoDispose day detail, resting-state permission cards) · debug launch switches for the simulator (`--dart-define=SCHWUNG_SKIP_ONBOARDING=1`, `SCHWUNG_DEMO=1`, `SCHWUNG_TAB=tage`). 150 tests, analyzer clean, `main` = ce6782b.
+Onboarding (3 steps, mascot hero + cards, two-step Always flow) · Heute idle/live · Tagesbilanz (count-up, PB chips, notification opt-in) · Tage list + Tag detail (map, altitude profile, stats grid, run list, share/delete) · altitude profile, share card PNG, GPX 1.1, diagnostics bundle · Settings sheet + hidden Diagnose page · Apple Watch SwiftUI app sources + WatchConnectivity bridge + heart-rate source (target is added with `python3 app/ios/DroplineWatch/tools/add_watch_target.py` once the watchOS SDK is installed; see docs/WATCH.md) · router/main wiring, thumbnail + weather written at End · review fixes (hold-button dispose, autoDispose day detail, resting-state permission cards) · debug launch switches for the simulator (`--dart-define=DROPLINE_SKIP_ONBOARDING=1`, `DROPLINE_DEMO=1`, `DROPLINE_TAB=tage`). 150 tests, analyzer clean, `main` = ce6782b.
 
 ## Next steps, in order
-1. Founder: Xcode account for Team 5GDU97KSQU **or** App Store Connect API key; create the App Store Connect record "Schwung"; confirm the name. Then `tools/testflight.sh --upload`.
+1. Founder: Xcode account for Team 5GDU97KSQU **or** App Store Connect API key; create the App Store Connect record "Dropline"; confirm the name. Then `tools/testflight.sh --upload`.
 2. Device QA (`docs/QA.md`): one locked-phone hour, one kill/resume, one mountain day → diagnostics bundle → engine fixture.
 3. TestFlight build 2: Watch app, Live Activity, `Gebiet` info card.
-4. Backend (Supabase project `svzmmpzevmpodcelzvit` "SKI", Frankfurt — schema from `supabase/migrations/0001_schwung.sql` is applied, Sign in with Apple enabled with client id de.torchtechnology.schwung, iOS entitlement added, `supabase_flutter` bootstrapped in `lib/data/supabase/`): sync + auth (WP-14), account sheet (WP-15), social tab Rangliste/Tagesduell/Wochen-Challenge (WP-16) are being built by agents via `.context/plan/backend-workflow.js`; lead wires `AppRouter.social()` and `startAutoSync` afterwards.
+4. Backend (Supabase project `svzmmpzevmpodcelzvit` "SKI", Frankfurt — schema from `supabase/migrations/0001_dropline.sql` is applied, Sign in with Apple enabled with client id de.torchtechnology.dropline, iOS entitlement added, `supabase_flutter` bootstrapped in `lib/data/supabase/`): sync + auth (WP-14), account sheet (WP-15), social tab Rangliste/Tagesduell/Wochen-Challenge (WP-16) are being built by agents via `.context/plan/backend-workflow.js`; lead wires `AppRouter.social()` and `startAutoSync` afterwards.
 
 ## Decisions still open
-- Name "Schwung" (bundle id becomes permanent with the first upload).
+- Name "Dropline" (bundle id becomes permanent with the first upload).
 - Stack note: Flutter phone app + native SwiftUI Watch app (as built). A fully native rewrite would drop Android; not recommended now.
 - Social in v1 (delays TestFlight) vs. v1.5 (recommended).
 - Map provider for the store release (Mapbox/MapTiler key); TestFlight uses OpenTopoMap + OpenSnowMap without a key.

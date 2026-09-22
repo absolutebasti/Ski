@@ -23,7 +23,7 @@ swallows `MissingPluginException` / `PlatformException`.
 
 | Direction | Payload | Code |
 |---|---|---|
-| phone → watch | application context `{status, dayId, dropM, runCount, maxSpeedMs, elapsedMs, speedMs, altM}`, at most every 2 s | `lib/platform/watch/watch_messages.dart` ↔ `ios/SchwungWatch/WatchLive.swift` |
+| phone → watch | application context `{status, dayId, dropM, runCount, maxSpeedMs, elapsedMs, speedMs, altM}`, at most every 2 s | `lib/platform/watch/watch_messages.dart` ↔ `ios/DroplineWatch/WatchLive.swift` |
 | watch → phone | message `{cmd: "start"}` / `{cmd: "end"}` | `watchCommandFrom` ↔ `WatchSessionManager.send(command:)` |
 | watch → phone | message `{hr: <bpm>}` | `WatchHeartRateSource` ↔ `WorkoutManager` |
 
@@ -51,12 +51,12 @@ Without this, adding the target breaks the iPhone build too.
 
 ```bash
 cd app
-python3 ios/SchwungWatch/tools/add_watch_target.py
-xcodebuild -list -project ios/Runner.xcodeproj   # SchwungWatch must be listed
+python3 ios/DroplineWatch/tools/add_watch_target.py
+xcodebuild -list -project ios/Runner.xcodeproj   # DroplineWatch must be listed
 flutter build ios --no-codesign                  # must stay green
 ```
 
-The script is idempotent (it refuses if `SchwungWatch` already appears) and
+The script is idempotent (it refuses if `DroplineWatch` already appears) and
 undone with `git checkout -- ios/Runner.xcodeproj/project.pbxproj`. It adds the
 native target, its three build configurations, the sources / resources phases
 and the *Embed Watch Content* copy phase on Runner, with exactly the settings
@@ -69,24 +69,24 @@ companion without `-d <simulator id>`. Use `flutter build ios --no-codesign`
 ## 3. Add the target — by hand in Xcode (fallback)
 
 1. `open app/ios/Runner.xcworkspace` → File > New > Target… > watchOS > **App**.
-   * Product name `SchwungWatch`, Interface SwiftUI, Language Swift,
+   * Product name `DroplineWatch`, Interface SwiftUI, Language Swift,
      **no** Notification Scene, **no** Complication, **no** tests.
    * "Watch App for Existing iOS App" → companion `Runner`.
-   * Bundle identifier **`de.torchtechnology.schwung.watchkitapp`** (Apple
+   * Bundle identifier **`de.torchtechnology.dropline.watchkitapp`** (Apple
      requires the companion's id + `.watchkitapp`).
 2. Delete the files Xcode generated in the new group (`ContentView.swift`,
-   `SchwungWatchApp.swift`, `Assets.xcassets`, `Info.plist`, `Preview Content`)
+   `DroplineWatchApp.swift`, `Assets.xcassets`, `Info.plist`, `Preview Content`)
    — **Move to Trash** — then File > Add Files… and add the existing folder
-   `app/ios/SchwungWatch` *without* "Copy items if needed", target membership
-   `SchwungWatch` only.
-3. Target `SchwungWatch` > **Signing & Capabilities**
+   `app/ios/DroplineWatch` *without* "Copy items if needed", target membership
+   `DroplineWatch` only.
+3. Target `DroplineWatch` > **Signing & Capabilities**
    * Team `5GDU97KSQU` (Torch Technology), Automatically manage signing.
    * `+ Capability` → **HealthKit** (leave "Clinical Health Records" off).
    * `+ Capability` → **Background Modes** → check **Workout processing**.
-   * Entitlements file: `SchwungWatch/SchwungWatch.entitlements` (already in the
+   * Entitlements file: `DroplineWatch/DroplineWatch.entitlements` (already in the
      repo; Xcode may point at a new file — repoint it to this one).
-4. Target `SchwungWatch` > **Build Settings**
-   * `Info.plist File` = `SchwungWatch/Info.plist`,
+4. Target `DroplineWatch` > **Build Settings**
+   * `Info.plist File` = `DroplineWatch/Info.plist`,
      `Generate Info.plist File` = **No**.
    * `watchOS Deployment Target` = **10.0**, `Targeted Device Families` = 4.
    * `Marketing Version` = `$(FLUTTER_BUILD_NAME)`,
@@ -96,8 +96,8 @@ companion without `-d <simulator id>`. Use `flutter build ios --no-codesign`
      app's — this keeps them in lockstep with `flutter build --build-number`.
    * Swift Language Version 5, `Skip Install` = Yes.
 5. Target `Runner` > Build Phases: an **Embed Watch Content** phase with
-   `SchwungWatch.app`, destination `$(CONTENTS_FOLDER_PATH)/Watch`, plus
-   `SchwungWatch` in Target Dependencies. Xcode adds both automatically.
+   `DroplineWatch.app`, destination `$(CONTENTS_FOLDER_PATH)/Watch`, plus
+   `DroplineWatch` in Target Dependencies. Xcode adds both automatically.
 6. There must be **three** build configurations on the watch target — Flutter
    also builds `Profile`. Xcode only creates Debug/Release; duplicate Release
    into `Profile` (Project > Info > Configurations is project-wide, so the
@@ -110,7 +110,7 @@ companion without `-d <simulator id>`. Use `flutter build ios --no-codesign`
 Two lines, after the `ProviderContainer` exists and before `runApp`:
 
 ```dart
-import 'package:schwung/platform/watch/watch.dart';
+import 'package:dropline/platform/watch/watch.dart';
 ...
 container.read(watchBridgeProvider.notifier).attach();
 ```

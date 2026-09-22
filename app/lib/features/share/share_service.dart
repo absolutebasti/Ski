@@ -38,7 +38,7 @@ class ShareService {
     final s = ShareStrings.of(context);
     final l = AppLocale.of(context);
     final png = await ShareCardRenderer.render(context, detail, awaitFrame: awaitFrame);
-    final file = await writeTemp('schwung-${GpxExporter.isoDate(detail.day.startedAt)}-${GpxExporter.shortId(detail.day.id)}.png', png);
+    final file = await writeTemp('dropline-${GpxExporter.isoDate(detail.day.startedAt)}-${GpxExporter.shortId(detail.day.id)}.png', png);
     final st = detail.day.stats;
     await _sink(
       [XFile(file.path, mimeType: 'image/png')],

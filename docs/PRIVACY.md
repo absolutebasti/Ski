@@ -1,12 +1,12 @@
-# Datenschutzerklärung / Privacy Policy — Schwung
+# Datenschutzerklärung / Privacy Policy — Dropline
 
 Stand / last updated: 2026-09-22 · Verantwortlich / controller: Sebastian Fackelmann, Torch Technology, hello@torchtechnology.de
 
 ## Deutsch
 
-**Kurz gesagt:** Schwung speichert deine Skitage nur auf deinem iPhone. Es gibt kein Konto, keine Werbung, kein Tracking und keine Cloud.
+**Kurz gesagt:** Dropline speichert deine Skitage nur auf deinem iPhone. Es gibt kein Konto, keine Werbung, kein Tracking und keine Cloud.
 
-**Standortdaten.** Schwung zeichnet deinen GPS-Standort auf, solange du einen Skitag aufnimmst – auch im Hintergrund, wenn das iPhone gesperrt ist. Daraus berechnet die App Abfahrten, Höhenmeter, Distanz und Geschwindigkeit. Die Daten bleiben in der lokalen Datenbank der App auf deinem Gerät. Beendest du den Skitag, endet auch die Standortnutzung.
+**Standortdaten.** Dropline zeichnet deinen GPS-Standort auf, solange du einen Skitag aufnimmst – auch im Hintergrund, wenn das iPhone gesperrt ist. Daraus berechnet die App Abfahrten, Höhenmeter, Distanz und Geschwindigkeit. Die Daten bleiben in der lokalen Datenbank der App auf deinem Gerät. Beendest du den Skitag, endet auch die Standortnutzung.
 
 **Sensoren.** Der Luftdrucksensor (über die Berechtigung „Bewegung & Fitness“) verbessert die Höhenmessung. Mit einer Apple Watch kann die Herzfrequenz in den Skitag übernommen werden. Auch diese Daten bleiben auf dem Gerät.
 
@@ -22,9 +22,9 @@ Stand / last updated: 2026-09-22 · Verantwortlich / controller: Sebastian Facke
 
 ## English
 
-**In short:** Schwung keeps your ski days on your iPhone only. No account, no ads, no tracking, no cloud.
+**In short:** Dropline keeps your ski days on your iPhone only. No account, no ads, no tracking, no cloud.
 
-**Location.** Schwung records your GPS position while a ski day is being recorded – including in the background with the phone locked – to compute runs, vertical, distance and speed. Data stays in the app's local database on your device. Location use ends when you end the day.
+**Location.** Dropline records your GPS position while a ski day is being recorded – including in the background with the phone locked – to compute runs, vertical, distance and speed. Data stays in the app's local database on your device. Location use ends when you end the day.
 
 **Sensors.** The barometer (via the "Motion & Fitness" permission) improves altitude accuracy. With an Apple Watch, heart rate can be added to a day. This data also stays on the device.
 

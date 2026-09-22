@@ -1,4 +1,4 @@
-import 'package:schwung/core/core.dart';
+import 'package:dropline/core/core.dart';
 
 /// 2026-01-15 09:00 — inside season 2025/26.
 final int tsDay = DateTime(2026, 1, 15, 9).millisecondsSinceEpoch;
