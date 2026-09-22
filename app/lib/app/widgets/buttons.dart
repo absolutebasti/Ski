@@ -130,7 +130,7 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton> with SingleTi
       if (s == AnimationStatus.completed) {
         unawaited(HapticFeedback.heavyImpact());
         widget.onConfirmed();
-        _ctrl.reset();
+        if (mounted) _ctrl.reset();
       }
     });
 
@@ -146,6 +146,7 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton> with SingleTi
   }
 
   void _cancel() {
+    if (!mounted) return;
     if (_ctrl.status != AnimationStatus.completed) _ctrl.reverse();
   }
 

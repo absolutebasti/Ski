@@ -5,10 +5,12 @@ import 'package:schwung/app/widgets/widgets.dart';
 import 'package:schwung/core/core.dart';
 
 import '../support/pump.dart';
+import '../support/screen_overrides.dart';
 
 void main() {
-  testWidgets('shell shows two tabs', (tester) async {
-    await pumpApp(tester, const RootShell());
+  testWidgets('shell shows two tabs with the real screens', (tester) async {
+    await pumpApp(tester, const RootShell(), overrides: screenOverrides());
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(NavigationDestination), findsNWidgets(2));
     expect(find.text('Tage'), findsWidgets);
   });

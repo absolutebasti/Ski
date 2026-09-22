@@ -43,11 +43,12 @@ class Settings {
 }
 
 class SettingsNotifier extends Notifier<Settings> {
-  SettingsNotifier(this._prefs);
+  SettingsNotifier(this._prefs, {Settings? initial}) : _initial = initial; // ignore: prefer_initializing_formals
   final SharedPreferences? _prefs;
+  final Settings? _initial;
 
   @override
-  Settings build() => _prefs == null ? const Settings() : Settings.fromPrefs(_prefs);
+  Settings build() => _initial ?? (_prefs == null ? const Settings() : Settings.fromPrefs(_prefs));
 
   Future<void> update(Settings Function(Settings) fn) async {
     final next = fn(state);
@@ -58,7 +59,11 @@ class SettingsNotifier extends Notifier<Settings> {
     await p.setBool('onboardingDone', next.onboardingDone);
     await p.setBool('notificationsOptIn', next.notificationsOptIn);
     await p.setBool('notificationsAsked', next.notificationsAsked);
-    if (next.lastResortId != null) await p.setString('lastResortId', next.lastResortId!);
+    if (next.lastResortId != null) {
+      await p.setString('lastResortId', next.lastResortId!);
+    } else {
+      await p.remove('lastResortId');
+    }
     await p.setBool('diagnosticsUnlocked', next.diagnosticsUnlocked);
   }
 
@@ -66,6 +71,11 @@ class SettingsNotifier extends Notifier<Settings> {
   Future<void> setOnboardingDone() => update((s) => s.copyWith(onboardingDone: true));
   Future<void> setNotifications({required bool optIn}) =>
       update((s) => s.copyWith(notificationsOptIn: optIn, notificationsAsked: true));
+  Future<void> setDiagnosticsUnlocked() => update((s) => s.copyWith(diagnosticsUnlocked: true));
+  Future<void> clearLastResort() => update((s) => Settings(
+        locale: s.locale, onboardingDone: s.onboardingDone, notificationsOptIn: s.notificationsOptIn,
+        notificationsAsked: s.notificationsAsked, lastResortId: null, diagnosticsUnlocked: s.diagnosticsUnlocked,
+      ));
 }
 
 /// Overridden in main() with the real SharedPreferences instance.

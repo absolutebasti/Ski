@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../features/days/days.dart';
+import '../features/onboarding/onboarding.dart';
+import '../features/summary/summary.dart';
+import '../features/today/today.dart';
 import 'placeholders.dart';
 
 /// Named routes. Feature screens are registered here by the lead (WP-12);
@@ -24,11 +28,11 @@ class AppRoutes {
 class AppRouter {
   const AppRouter._();
 
-  static Widget heute() => const PlaceholderScreen('Heute');
-  static Widget tage() => const PlaceholderScreen('Tage');
-  static Widget onboarding() => const PlaceholderScreen('Onboarding');
-  static Widget dayDetail(String dayId) => PlaceholderScreen('Tag', subtitle: dayId);
-  static Widget summary(String dayId) => PlaceholderScreen('Tagesbilanz', subtitle: dayId);
+  static Widget heute() => const HeuteScreen();
+  static Widget tage() => const TageScreen();
+  static Widget onboarding() => const OnboardingFlow();
+  static Widget dayDetail(String dayId) => DayDetailScreen(dayId: dayId);
+  static Widget summary(String dayId) => TagesbilanzScreen(dayId: dayId);
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final uri = Uri.parse(settings.name ?? AppRoutes.home);

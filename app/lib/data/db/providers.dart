@@ -14,7 +14,7 @@ final daysRepositoryProvider = Provider<DaysRepository>((ref) => DaysRepository(
 
 final daysListProvider = StreamProvider<List<DaySummary>>((ref) => ref.watch(daysRepositoryProvider).watchDays());
 
-final dayDetailProvider = FutureProvider.family<DayDetail, String>((ref, id) async {
+final dayDetailProvider = FutureProvider.autoDispose.family<DayDetail, String>((ref, id) async {
   final d = await ref.watch(daysRepositoryProvider).dayDetail(id);
   if (d == null) throw StateError('day $id not found');
   return d;
