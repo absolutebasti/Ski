@@ -136,8 +136,11 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // 12 pt gutters: a scaled-down '1.849 m' must never touch the next column.
                         Expanded(child: _Hero(value: '${st.runCount}', label: s.runs)),
+                        const SizedBox(width: 12),
                         Expanded(child: _Hero(value: Fmt.metres(st.dropM, locale: l.code), unit: s.unitHm, label: s.vertical)),
+                        const SizedBox(width: 12),
                         Expanded(child: _Hero(value: Fmt.kmh(st.maxSpeedMs, locale: l.code), unit: s.unitKmh, label: s.topSpeed)),
                       ],
                     ),
@@ -201,7 +204,7 @@ class _Hero extends StatelessWidget {
   Widget build(BuildContext context) => FittedBox(
         fit: BoxFit.scaleDown,
         alignment: Alignment.centerLeft,
-        child: HeroNumber(value: value, unit: unit, label: label, size: 44),
+        child: HeroNumber(value: value, unit: unit, label: label, size: 40),
       );
 }
 

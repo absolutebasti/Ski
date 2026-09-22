@@ -181,7 +181,7 @@ class PbTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final body = Container(
-      height: 64,
+      height: 72,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: ShapeDecoration(
         color: Color.alphaBlend(c.accent.withValues(alpha: 0.08), c.surface),
@@ -191,7 +191,7 @@ class PbTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label.overline, style: AppText.label(c.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(label.overline, style: AppText.label(c.textTertiary), maxLines: 2, overflow: TextOverflow.ellipsis),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
