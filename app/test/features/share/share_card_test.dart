@@ -33,6 +33,45 @@ void main() {
     expect(find.byType(CustomPaint), findsWidgets);
   });
 
+  testWidgets('the square variant drops the bottom stat row and still fits', (tester) async {
+    tester.view.physicalSize = const Size(1080, 1080);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await pumpApp(tester, ShareCard(detail: detail, format: ShareFormat.square));
+    final box = tester.renderObject<RenderBox>(find.byType(ShareCard));
+    expect(box.size, const Size(1080, 1080));
+    expect(find.text('HÖHENMETER'), findsOneWidget);
+    expect(find.text('SKI-KM'), findsNothing);
+    expect(find.text('LÄNGSTE ABFAHRT'), findsNothing);
+    expect(find.text(kAppName), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'no RenderFlex overflow at 1:1');
+  });
+
+  testWidgets('the story variant lays out at 1080×1920 with the wordmark above the safe area', (tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await pumpApp(tester, ShareCard(detail: detail, format: ShareFormat.story));
+    final box = tester.renderObject<RenderBox>(find.byType(ShareCard));
+    expect(box.size, const Size(1080, 1920));
+    expect(find.text('HÖHENMETER'), findsOneWidget);
+    expect(find.text('SKI-KM'), findsNothing);
+    final wordmark = tester.getRect(find.byType(Wordmark));
+    expect(1920 - wordmark.bottom, greaterThanOrEqualTo(120), reason: 'IG story safe area');
+    expect(tester.takeException(), isNull, reason: 'no RenderFlex overflow at 9:16');
+  });
+
+  test('every format carries its own size and file slug', () {
+    expect(ShareFormat.portrait.size, const Size(1080, 1350));
+    expect(ShareFormat.square.size, const Size(1080, 1080));
+    expect(ShareFormat.story.size, const Size(1080, 1920));
+    expect({for (final f in ShareFormat.values) f.slug}, hasLength(ShareFormat.values.length));
+    expect(ShareCard.width, ShareFormat.portrait.width);
+    expect(ShareCard.height, ShareFormat.portrait.height);
+  });
+
   testWidgets('ShareCard renders in English with the open-terrain fallback', (tester) async {
     tester.view.physicalSize = const Size(1080, 1350);
     tester.view.devicePixelRatio = 1;
@@ -81,5 +120,20 @@ void main() {
 
     await tester.pump();
     expect(find.byType(ShareCard), findsNothing, reason: 'overlay entry is removed again');
+  });
+
+  testWidgets('ShareCardRenderer honours the requested format', (tester) async {
+    late BuildContext ctx;
+    await pumpApp(tester, Builder(builder: (c) {
+      ctx = c;
+      return const SizedBox.shrink();
+    }));
+    final png = await tester.runAsync(
+      () => ShareCardRenderer.render(ctx, detail, awaitFrame: () => tester.pump(), format: ShareFormat.story),
+    );
+    int be(int o) => (png![o] << 24) | (png[o + 1] << 16) | (png[o + 2] << 8) | png[o + 3];
+    expect(be(16), 1080);
+    expect(be(20), 1920);
+    await tester.pump();
   });
 }

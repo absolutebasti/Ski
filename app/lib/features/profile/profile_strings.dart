@@ -13,4 +13,5 @@ class ProfileStrings {
   String get lift => l.pick(de: 'Liftfahrt', en: 'Lift');
   String get signalLoss => l.pick(de: 'Kein GPS', en: 'No GPS');
   String get noData => l.pick(de: 'Kein Höhenprofil', en: 'No altitude profile');
+  String get unitM => 'm';
 }

@@ -7,22 +7,28 @@ import 'package:flutter/widgets.dart';
 import '../../core/core.dart';
 import 'share_card.dart';
 
-/// Renders [ShareCard] to PNG bytes at pixel ratio 1 (1080×1350) by inserting
-/// it off-screen into the root [Overlay] for one frame and reading the
+/// Renders [ShareCard] to PNG bytes at pixel ratio 1 (1080×1350 by default) by
+/// inserting it off-screen into the root [Overlay] for one frame and reading the
 /// [RenderRepaintBoundary] back. Needs a context below the app's MaterialApp
 /// (theme, locale, overlay).
 class ShareCardRenderer {
   const ShareCardRenderer._();
 
   /// [awaitFrame] is injectable for widget tests, where frames are pumped by hand.
-  static Future<Uint8List> render(BuildContext context, DayDetail detail, {Future<void> Function()? awaitFrame}) async {
+  /// [format] picks the output size; the default stays 1080×1350.
+  static Future<Uint8List> render(
+    BuildContext context,
+    DayDetail detail, {
+    Future<void> Function()? awaitFrame,
+    ShareFormat format = ShareFormat.portrait,
+  }) async {
     final overlay = Overlay.of(context, rootOverlay: true);
     final key = GlobalKey();
     final entry = OverlayEntry(
       builder: (_) => Positioned(
-        left: -ShareCard.width - 64,
+        left: -format.width - 64,
         top: 0,
-        child: RepaintBoundary(key: key, child: ShareCard(detail: detail)),
+        child: RepaintBoundary(key: key, child: ShareCard(detail: detail, format: format)),
       ),
     );
     overlay.insert(entry);

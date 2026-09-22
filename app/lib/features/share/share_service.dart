@@ -11,6 +11,7 @@ import '../../data/db/days_repository.dart';
 import '../../data/db/providers.dart';
 import 'diagnostics_bundle.dart';
 import 'gpx_exporter.dart';
+import 'share_card.dart';
 import 'share_card_renderer.dart';
 import 'share_strings.dart';
 
@@ -32,13 +33,20 @@ class ShareService {
   final ShareSink _sink;
   final Future<Directory> Function() _tempDir;
 
-  /// Renders the 1080×1350 card off-screen and shares it as PNG.
+  /// Renders the card off-screen and shares it as PNG. [format] defaults to the
+  /// 1080×1350 portrait variant; square and story write their own file name.
   /// [awaitFrame] is injectable for widget tests, which pump frames by hand.
-  Future<void> shareDayCard(BuildContext context, DayDetail detail, {Future<void> Function()? awaitFrame}) async {
+  Future<void> shareDayCard(
+    BuildContext context,
+    DayDetail detail, {
+    Future<void> Function()? awaitFrame,
+    ShareFormat format = ShareFormat.portrait,
+  }) async {
     final s = ShareStrings.of(context);
     final l = AppLocale.of(context);
-    final png = await ShareCardRenderer.render(context, detail, awaitFrame: awaitFrame);
-    final file = await writeTemp('dropline-${GpxExporter.isoDate(detail.day.startedAt)}-${GpxExporter.shortId(detail.day.id)}.png', png);
+    final png = await ShareCardRenderer.render(context, detail, awaitFrame: awaitFrame, format: format);
+    final suffix = format == ShareFormat.portrait ? '' : '-${format.slug}';
+    final file = await writeTemp('dropline-${GpxExporter.isoDate(detail.day.startedAt)}-${GpxExporter.shortId(detail.day.id)}$suffix.png', png);
     final st = detail.day.stats;
     await _sink(
       [XFile(file.path, mimeType: 'image/png')],

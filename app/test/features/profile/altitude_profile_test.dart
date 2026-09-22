@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dropline/app/theme/tokens.dart';
 import 'package:dropline/core/core.dart';
 import 'package:dropline/features/profile/altitude_profile.dart';
 import 'package:dropline/features/profile/profile_series.dart';
@@ -94,6 +95,8 @@ void main() {
       expect(chart.data.lineBarsData.single.spots.length, lessThanOrEqualTo(1500));
       expect(chart.data.rangeAnnotations.verticalRangeAnnotations.length, detail.lifts.length);
       expect(chart.data.lineBarsData.single.belowBarData.show, isTrue, reason: 'area fill under the profile');
+      expect(chart.data.lineBarsData.single.belowBarData.gradient, isNotNull, reason: 'accent 22 % → 0 area gradient');
+      expect(chart.data.lineBarsData.single.barWidth, 2);
       expect(chart.data.extraLinesData.verticalLines, isEmpty);
       expect(tester.takeException(), isNull);
     });
@@ -116,11 +119,20 @@ void main() {
       expect(seen.whereType<int>(), isNotEmpty);
       final ts = seen.whereType<int>().last;
       expect(ts, inInclusiveRange(detail.points.first.ts, detail.points.last.ts));
-      expect(tester.widget<LineChart>(chart).data.extraLinesData.verticalLines, hasLength(1));
+      final cursor = tester.widget<LineChart>(chart).data.extraLinesData.verticalLines;
+      expect(cursor, hasLength(1));
+      expect(cursor.single.strokeWidth, 1, reason: '1 px ice cursor');
+      expect(cursor.single.color, AppColors.dark.ice);
+      // floating glass readout: '11:42 · 1.980 m'
+      expect(find.text(Fmt.timeOfDay(ts, locale: 'de')), findsOneWidget);
+      expect(find.text('·'), findsNothing);
+      expect(find.text(' · '), findsOneWidget);
+      expect(find.text('m'), findsOneWidget);
       await g.up();
       await tester.pump();
       expect(seen.last, isNull);
       expect(tester.widget<LineChart>(chart).data.extraLinesData.verticalLines, isEmpty);
+      expect(find.text(' · '), findsNothing);
     });
   });
 }
