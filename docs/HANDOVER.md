@@ -1,4 +1,4 @@
-# Schwung — Handover (2026-09-22, 13:30)
+# Schwung — Handover (2026-09-22, 14:00)
 
 ## What this is
 The ski-day tracker rebuilt from the 2025 PWA as a Flutter app (iOS first, Android builds, native Apple Watch companion). One tap records the whole day; runs, lifts and stops are detected automatically; tracking keeps running with the phone locked. Brand: **Schwung**, bundle id `de.torchtechnology.schwung`, Team 5GDU97KSQU.
@@ -27,7 +27,7 @@ Onboarding (3 steps, mascot hero + cards, two-step Always flow) · Heute idle/li
 1. Founder: Xcode account for Team 5GDU97KSQU **or** App Store Connect API key; create the App Store Connect record "Schwung"; confirm the name. Then `tools/testflight.sh --upload`.
 2. Device QA (`docs/QA.md`): one locked-phone hour, one kill/resume, one mountain day → diagnostics bundle → engine fixture.
 3. TestFlight build 2: Watch app, Live Activity, `Gebiet` info card.
-4. Backend (Supabase, see `docs/BACKEND.md`): Sign in with Apple, cloud backup of days, opt-in leaderboards, group days ≤ 3, weekly challenges.
+4. Backend (Supabase project `svzmmpzevmpodcelzvit` "SKI", Frankfurt — schema from `supabase/migrations/0001_schwung.sql` is applied, Sign in with Apple enabled with client id de.torchtechnology.schwung, iOS entitlement added, `supabase_flutter` bootstrapped in `lib/data/supabase/`): sync + auth (WP-14), account sheet (WP-15), social tab Rangliste/Tagesduell/Wochen-Challenge (WP-16) are being built by agents via `.context/plan/backend-workflow.js`; lead wires `AppRouter.social()` and `startAutoSync` afterwards.
 
 ## Decisions still open
 - Name "Schwung" (bundle id becomes permanent with the first upload).
