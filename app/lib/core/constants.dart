@@ -1,7 +1,7 @@
 /// Every tracking threshold in one place (see docs/PLAN.md §5).
 /// Pure Dart — no Flutter imports. Values are SI: metres, seconds, m/s.
 class TrackingConfig {
-  const TrackingConfig._();
+  const TrackingConfig();
 
   // ---- Gate (per raw fix) ----
   static const double maxHorizontalAccuracyM = 30;
