@@ -137,21 +137,23 @@ class SupabaseSocialApi implements SocialApi {
 
   @override
   Future<DuelGroup> joinDuel(String code) => _guard(() async {
-        final uid = _requireUser();
+        _requireUser();
         final normalised = normaliseCode(code);
         if (!isValidCode(normalised)) throw const SocialError(SocialErrorKind.codeNotFound);
-        // TODO(WP-16): `groups` is only readable by members or the creator, so
-        // this select returns null for everyone who was invited. Joining needs a
-        // security-definer RPC `join_group(p_code text)` — see the report.
-        final row = await _client.from('groups').select().eq('code', normalised).maybeSingle();
-        if (row == null) throw const SocialError(SocialErrorKind.codeNotFound);
-        final group = DuelGroup.fromJson(Map<String, Object?>.from(row));
-        final members = _rows(await _client.from('group_members').select('user_id').eq('group_id', group.id));
-        if (members.any((m) => m['user_id'] == uid)) return group;
-        // Client-side cap only; the server has no check yet (see the report).
-        if (members.length >= group.maxMembers) throw const SocialError(SocialErrorKind.duelFull);
-        await _client.from('group_members').insert({'group_id': group.id, 'user_id': uid});
-        return group;
+        // Security-definer RPC (supabase/migrations/0002_social_fixes.sql):
+        // invitees cannot read a group before they are in it, and the server
+        // enforces max_members.
+        final Object? raw;
+        try {
+          raw = await _client.rpc<dynamic>('join_group', params: {'p_code': normalised});
+        } on PostgrestException catch (e) {
+          if (e.message.contains('code_not_found')) throw const SocialError(SocialErrorKind.codeNotFound);
+          if (e.message.contains('duel_full')) throw const SocialError(SocialErrorKind.duelFull);
+          rethrow;
+        }
+        final rows = _rows(raw);
+        if (rows.isEmpty) throw const SocialError(SocialErrorKind.codeNotFound);
+        return DuelGroup.fromJson(rows.first);
       });
 
   @override
