@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 
-/// The snow leopard. PNGs carry the graphite field, so edges are faded with a
-/// radial mask until transparent cut-outs land in assets/mascot.
+/// The snow leopard. Transparent cut-outs (tools/assets/cutout_leopard.py),
+/// so the figure sits directly on the page without a halo.
 class Leo extends StatelessWidget {
   const Leo({super.key, this.pose = 'head', this.size = 160});
   final String pose;
@@ -17,17 +17,12 @@ class Leo extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: ShaderMask(
-        shaderCallback: (r) => const RadialGradient(
-          colors: [Colors.white, Colors.white, Colors.transparent],
-          stops: [0, 0.68, 1],
-        ).createShader(r),
-        blendMode: BlendMode.dstIn,
-        child: Image.asset(
-          _asset,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Image.asset('assets/mascot/leo-head.png', fit: BoxFit.cover),
-        ),
+      child: Image.asset(
+        _asset,
+        fit: BoxFit.contain,
+        alignment: Alignment.bottomCenter,
+        filterQuality: FilterQuality.medium,
+        errorBuilder: (_, _, _) => Image.asset('assets/mascot/leo-head.png', fit: BoxFit.contain),
       ),
     );
   }
