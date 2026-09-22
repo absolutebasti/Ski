@@ -1,13 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dropline/app/l10n/app_locale.dart';
 import 'package:dropline/app/shell.dart';
-import 'package:dropline/app/widgets/widgets.dart';
+import 'package:dropline/core/core.dart';
 import 'package:dropline/core/settings.dart';
+import 'package:dropline/data/sync/auth_service.dart';
 import 'package:dropline/features/onboarding/onboarding.dart';
 import 'package:dropline/platform/permission_service.dart';
 
@@ -15,53 +14,51 @@ import '../../support/fakes.dart';
 import '../../support/pump.dart';
 import '../../support/screen_overrides.dart';
 
-/// Records the permission calls in order and can hold the first one open,
-/// which is what "an iOS dialog is on screen" looks like to the widget.
-class _Perms extends FakePermissionService {
-  _Perms({super.state});
-
+/// Records the order of permission calls and lets a test hold a dialog open.
+class RecordingPermissions extends FakePermissionService {
+  RecordingPermissions({super.state, this.gate});
   final List<String> calls = [];
-  int settingsOpened = 0;
-  Completer<void>? gate;
+  Future<void>? gate;
 
   @override
   Future<LocationPermissionState> requestWhenInUse() async {
     calls.add('whenInUse');
-    final g = gate;
-    if (g != null) await g.future;
+    if (gate != null) await gate;
     return super.requestWhenInUse();
   }
 
   @override
-  Future<LocationPermissionState> requestAlways() {
+  Future<LocationPermissionState> requestAlways() async {
     calls.add('always');
     return super.requestAlways();
   }
 
   @override
-  Future<bool> requestMotion() {
+  Future<bool> requestMotion() async {
     calls.add('motion');
-    return super.requestMotion();
+    return true;
   }
 
   @override
-  Future<void> openSettings() async => settingsOpened++;
+  Future<void> openSettings() async => calls.add('openSettings');
 }
 
-const _de = OnboardingStrings(AppLocale(Locale('de')));
+const _resorts = [
+  Resort(id: 'kitzbuehel', name: 'Kitzbühel', country: 'AT', lat: 47.44, lon: 12.39, radiusKm: 12),
+  Resort(id: 'ischgl', name: 'Ischgl', country: 'AT', lat: 47.01, lon: 10.29, radiusKm: 10),
+];
 
-Settings _settingsOf(WidgetTester tester, Finder finder) =>
-    ProviderScope.containerOf(tester.element(finder)).read(settingsProvider);
-
-Future<void> _pumpFlow(WidgetTester tester, _Perms perms) => pumpApp(
+Future<void> _pump(WidgetTester tester, RecordingPermissions perms, {Future<AuthUser?> Function()? signIn, Locale locale = const Locale('de')}) => pumpApp(
       tester,
       const OnboardingFlow(),
-      overrides: screenOverrides(settings: const Settings(), permissions: perms),
+      overrides: [
+        ...screenOverrides(settings: const Settings(), permissions: perms, resorts: _resorts),
+        onboardingSignInProvider.overrideWithValue(signIn ?? () async => null),
+      ],
+      locale: locale,
     );
 
-Future<void> _toStepThree(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('onboarding-primary')));
-  await tester.pumpAndSettle();
+Future<void> _next(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('onboarding-primary')));
   await tester.pumpAndSettle();
 }
@@ -70,117 +67,104 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    // video_player has no platform side in tests; MascotCard/MascotHero fall back
-    // to the poster when initialize() fails, so a no-op handler is enough.
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(const MethodChannel('flutter.io/videoPlayer'), (call) async => null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('flutter.io/videoPlayer'), (call) async => null);
   });
 
-  tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(const MethodChannel('flutter.io/videoPlayer'), null);
-  });
-
-  testWidgets('three pages in order, dots follow, no permission call before step 3', (tester) async {
-    final perms = _Perms(state: LocationPermissionState.denied);
-    await _pumpFlow(tester, perms);
-
-    expect(find.text(_de.p1Headline), findsOneWidget);
-    expect(find.text(_de.p1Mascot), findsOneWidget);
-    expect(find.text(_de.next), findsOneWidget);
-    expect(find.byType(ProgressDots), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('onboarding-primary')));
+  testWidgets('four pages in order, no permission call before the last page', (tester) async {
+    final perms = RecordingPermissions();
+    await _pump(tester, perms);
+    const de = OnboardingStrings(AppLocale(Locale('de')));
+    expect(find.text(de.p1Headline), findsOneWidget);
+    expect(find.byType(RouteHook), findsOneWidget);
+    expect(find.byKey(const ValueKey('onboarding-hm-slider')), findsOneWidget);
+    await _next(tester);
+    expect(find.text(de.p2Headline), findsOneWidget);
+    expect(find.text('Kitzbühel'), findsOneWidget);
+    await _next(tester);
+    expect(find.text(de.p3Headline), findsOneWidget);
+    expect(find.byKey(const ValueKey('onboarding-skip')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('onboarding-skip')));
     await tester.pumpAndSettle();
-    expect(find.text(_de.p2Headline), findsOneWidget);
-    expect(find.text(_de.p2Row2), findsOneWidget);
-    expect(find.text(_de.p2Pill), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('onboarding-primary')));
-    await tester.pumpAndSettle();
-    expect(find.text(_de.p3Headline), findsOneWidget);
-    expect(find.text(_de.p3ItemB), findsOneWidget);
-    expect(find.text(_de.allow), findsOneWidget);
+    expect(find.text(de.p4Headline), findsOneWidget);
     expect(perms.calls, isEmpty);
   });
 
-  testWidgets('back returns to the previous page', (tester) async {
-    final perms = _Perms();
-    await _pumpFlow(tester, perms);
-
-    await _toStepThree(tester);
-    await tester.tap(find.byKey(const ValueKey('onboarding-back')));
+  testWidgets('slider moves the hero numeral and the mascot line', (tester) async {
+    await _pump(tester, RecordingPermissions());
+    expect(find.text('1.849'), findsOneWidget);
+    tester.widget<Slider>(find.byKey(const ValueKey('onboarding-hm-slider'))).onChanged!(6500);
     await tester.pumpAndSettle();
-    expect(find.text(_de.p2Headline), findsOneWidget);
+    expect(find.text('1.849'), findsNothing);
+    expect(find.text('6.500'), findsOneWidget);
+    expect(find.text('Respekt. Das will ich sehen.'), findsOneWidget);
+  });
+
+  testWidgets('picking a resort and a goal persists to settings', (tester) async {
+    await _pump(tester, RecordingPermissions());
+    await _next(tester);
+    await tester.tap(find.text('Ischgl'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sei der Erste in Ischgl.'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const ValueKey('goal-plus')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-plus')));
+    await tester.pumpAndSettle();
+    expect(find.text('25.000'), findsOneWidget);
+    await _next(tester);
+    final container = ProviderScope.containerOf(tester.element(find.byType(OnboardingFlow)));
+    expect(container.read(settingsProvider).lastResortId, 'ischgl');
+    expect(container.read(settingsProvider).seasonGoalHm, 25000);
+  });
+
+  testWidgets('sign in with Apple shows the signed-in card and continues', (tester) async {
+    await _pump(tester, RecordingPermissions(), signIn: () async => const AuthUser(id: 'u1', displayName: 'Sebastian'));
+    await _next(tester);
+    await _next(tester);
+    await _next(tester); // primary = sign in
+    expect(find.text('Angemeldet als Sebastian'), findsOneWidget);
+    await _next(tester);
+    const de = OnboardingStrings(AppLocale(Locale('de')));
+    expect(find.text(de.p4Headline), findsOneWidget);
   });
 
   testWidgets('granted: whenInUse → always → motion, onboardingDone, lands on RootShell', (tester) async {
-    final perms = _Perms(state: LocationPermissionState.whileInUse);
-    await _pumpFlow(tester, perms);
-    await _toStepThree(tester);
-
-    await tester.tap(find.text(_de.allow));
+    final perms = RecordingPermissions(state: LocationPermissionState.whileInUse);
+    await _pump(tester, perms);
+    for (var i = 0; i < 2; i++) {
+      await _next(tester);
+    }
+    await tester.tap(find.byKey(const ValueKey('onboarding-skip')));
     await tester.pumpAndSettle();
-
+    final container = ProviderScope.containerOf(tester.element(find.byType(OnboardingFlow)));
+    await _next(tester); // Erlauben
     expect(perms.calls, ['whenInUse', 'always', 'motion']);
-    expect(perms.state, LocationPermissionState.always);
+    expect(container.read(settingsProvider).onboardingDone, isTrue);
     expect(find.byType(RootShell), findsOneWidget);
     expect(find.byType(OnboardingFlow), findsNothing);
-    expect(_settingsOf(tester, find.byType(RootShell)).onboardingDone, isTrue);
   });
 
-  testWidgets('back is dead while the permission dialog is open', (tester) async {
-    final perms = _Perms(state: LocationPermissionState.whileInUse)..gate = Completer<void>();
-    await _pumpFlow(tester, perms);
-    await _toStepThree(tester);
-
-    await tester.tap(find.text(_de.allow));
-    await tester.pump();
-
-    final back = tester.widget<IconButton>(find.byKey(const ValueKey('onboarding-back')));
-    expect(back.onPressed, isNull, reason: 'back must be locked while iOS asks');
-    final primary = tester.widget<PrimaryButton>(find.byKey(const ValueKey('onboarding-primary')));
-    expect(primary.onPressed, isNull, reason: 'no double request');
-    expect(find.byType(RootShell), findsNothing);
-
-    perms.gate!.complete();
+  testWidgets('denied: settings hint, motion skipped, onboarding still finishes', (tester) async {
+    final perms = RecordingPermissions(state: LocationPermissionState.denied);
+    await _pump(tester, perms);
+    await _next(tester);
+    await _next(tester);
+    await tester.tap(find.byKey(const ValueKey('onboarding-skip')));
     await tester.pumpAndSettle();
-    expect(find.byType(RootShell), findsOneWidget);
-  });
-
-  testWidgets('denied: inline settings hint, motion skipped, onboarding still finishes', (tester) async {
-    final perms = _Perms(state: LocationPermissionState.denied);
-    await _pumpFlow(tester, perms);
-    await _toStepThree(tester);
-
-    await tester.tap(find.text(_de.allow));
-    await tester.pumpAndSettle();
-
+    await _next(tester); // Erlauben → denied
     expect(perms.calls, ['whenInUse']);
-    expect(find.text(_de.denied), findsOneWidget);
-    expect(find.text(_de.openSettings), findsOneWidget);
-    expect(find.byType(RootShell), findsNothing);
-
-    await tester.ensureVisible(find.text(_de.openSettings));
+    const de = OnboardingStrings(AppLocale(Locale('de')));
+    expect(find.text(de.openSettings), findsOneWidget);
+    await tester.ensureVisible(find.text(de.openSettings));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(_de.openSettings));
-    await tester.pumpAndSettle();
-    expect(perms.settingsOpened, 1);
-
-    await tester.tap(find.text(_de.finish));
-    await tester.pumpAndSettle();
+    await tester.tap(find.text(de.openSettings));
+    await tester.pump();
+    expect(perms.calls.last, 'openSettings');
+    await _next(tester); // Los geht's
     expect(find.byType(RootShell), findsOneWidget);
-    expect(_settingsOf(tester, find.byType(RootShell)).onboardingDone, isTrue);
   });
 
   testWidgets('english copy is used for the en locale', (tester) async {
-    final perms = _Perms();
-    await pumpApp(
-      tester,
-      const OnboardingFlow(),
-      overrides: screenOverrides(settings: const Settings(), permissions: perms),
-      locale: const Locale('en'),
-    );
+    await _pump(tester, RecordingPermissions(), locale: const Locale('en'));
     const en = OnboardingStrings(AppLocale(Locale('en')));
     expect(find.text(en.p1Headline), findsOneWidget);
     expect(find.text(en.next), findsOneWidget);

@@ -12,10 +12,13 @@ import '../recording/live_state_provider.dart';
 import '../recording/recording_controller.dart';
 import '../share/share_service.dart';
 import 'settings_providers.dart';
+import 'settings_sheet.dart';
 import 'settings_strings.dart';
 
-/// Hidden behind seven taps on the version row (docs/PLAN.md §3 row
-/// "Einstellungen"): sensor status, today's fix counters and two repair tools.
+/// Hidden behind seven taps on the settings footer (docs/DESIGN.md §5):
+/// sensor status, today's fix counters and two repair tools. Same visual
+/// language as the Einstellungen sheet — grouped surfaces, overlines, no
+/// Material defaults.
 class DiagnosticsPage extends ConsumerStatefulWidget {
   const DiagnosticsPage({super.key});
 
@@ -38,7 +41,7 @@ class _DiagnosticsPageState extends ConsumerState<DiagnosticsPage> {
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.recomputed)));
+    showToast(context, s.recomputed);
   }
 
   Future<void> _share(String dayId) async {
@@ -49,6 +52,56 @@ class _DiagnosticsPageState extends ConsumerState<DiagnosticsPage> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _pickDay(List<DaySummary> days, String selected) async {
+    final s = SettingsStrings.of(context);
+    final l = AppLocale.of(context);
+    final picked = await AppSheet.show<String>(
+      context,
+      title: s.pickDay,
+      builder: (ctx) {
+        final c = AppColors.of(ctx);
+        return SingleChildScrollView(
+          child: SurfaceCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (i, d) in days.indexed) ...[
+                  if (i > 0) const Hairline(inset: 18),
+                  Pressable(
+                    onTap: () => Navigator.of(ctx).pop(d.id),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              Fmt.dateShort(d.startedAt, locale: l.code),
+                              style: AppText.bodyStrong(c.textPrimary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (d.resortName != null) ...[
+                            const SizedBox(width: 12),
+                            Flexible(child: Text(d.resortName!, style: AppText.caption(c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                          ],
+                          if (d.id == selected) ...[const SizedBox(width: 10), GlyphIcon(Glyph.crest, size: 16, color: c.accent)],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (picked != null && mounted) setState(() => _selectedId = picked);
   }
 
   @override
@@ -62,60 +115,95 @@ class _DiagnosticsPageState extends ConsumerState<DiagnosticsPage> {
     final baro = ref.watch(barometerAvailableProvider).asData?.value;
     final days = ref.watch(daysListProvider).asData?.value ?? const <DaySummary>[];
     final selected = days.any((d) => d.id == _selectedId) ? _selectedId! : (days.isEmpty ? null : days.first.id);
+    final day = selected == null ? null : days.firstWhere((d) => d.id == selected);
 
     return Scaffold(
       backgroundColor: c.bg,
-      appBar: AppBar(title: Text(s.diagnostics)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(Tokens.pad, 8, Tokens.pad, 32),
-        children: [
-          AppCard(
-            child: Column(
-              children: [
-                _Line(label: s.gps, value: location == null ? '…' : s.locationState(location)),
-                _Line(label: s.precise, value: precise == null ? '…' : (precise ? s.yes : s.no)),
-                _Line(label: s.barometer, value: baro == null ? '…' : (baro ? s.yes : s.no)),
-                _Line(
-                  label: s.fixesToday,
-                  value: s.fixes(
-                    accepted: Fmt.metres(live.stats.acceptedFixes.toDouble(), locale: l.code),
-                    rejected: Fmt.metres(live.stats.rejectedFixes.toDouble(), locale: l.code),
-                  ),
+      body: PageBackground(
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              ScreenHeader(
+                title: s.diagnostics,
+                caption: s.diagnosticsCaption,
+                leading: HeaderButton(glyph: Glyph.back, onTap: () => Navigator.of(context).maybePop()),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, 32),
+                  children: [
+                    SettingsSection(
+                      label: s.sectionSensors,
+                      first: true,
+                      children: [
+                        _Line(label: s.gps, value: location == null ? '…' : s.locationState(location)),
+                        _Line(label: s.precise, value: precise == null ? '…' : (precise ? s.yes : s.no)),
+                        _Line(label: s.barometer, value: baro == null ? '…' : (baro ? s.yes : s.no)),
+                        _Line(
+                          label: s.fixesToday,
+                          value: s.fixes(
+                            accepted: Fmt.metres(live.stats.acceptedFixes.toDouble(), locale: l.code),
+                            rejected: Fmt.metres(live.stats.rejectedFixes.toDouble(), locale: l.code),
+                          ),
+                        ),
+                        _Line(label: s.streamRestarts, value: '${ref.watch(locationSourceProvider).restartCount}'),
+                      ],
+                    ),
+                    if (selected == null || day == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: SurfaceCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(s.noDaysHeadline, style: AppText.headline(c.textPrimary, size: 19)),
+                              const SizedBox(height: 6),
+                              Text(s.noDays, style: AppText.bodyText(c.textSecondary, size: 15)),
+                            ],
+                          ),
+                        ),
+                      )
+                    else ...[
+                      SettingsSection(
+                        label: s.sectionDay,
+                        children: [
+                          SettingsRow(
+                            glyph: Glyph.calendar,
+                            label: s.selectedDay,
+                            caption: day.resortName,
+                            value: Fmt.dateShort(day.startedAt, locale: l.code),
+                            chevron: true,
+                            onTap: days.length < 2 ? null : () => _pickDay(days, selected),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      SecondaryButton(
+                        label: s.recompute,
+                        icon: Icons.refresh_rounded,
+                        onPressed: _busy ? null : () => _recompute(selected),
+                      ),
+                      const SizedBox(height: 10),
+                      SecondaryButton(
+                        label: s.shareDiagnostics,
+                        glyph: Glyph.share,
+                        onPressed: _busy ? null : () => _share(selected),
+                      ),
+                    ],
+                  ],
                 ),
-                _Line(label: s.streamRestarts, value: '${ref.watch(locationSourceProvider).restartCount}'),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
-          if (selected == null)
-            Text(s.noDays, style: AppText.bodyText(c.textSecondary, size: 15))
-          else ...[
-            Text(s.selectedDay.toUpperCase(), style: AppText.label(c.textSecondary)),
-            const SizedBox(height: 8),
-            _DayPicker(
-              days: days,
-              value: selected,
-              onChanged: (id) => setState(() => _selectedId = id),
-            ),
-            const SizedBox(height: 16),
-            SecondaryButton(
-              label: s.recompute,
-              icon: Icons.refresh_rounded,
-              onPressed: _busy ? null : () => _recompute(selected),
-            ),
-            const SizedBox(height: 10),
-            SecondaryButton(
-              label: s.shareDiagnostics,
-              icon: Icons.bug_report_outlined,
-              onPressed: _busy ? null : () => _share(selected),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
 }
 
+/// Label left, tabular value right — a read-only settings row.
 class _Line extends StatelessWidget {
   const _Line({required this.label, required this.value});
   final String label, value;
@@ -124,48 +212,13 @@ class _Line extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.fromLTRB(18, 13, 18, 13),
       child: Row(
         children: [
           Expanded(child: Text(label, style: AppText.bodyText(c.textSecondary, size: 15))),
-          Text(value, style: AppText.bodyText(c.textPrimary, size: 15, weight: FontWeight.w600)),
+          const SizedBox(width: 12),
+          Text(value, style: AppText.bodyStrong(c.textPrimary, size: 15), maxLines: 1, overflow: TextOverflow.ellipsis),
         ],
-      ),
-    );
-  }
-}
-
-class _DayPicker extends StatelessWidget {
-  const _DayPicker({required this.days, required this.value, required this.onChanged});
-  final List<DaySummary> days;
-  final String value;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    final l = AppLocale.of(context);
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          dropdownColor: c.elevated,
-          style: AppText.bodyText(c.textPrimary, size: 15),
-          onChanged: (v) => v == null ? null : onChanged(v),
-          items: [
-            for (final d in days)
-              DropdownMenuItem<String>(
-                value: d.id,
-                child: Text(
-                  '${Fmt.dateShort(d.startedAt, locale: l.code)}${d.resortName == null ? '' : ' · ${d.resortName}'}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }

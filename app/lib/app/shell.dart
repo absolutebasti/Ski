@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/settings.dart';
+import '../features/account/account.dart';
+import '../features/settings/settings.dart';
 import 'demo.dart';
 import 'l10n/app_locale.dart';
 import 'router.dart';
@@ -21,6 +23,24 @@ class _RootShellState extends ConsumerState<RootShell> {
   int _index = demoInitialTab();
 
   @override
+  void initState() {
+    super.initState();
+    final route = demoInitialRoute();
+    if (route == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      switch (route) {
+        case 'settings':
+          SettingsSheet.show(context);
+        case 'account':
+          AccountSheet.show(context);
+        default:
+          Navigator.of(context).pushNamed(route);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = AppLocale.of(context);
     final recording = ref.watch(isRecordingProvider);
@@ -33,7 +53,14 @@ class _RootShellState extends ConsumerState<RootShell> {
           switchOutCurve: Curves.easeIn,
           child: KeyedSubtree(
             key: ValueKey(_index),
-            child: IndexedStack(index: _index, children: [AppRouter.heute(), AppRouter.tage(), AppRouter.social()]),
+            child: IndexedStack(
+              index: _index,
+              children: [
+                // TickerMode: hidden tabs stop their tickers (duel polling, pulses).
+                for (final (i, page) in [AppRouter.heute(), AppRouter.tage(), AppRouter.social()].indexed)
+                  TickerMode(enabled: i == _index, child: page),
+              ],
+            ),
           ),
         ),
       ),

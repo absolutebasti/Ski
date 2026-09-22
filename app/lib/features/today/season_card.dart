@@ -41,18 +41,25 @@ class SeasonCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(Fmt.metres(totals.dropM, locale: l.code), style: (compact ? AppText.numL(c.accent) : AppText.numXl(c.accent))),
+                    // Flexible + FittedBox: a five-digit season never pushes the unit off the card.
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(Fmt.metres(totals.dropM, locale: l.code), style: (compact ? AppText.numL(c.accent) : AppText.numXl(c.accent))),
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     Text(l.pick(de: 'hm', en: 'm'), style: AppText.unit(c.textTertiary, size: compact ? 14 : 20)),
-                    if (delta != null && delta.abs() >= 1) ...[
-                      const Spacer(),
-                      Text(
-                        '${delta >= 0 ? '+' : '−'}${Fmt.metres(delta.abs(), locale: l.code)} ${l.pick(de: 'zur Vorsaison', en: 'vs last season')}',
-                        style: AppText.caption(delta >= 0 ? c.accent : c.textSecondary),
-                      ),
-                    ],
                   ],
                 ),
+                if (delta != null && delta.abs() >= 1) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${delta >= 0 ? '+' : '−'}${Fmt.metres(delta.abs(), locale: l.code)} ${l.pick(de: 'zur Vorsaison', en: 'vs last season')}',
+                    style: AppText.caption(delta >= 0 ? c.accent : c.textSecondary),
+                  ),
+                ],
                 SizedBox(height: compact ? 12 : 16),
                 MetricStrip(
                   size: 22,

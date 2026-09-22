@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../features/account/account.dart';
 import '../features/days/days.dart';
 import '../features/onboarding/onboarding.dart';
+import '../features/social/social.dart';
 import '../features/summary/summary.dart';
 import '../features/today/today.dart';
 import 'placeholders.dart';
@@ -31,7 +33,7 @@ class AppRouter {
 
   static Widget heute() => const HeuteScreen();
   static Widget tage() => const TageScreen();
-  static Widget social() => const PlaceholderScreen('Rangliste');
+  static Widget social() => Builder(builder: (context) => SocialScreen(onOpenAccount: () => AccountSheet.show(context)));
   static Widget onboarding() => const OnboardingFlow();
   static Widget dayDetail(String dayId) => DayDetailScreen(dayId: dayId);
   static Widget summary(String dayId) => TagesbilanzScreen(dayId: dayId);

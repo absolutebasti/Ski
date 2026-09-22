@@ -10,6 +10,24 @@ import '../../support/pump.dart';
 import 'track_fixture.dart';
 
 void main() {
+  test('TrackThumbnailPainter defaults follow the design spec', () {
+    final p = TrackThumbnailPainter(points: fixtureTrack());
+    expect(p.background, const Color(0xFF101216)); // graphite base
+    expect(p.runWidth, 2.5);
+    expect(p.liftWidth, 1.5);
+    expect(p.glowWidth, 0); // the route is crisp, not glowing
+    expect(p.hatch, isTrue);
+    expect(p.vignette, isTrue);
+    expect(TrackThumbnailPainter.vignetteOpacity, 0.12);
+    expect(TrackThumbnailPainter.hatchOpacity, 0.06);
+  });
+
+  test('TrackThumbnailPainter paints the contour fallback for a day without points', () {
+    final recorder = ui.PictureRecorder();
+    TrackThumbnailPainter(points: const []).paint(Canvas(recorder), const Size(600, 400));
+    expect(recorder.endRecording(), isNotNull);
+  });
+
   test('TrackThumbnailPainter paints a full track without throwing', () {
     final detail = fixtureDetail();
     final recorder = ui.PictureRecorder();

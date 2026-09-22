@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dropline/app/widgets/widgets.dart';
 import 'package:dropline/core/core.dart';
 import 'package:dropline/features/map/map_sheet.dart';
 import 'package:dropline/features/map/track_map.dart';
@@ -96,14 +97,16 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('MapSheetBody renders the live ring and the readout', (tester) async {
+  testWidgets('MapSheetBody renders the live ring, the GPS pill and the readout', (tester) async {
     final pts = fixtureTrack();
     await pumpApp(
       tester,
       const Scaffold(body: MapSheetBody(tilesEnabled: false)),
       overrides: [
         liveTrackProvider.overrideWith(() => _SeededTrack(pts)),
-        liveStateNotifierProvider.overrideWith(() => _SeededLive(const LiveState(speedMs: 12.5, altM: 1830))),
+        liveStateNotifierProvider.overrideWith(
+          () => _SeededLive(const LiveState(speedMs: 12.5, altM: 1830, gps: GpsQuality.good, state: MotionState.run)),
+        ),
       ],
     );
     await tester.pump();
@@ -112,16 +115,59 @@ void main() {
     expect(find.text('Karte'), findsOneWidget);
     expect(find.text('45'), findsOneWidget); // 12.5 m/s → 45 km/h
     expect(find.text('1.830'), findsOneWidget);
-    expect(find.byIcon(Icons.my_location_rounded), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.my_location_rounded));
+
+    // GPS quality pill: three ice bars + the word
+    expect(find.byType(GpsQualityPill), findsOneWidget);
+    expect(find.text('GPS gut'), findsOneWidget);
+    expect(GpsQualityPill.barsFor(GpsQuality.good), 3);
+    expect(GpsQualityPill.barsFor(GpsQuality.weak), 1);
+    expect(GpsQualityPill.barsFor(GpsQuality.none), 0);
+
+    // state chip, not a Material Chip
+    expect(find.text('Abfahrt 0'), findsOneWidget);
+    expect(find.byType(Chip), findsNothing);
+
+    // the locate circle is a glyph circle with a semantics label now
+    final locate = find.bySemanticsLabel('Auf mich zentrieren');
+    expect(locate, findsOneWidget);
+    await tester.tap(locate);
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('MapSheetBody without a fix shows the waiting line', (tester) async {
+  testWidgets('MapSheetBody without a fix shows the waiting line and no hold button', (tester) async {
     await pumpApp(tester, const Scaffold(body: MapSheetBody(tilesEnabled: false)));
     await tester.pump();
     expect(find.text('Warte auf GPS …'), findsOneWidget);
+    expect(find.byType(HoldToConfirmButton), findsNothing);
+  });
+
+  testWidgets('the inline hold-to-end finishes the day from the map', (tester) async {
+    var ended = false;
+    await pumpApp(
+      tester,
+      Scaffold(body: MapSheetBody(tilesEnabled: false, onEnd: () => ended = true)),
+      overrides: [
+        liveTrackProvider.overrideWith(() => _SeededTrack(fixtureTrack())),
+        liveStateNotifierProvider.overrideWith(() => _SeededLive(const LiveState(speedMs: 8, altM: 1600, gps: GpsQuality.ok))),
+      ],
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final hold = find.byType(HoldToConfirmButton);
+    expect(hold, findsOneWidget);
+    expect(tester.getSize(hold).height, MapSheetBody.holdHeight);
+
+    final gesture = await tester.startGesture(tester.getCenter(hold));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(ended, isFalse); // not yet — it has to be held
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(ended, isTrue);
+    await gesture.up();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
   });
 }
 

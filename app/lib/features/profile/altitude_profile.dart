@@ -2,18 +2,21 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/l10n/app_locale.dart';
+import '../../app/theme/surfaces.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../core/core.dart';
 import 'profile_series.dart';
 import 'profile_strings.dart';
 
-/// Time-based altitude profile of one ski day (docs/PLAN.md §3 Tag detail).
+/// Time-based altitude profile of one ski day (docs/DESIGN.md §4 "Charts").
 ///
 /// x = elapsed time since the first accepted point, y = fused altitude.
-/// Lift rides are shaded grey, signal-loss gaps red; dragging over the chart
-/// draws a vertical cursor and reports the touched point's `ts` via [onScrub]
-/// (null when the finger lifts).
+/// Champagne 2 pt stroke over an accent area that fades to nothing, lift rides
+/// shaded liftGrey, signal-loss gaps hatched danger. Dragging over the chart
+/// draws a 1 px ice cursor with a floating glass readout ("11:42 · 1.980 m")
+/// and reports the touched point's `ts` via [onScrub] (null when the finger
+/// lifts).
 class AltitudeProfile extends StatefulWidget {
   const AltitudeProfile({super.key, required this.points, required this.segments, this.onScrub, this.height = 200});
 
@@ -21,6 +24,12 @@ class AltitudeProfile extends StatefulWidget {
   final List<Segment> segments;
   final ValueChanged<int?>? onScrub;
   final double height;
+
+  /// Space fl_chart reserves for the altitude labels on the left.
+  static const double leftAxis = 48;
+
+  /// Space fl_chart reserves for the time labels at the bottom.
+  static const double bottomAxis = 22;
 
   @override
   State<AltitudeProfile> createState() => _AltitudeProfileState();
@@ -73,11 +82,12 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
     }
     final axis = _series.altitudeAxis;
     final scrub = _scrub;
+    final maxX = _series.durationS <= 0 ? 1.0 : _series.durationS;
     final spots = [for (final p in _series.samples) FlSpot(p.elapsedS, p.altM)];
 
     final data = LineChartData(
       minX: 0,
-      maxX: _series.durationS <= 0 ? 1 : _series.durationS,
+      maxX: maxX,
       minY: axis.min,
       maxY: axis.max,
       clipData: const FlClipData.all(),
@@ -87,7 +97,7 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
         show: true,
         drawVerticalLine: false,
         horizontalInterval: axis.interval,
-        getDrawingHorizontalLine: (_) => FlLine(color: c.hairline, strokeWidth: 1),
+        getDrawingHorizontalLine: (_) => FlLine(color: c.hairline, strokeWidth: c.hairlineWidth),
       ),
       rangeAnnotations: RangeAnnotations(
         verticalRangeAnnotations: [
@@ -97,7 +107,7 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
       ),
       extraLinesData: ExtraLinesData(
         verticalLines: [
-          if (scrub != null) VerticalLine(x: scrub.elapsedS, color: c.textPrimary, strokeWidth: 1.5),
+          if (scrub != null) VerticalLine(x: scrub.elapsedS, color: c.ice, strokeWidth: 1),
         ],
       ),
       titlesData: FlTitlesData(
@@ -106,7 +116,7 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 48,
+            reservedSize: AltitudeProfile.leftAxis,
             interval: axis.interval,
             getTitlesWidget: (v, meta) => Padding(
               padding: const EdgeInsets.only(right: 6),
@@ -117,7 +127,7 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 22,
+            reservedSize: AltitudeProfile.bottomAxis,
             interval: _series.timeInterval,
             getTitlesWidget: (v, meta) {
               if (v <= 0 || v >= meta.max) return const SizedBox.shrink();
@@ -142,7 +152,14 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
           barWidth: 2,
           isCurved: false,
           dotData: const FlDotData(show: false),
-          belowBarData: BarAreaData(show: true, color: c.run.withValues(alpha: 0.20)),
+          belowBarData: BarAreaData(
+            show: true,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [c.run.withValues(alpha: 0.22), c.run.withValues(alpha: 0)],
+            ),
+          ),
         ),
       ],
     );
@@ -151,26 +168,34 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
       label: s.chartLabel,
       child: SizedBox(
         height: widget.height,
-        child: Stack(
-          children: [
-            Positioned.fill(child: LineChart(data, duration: Duration.zero)),
-            if (scrub != null)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: c.elevated, borderRadius: BorderRadius.circular(8)),
-                  child: Text(
-                    '${Fmt.timeOfDay(scrub.ts, locale: l.code)} · ${Fmt.metres(scrub.altM, locale: l.code)} m',
-                    style: AppText.label(c.textPrimary, size: 11),
+        child: LayoutBuilder(
+          builder: (context, box) => Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(child: LineChart(data, duration: Duration.zero)),
+              if (scrub != null)
+                Positioned(
+                  top: 0,
+                  left: _chipLeft(box.maxWidth, scrub.elapsedS, maxX),
+                  child: _ScrubReadout(
+                    time: Fmt.timeOfDay(scrub.ts, locale: l.code),
+                    altitude: Fmt.metres(scrub.altM, locale: l.code),
+                    unit: s.unitM,
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  /// Keeps the readout over the cursor but inside the card.
+  static double _chipLeft(double width, double elapsedS, double maxX) {
+    const chip = 132.0;
+    final plot = (width - AltitudeProfile.leftAxis).clamp(1.0, double.infinity);
+    final x = AltitudeProfile.leftAxis + (elapsedS / maxX).clamp(0.0, 1.0) * plot;
+    return (x - chip / 2).clamp(0.0, (width - chip).clamp(0.0, double.infinity));
   }
 
   /// Diagonal stripes so a signal-loss gap reads as "no data", not as a lift.
@@ -181,4 +206,35 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
         colors: [color, color, Colors.transparent, Colors.transparent],
         stops: const [0, 0.5, 0.5, 1],
       );
+}
+
+/// Floating glass chip above the ice cursor: "11:42 · 1.980 m".
+class _ScrubReadout extends StatelessWidget {
+  const _ScrubReadout({required this.time, required this.altitude, required this.unit});
+  final String time, altitude, unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: ShapeDecoration(
+        color: c.surfaceRaised.withValues(alpha: 0.94),
+        shape: Squircle.border(Tokens.r10, side: c.glassStroke, width: c.hairlineWidth),
+        shadows: Tokens.floatingShadow,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Text(time, style: AppText.numXs(c.textPrimary)),
+          Text(' · ', style: AppText.caption(c.textTertiary, size: 13)),
+          Text(altitude, style: AppText.numXs(c.textPrimary)),
+          const SizedBox(width: 4),
+          Text(unit, style: AppText.unit(c.textTertiary, size: 11)),
+        ],
+      ),
+    );
+  }
 }

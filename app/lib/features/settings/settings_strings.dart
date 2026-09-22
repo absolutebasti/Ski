@@ -11,13 +11,40 @@ class SettingsStrings {
   static SettingsStrings of(BuildContext context) => SettingsStrings(AppLocale.of(context));
 
   String get title => l.pick(de: 'Einstellungen', en: 'Settings');
+
+  // --- section overlines ---------------------------------------------------
+  String get sectionGeneral => l.pick(de: 'Allgemein', en: 'General');
+  String get sectionAccount => l.pick(de: 'Konto', en: 'Account');
+  String get sectionPermissions => l.pick(de: 'Berechtigungen', en: 'Permissions');
+  String get sectionData => l.pick(de: 'Daten', en: 'Data');
+
+  // --- Erscheinungsbild ----------------------------------------------------
+  String get appearance => l.pick(de: 'Erscheinungsbild', en: 'Appearance');
+  String get appearanceHint => l.pick(de: 'Dunkel liest sich auf dem Berg am besten.', en: 'Dark reads best on the mountain.');
+  String get appearanceSystem => l.pick(de: 'System', en: 'System');
+  String get appearanceLight => l.pick(de: 'Hell', en: 'Light');
+  String get appearanceDark => l.pick(de: 'Dunkel', en: 'Dark');
+
   String get language => l.pick(de: 'Sprache', en: 'Language');
   String get system => l.pick(de: 'System', en: 'System');
   String get german => 'Deutsch';
   String get english => 'English';
   String get units => l.pick(de: 'Einheiten', en: 'Units');
   String get unitsValue => l.pick(de: 'Folgt der Sprache', en: 'Follows the language');
+
+  // --- Konto ---------------------------------------------------------------
+  String get account => l.pick(de: 'Konto', en: 'Account');
+  String get accountHint => l.pick(
+        de: 'Anmelden, Profil und Bestenlisten.',
+        en: 'Sign in, profile and leaderboards.',
+      );
+  String get comingSoon => l.pick(de: 'Bald verfügbar', en: 'Coming soon');
+
   String get location => l.pick(de: 'Standortzugriff', en: 'Location access');
+  String get locationHint => l.pick(
+        de: 'Ohne Standort im Hintergrund bricht die Aufzeichnung im Lift ab.',
+        en: 'Without background location the recording stops on the lift.',
+      );
   String get openSettings => l.pick(de: 'Einstellungen öffnen', en: 'Open settings');
   String get notifications => l.pick(de: 'Benachrichtigungen', en: 'Notifications');
   String get notificationsHint => l.pick(
@@ -25,9 +52,12 @@ class SettingsStrings {
         en: 'Reminder after 4 hours and a battery warning — nothing else.',
       );
   String get deleteAll => l.pick(de: 'Alle Daten löschen', en: 'Delete all data');
+  String get deleteAllHint => l.pick(de: 'Jeder Skitag auf diesem iPhone.', en: 'Every ski day on this iPhone.');
   String get privacy => l.pick(de: 'Datenschutz', en: 'Privacy');
+  String get privacyHint => l.pick(de: 'Alles bleibt auf dem Gerät.', en: 'Everything stays on the device.');
   String get version => l.pick(de: 'Version', en: 'Version');
   String get diagnostics => l.pick(de: 'Diagnose', en: 'Diagnostics');
+  String get diagnosticsHint => l.pick(de: 'Sensoren, Zähler und Reparatur.', en: 'Sensors, counters and repair.');
   String get diagnosticsUnlockedToast => l.pick(de: 'Diagnose ist jetzt sichtbar', en: 'Diagnostics is now visible');
 
   String locationState(LocationPermissionState s) => switch (s) {
@@ -61,6 +91,9 @@ class SettingsStrings {
       );
 
   // --- diagnostics ---------------------------------------------------------
+  String get diagnosticsCaption => l.pick(de: 'Sensoren und Reparatur', en: 'Sensors and repair');
+  String get sectionSensors => l.pick(de: 'Sensoren', en: 'Sensors');
+  String get sectionDay => l.pick(de: 'Skitag', en: 'Ski day');
   String get gps => l.pick(de: 'Standort', en: 'Location');
   String get precise => l.pick(de: 'Genauer Standort', en: 'Precise location');
   String get barometer => l.pick(de: 'Barometer', en: 'Barometer');
@@ -69,10 +102,12 @@ class SettingsStrings {
   String get fixesToday => l.pick(de: 'Fixes heute', en: 'Fixes today');
   String get streamRestarts => l.pick(de: 'Stream-Neustarts', en: 'Stream restarts');
   String get selectedDay => l.pick(de: 'Ausgewählter Tag', en: 'Selected day');
+  String get pickDay => l.pick(de: 'Tag wählen', en: 'Pick a day');
   String get recompute => l.pick(de: 'Neu berechnen', en: 'Recompute');
   String get recomputed => l.pick(de: 'Neu berechnet', en: 'Recomputed');
   String get shareDiagnostics => l.pick(de: 'Diagnosepaket teilen', en: 'Share diagnostics bundle');
   String get noDays => l.pick(de: 'Noch kein Skitag gespeichert.', en: 'No ski day stored yet.');
+  String get noDaysHeadline => l.pick(de: 'Nichts zu diagnostizieren', en: 'Nothing to diagnose');
 
   /// '1.234 akzeptiert · 12 verworfen'
   String fixes({required String accepted, required String rejected}) =>

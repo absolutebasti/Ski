@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,6 +11,8 @@ class Settings {
     this.notificationsAsked = false,
     this.lastResortId,
     this.diagnosticsUnlocked = false,
+    this.seasonGoalHm = 20000,
+    this.appearance = 'dark',
   });
 
   /// 'system' | 'de' | 'en'
@@ -19,10 +22,20 @@ class Settings {
   final bool notificationsAsked;
   final String? lastResortId;
   final bool diagnosticsUnlocked;
+  /// Season goal in vertical metres (onboarding step 2).
+  final int seasonGoalHm;
+  /// 'system' | 'light' | 'dark' — dark is the product default (docs/DESIGN.md).
+  final String appearance;
+
+  ThemeMode get themeMode => switch (appearance) {
+        'light' => ThemeMode.light,
+        'system' => ThemeMode.system,
+        _ => ThemeMode.dark,
+      };
 
   Settings copyWith({
     String? locale, bool? onboardingDone, bool? notificationsOptIn, bool? notificationsAsked,
-    String? lastResortId, bool? diagnosticsUnlocked,
+    String? lastResortId, bool? diagnosticsUnlocked, int? seasonGoalHm, String? appearance,
   }) => Settings(
         locale: locale ?? this.locale,
         onboardingDone: onboardingDone ?? this.onboardingDone,
@@ -30,6 +43,8 @@ class Settings {
         notificationsAsked: notificationsAsked ?? this.notificationsAsked,
         lastResortId: lastResortId ?? this.lastResortId,
         diagnosticsUnlocked: diagnosticsUnlocked ?? this.diagnosticsUnlocked,
+        seasonGoalHm: seasonGoalHm ?? this.seasonGoalHm,
+        appearance: appearance ?? this.appearance,
       );
 
   static Settings fromPrefs(SharedPreferences p) => Settings(
@@ -39,6 +54,8 @@ class Settings {
         notificationsAsked: p.getBool('notificationsAsked') ?? false,
         lastResortId: p.getString('lastResortId'),
         diagnosticsUnlocked: p.getBool('diagnosticsUnlocked') ?? false,
+        seasonGoalHm: p.getInt('seasonGoalHm') ?? 20000,
+        appearance: p.getString('appearance') ?? 'dark',
       );
 }
 
@@ -65,16 +82,22 @@ class SettingsNotifier extends Notifier<Settings> {
       await p.remove('lastResortId');
     }
     await p.setBool('diagnosticsUnlocked', next.diagnosticsUnlocked);
+    await p.setInt('seasonGoalHm', next.seasonGoalHm);
+    await p.setString('appearance', next.appearance);
   }
 
   Future<void> setLocale(String v) => update((s) => s.copyWith(locale: v));
   Future<void> setOnboardingDone() => update((s) => s.copyWith(onboardingDone: true));
   Future<void> setNotifications({required bool optIn}) =>
       update((s) => s.copyWith(notificationsOptIn: optIn, notificationsAsked: true));
+  Future<void> setSeasonGoal(int hm) => update((s) => s.copyWith(seasonGoalHm: hm));
+  Future<void> setLastResort(String? id) => update((s) => id == null ? s : s.copyWith(lastResortId: id));
   Future<void> setDiagnosticsUnlocked() => update((s) => s.copyWith(diagnosticsUnlocked: true));
+  Future<void> setAppearance(String v) => update((s) => s.copyWith(appearance: v));
   Future<void> clearLastResort() => update((s) => Settings(
         locale: s.locale, onboardingDone: s.onboardingDone, notificationsOptIn: s.notificationsOptIn,
-        notificationsAsked: s.notificationsAsked, lastResortId: null, diagnosticsUnlocked: s.diagnosticsUnlocked,
+        notificationsAsked: s.notificationsAsked, lastResortId: null, diagnosticsUnlocked: s.diagnosticsUnlocked, seasonGoalHm: s.seasonGoalHm,
+        appearance: s.appearance,
       ));
 }
 

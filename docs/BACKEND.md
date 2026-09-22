@@ -29,3 +29,7 @@ Views/RPC (SQL, `security invoker`): `leaderboard(resort_id, season_key, metric,
 2. **Gebiets-Top-10 der Saison** per metric, with "you are 14 of 312".
 3. **Wochen-Challenge**: one target per week, progress vs. friends.
 4. Later: follows, kudos, share links (`dropline.app/d/<id>`).
+
+## Migration 0002 (applied 2026-09-22)
+`supabase/migrations/0002_social_fixes.sql`: `is_group_member()` security-definer helper used by the groups/group_members read policies (0001's policy compared a column with itself), `join_group(p_code)` RPC (invitees cannot read a group before joining; enforces `max_members`; raises `code_not_found` / `duel_full`), and `leaderboard()` now also accepts month (`YYYY-MM`) and ISO-week (`YYYY-Www`) keys in `p_season_key`. Still open: `MyRank.total` is the fetched slice, not a server-side count; `deleteAccount` removes rows but not the `auth.users` entry (needs an Edge Function).
+

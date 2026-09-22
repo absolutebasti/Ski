@@ -3,15 +3,20 @@ import 'package:flutter/material.dart';
 import '../../app/l10n/app_locale.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
+import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
 import 'days_strings.dart';
 
-/// 'Abfahrt 7 · 10:42 · 312 hm · 2,1 km · 61 km/h · 14 %' — one row per run,
-/// in the order they were skied.
+/// The day's runs as a table (docs/DESIGN.md §5 "Tag — Detail", block 6):
+/// rows of 56 pt, hairline-separated, four fixed columns that line up down the
+/// whole list — `#7 · 09:21` | `312 hm` | `5,5 km` | `61 km/h`.
 class RunList extends StatelessWidget {
   const RunList({super.key, required this.segments});
 
   final List<Segment> segments;
+
+  static const double rowHeight = 56;
+  static const double numberColumn = 52;
 
   @override
   Widget build(BuildContext context) {
@@ -20,16 +25,23 @@ class RunList extends StatelessWidget {
     final s = DaysStrings.of(context);
     final runs = segments.where((x) => x.kind == SegmentKind.run).toList();
     if (runs.isEmpty) {
-      return Text(s.noRuns, style: AppText.bodyText(c.textSecondary, size: 15));
+      return SurfaceCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        child: Text(s.noRuns, style: AppText.bodyText(c.textSecondary, size: 15)),
+      );
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < runs.length; i++) ...[
-          if (i > 0) Divider(height: 1, color: c.hairline),
-          _RunRow(run: runs[i], fallbackNumber: i + 1, s: s, l: l),
+    return SurfaceCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < runs.length; i++) ...[
+            if (i > 0) const Hairline(inset: 16),
+            _RunRow(run: runs[i], fallbackNumber: i + 1, s: s, l: l),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -44,17 +56,63 @@ class _RunRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final line = s.runLine(
-      number: run.runNumber ?? fallbackNumber,
-      clock: Fmt.timeOfDay(run.startTs, locale: l.code),
-      dropM: Fmt.metres(run.dropM, locale: l.code),
-      km: Fmt.km(run.distanceM, locale: l.code),
-      kmh: Fmt.kmh(run.maxSpeedMs, locale: l.code),
-      gradient: Fmt.percent(run.avgGradientPct.abs(), locale: l.code),
+    final number = run.runNumber ?? fallbackNumber;
+    return Semantics(
+      label: s.runLabel(number),
+      child: SizedBox(
+        height: RunList.rowHeight,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              SizedBox(
+                width: RunList.numberColumn,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(s.runNo(number), style: AppText.numXs(c.textTertiary)),
+                    const SizedBox(height: 3),
+                    Text(Fmt.timeOfDay(run.startTs, locale: l.code), style: AppText.label(c.textQuaternary, size: 10)),
+                  ],
+                ),
+              ),
+              _Cell(value: Fmt.metres(run.dropM, locale: l.code), unit: s.unitHm),
+              _Cell(value: Fmt.km(run.distanceM, locale: l.code), unit: s.unitKm),
+              _Cell(value: Fmt.kmh(run.maxSpeedMs, locale: l.code), unit: s.unitKmh),
+            ],
+          ),
+        ),
+      ),
     );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(line, style: AppText.bodyText(c.textPrimary, size: 15)),
+  }
+}
+
+/// One tabular column: numeral cream, unit tertiary, right-aligned so the
+/// digits stack vertically down the table.
+class _Cell extends StatelessWidget {
+  const _Cell({required this.value, required this.unit});
+  final String value, unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Expanded(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(value, style: AppText.numS(c.textPrimary)),
+            const SizedBox(width: 4),
+            Text(unit, style: AppText.unit(c.textTertiary, size: 11)),
+          ],
+        ),
+      ),
     );
   }
 }

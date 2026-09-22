@@ -21,7 +21,7 @@ interpretation. Everything below already exists and compiles.
 | `haversineM`, `bearingDeg` | core/geo/haversine.dart | |
 | `seasonKey`, `seasonKeyFromMs`, `seasonStart` | core/season.dart | Jul 1 – Jun 30, '2025/26' |
 | `Fmt` | core/units/format.dart | `kmh`, `metres`, `km`, `durationCompact`, `clock`, `timeOfDay`, `dateShort`, `dateLong`, `percent`, `temp` |
-| `settingsProvider`, `Settings`, `SettingsNotifier` | core/settings.dart | locale / onboardingDone / notificationsOptIn / lastResortId / diagnosticsUnlocked |
+| `settingsProvider`, `Settings`, `SettingsNotifier` | core/settings.dart | locale / onboardingDone / notificationsOptIn / lastResortId / diagnosticsUnlocked / seasonGoalHm / appearance (`system`\|`light`\|`dark`, `themeMode` getter, `setAppearance`) |
 | `isRecordingProvider` | core/settings.dart | `ref.read(isRecordingProvider.notifier).set(true/false)` — WP-05 must call this |
 
 ## App layer (`package:dropline/app/...`)
@@ -65,7 +65,7 @@ interpretation. Everything below already exists and compiles.
 | `HeuteScreen`, `TagesbilanzScreen(dayId:)`, `SettingsSheet.show(context)`, `DiagnosticsPage` | widgets | WP-07 (done) | features/today, features/summary, features/settings |
 | `locationStatusProvider`, `preciseLocationProvider`, `barometerAvailableProvider`, `appVersionProvider`, `settingsRefreshProvider` | FutureProviders for the settings sheet / idle cards | WP-07 (done) | features/settings/settings_providers.dart |
 | `watchBridgeProvider`, `watchTransportProvider`, `watchClockProvider`, `watchHeartRateSourceProvider` | Apple Watch bridge (attach() in main.dart, self-seeding) | WP-13 (done) | platform/watch/** |
-| `TageScreen`, `DayDetailScreen({dayId, tilesEnabled = true, mapHeight = 240})` | widgets | WP-08 (done) | features/days |
+| `TageScreen`, `DayDetailScreen({dayId, tilesEnabled = true, heroHeight = 320})` | widgets | WP-08 (done) | features/days |
 | `OnboardingFlow` | widget; on finish calls `settingsProvider.notifier.setOnboardingDone()` and `Navigator.pushAndRemoveUntil` to `RootShell` (app.dart freezes the initial onboarding decision) | WP-06 (done) | features/onboarding/onboarding_flow.dart |
 
 ## Rules
@@ -93,3 +93,22 @@ interpretation. Everything below already exists and compiles.
 | `groupBoardProvider` | `FutureProvider.family<List<GroupMemberStats>, String groupId>` via RPC `group_board(p_group_id)` | WP-16 | features/social/group_providers.dart |
 
 Rules for backend packages: never block the UI on the network; every remote call has a 10 s timeout and degrades to the local state; Sign in with Apple is the only provider (`supabase.auth.signInWithApple()` from supabase_flutter, iOS entitlement is configured); leaderboards need `profiles.share_leaderboards = true`, which the user switches on explicitly in the Account sheet (default off).
+
+### WP-16 Rangliste (done) — features/social
+| Symbol | Type | Notes |
+|---|---|---|
+| `SocialScreen({onOpenAccount, now})` | widget | third tab; `AppRouter.social()` passes `AccountSheet.show` |
+| `socialApiProvider` | `Provider<SocialApi?>` | null without Supabase → offline/signed-out states |
+| `leaderboardProvider` | `FutureProvider.family<List<LeaderboardEntry>, LeaderboardQuery>` | RPC `leaderboard` |
+| `groupBoardProvider` | `FutureProvider.family<List<GroupMemberStats>, String>` | RPC `group_board` |
+| `myDuelProvider`, `openChallengesProvider`, `challengeProgressProvider`, `shareLeaderboardsProvider` (`bool?`), `socialUserIdProvider` | providers | all `retry: noRetry` |
+| `duelPollIntervalProvider` | `Provider<Duration?>` | 60 s; override with null in tests |
+
+### WP-15 Konto (done) — features/account
+| Symbol | Type | Notes |
+|---|---|---|
+| `AccountSheet.show(context)`, `AccountRow({onTap})` | widgets | Konto row in SettingsSheet embeds `AccountRow` |
+| `profileProvider` | `FutureProvider<Profile?>` | local-first cache, never throws |
+| `profileServiceProvider`, `profileApiProvider` | providers | `FakeProfileApi` for tests |
+| `accountSyncStatusProvider`, `accountSyncTriggerProvider`, `accountSignInProvider`, `accountSignOutProvider`, `accountDeleteProvider` | providers | indirections so tests never build SyncService |
+

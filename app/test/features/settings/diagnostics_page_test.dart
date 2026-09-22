@@ -62,6 +62,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(ctrl.recomputed, ['day-7']);
     expect(find.text('Neu berechnet'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('with several days the picker sheet switches the selected day', (tester) async {
+    final ctrl = FakeRecordingController();
+    final second = DaySummary(
+      id: 'day-2',
+      startedAt: DateTime(2026, 2, 3, 9).millisecondsSinceEpoch,
+      endedAt: DateTime(2026, 2, 3, 15).millisecondsSinceEpoch,
+      resortName: 'Saalbach',
+      stats: const DayStats(runCount: 4, dropM: 900, maxSpeedMs: 15),
+    );
+    await pumpApp(
+      tester,
+      const DiagnosticsPage(),
+      overrides: diagnosticsOverrides(controller: ctrl, days: [daySummary(id: 'day-1'), second]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ausgewählter Tag'), findsOneWidget);
+    await tester.tap(find.text('Ausgewählter Tag'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tag wählen'), findsOneWidget);
+
+    await tester.tap(find.text(Fmt.dateShort(second.startedAt, locale: 'de')).last);
+    await tester.pumpAndSettle();
+    expect(find.text('Tag wählen'), findsNothing);
+
+    await tester.tap(find.text('Neu berechnen'));
+    await tester.pumpAndSettle();
+    expect(ctrl.recomputed, ['day-2']);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('without a stored day the tools are hidden', (tester) async {
