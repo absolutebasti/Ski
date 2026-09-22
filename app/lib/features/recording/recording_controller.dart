@@ -9,6 +9,8 @@ import '../../core/settings.dart';
 import '../../data/db/days_repository.dart';
 import '../../data/db/providers.dart';
 import '../../data/resorts/resort_repository.dart';
+import '../../data/weather/weather_provider.dart';
+import '../map/thumbnail_renderer.dart';
 import '../../platform/notification_service.dart';
 import '../../platform/permission_service.dart';
 import '../../platform/providers.dart';
@@ -47,6 +49,7 @@ class RecordingController extends Notifier<RecordingState> {
   final List<(int ts, int pct)> _battery = [];
   bool _resortResolved = false;
   bool _ending = false;
+  bool _watchHrSeen = false;
 
   DaysRepository get _repo => ref.read(daysRepositoryProvider);
   RecordingClock get _clock => ref.read(recordingClockProvider);
@@ -132,10 +135,14 @@ class RecordingController extends Notifier<RecordingState> {
     _lastBatterySampleMs = 0;
     _battery.clear();
     _ending = false;
+    _watchHrSeen = false;
 
     _fixSub = _location.fixes.listen((f) => _engine?.addFix(f), onError: (_) {});
     _pressSub = _baro.samples.listen((s) => _engine?.addPressure(s));
-    _hrSub = _hr.bpm.listen((b) => _engine?.addHeartRate(b));
+    _hrSub = _hr.bpm.listen((b) {
+      _watchHrSeen = true;
+      _engine?.addHeartRate(b);
+    });
     await _location.start();
     await _baro.start();
     await ref.read(watchdogChannelProvider).start();
@@ -249,11 +256,37 @@ class RecordingController extends Notifier<RecordingState> {
       await _repo.discardDay(dayId);
     } else {
       final endedAt = trimTrailingIdleFrom ?? (result.points.isEmpty ? now : result.points.last.ts);
-      await _repo.finishDay(dayId, endedAt: endedAt, stats: result.stats, segments: result.segments);
+      await _repo.finishDay(dayId, endedAt: endedAt, stats: result.stats, segments: result.segments, trackedOnWatch: _watchHrSeen);
       out = dayId;
     }
     _teardownState();
+    if (out != null) await _enrichFinishedDay(out);
     return out;
+  }
+
+  /// Map thumbnail + weather snapshot for a finished day. Never blocks saving:
+  /// every step is best effort.
+  Future<void> _enrichFinishedDay(String dayId) async {
+    try {
+      final detail = await _repo.dayDetail(dayId);
+      if (detail != null && detail.points.length >= 2) {
+        final path = await ThumbnailRenderer.render(detail);
+        await _repo.updateMapThumb(dayId, path);
+      }
+    } catch (_) {}
+    try {
+      final d = await _repo.day(dayId);
+      final resortId = d?.resortId;
+      if (resortId != null) {
+        final resorts = await ref.read(resortRepositoryProvider.future);
+        final resort = resorts.byId(resortId);
+        if (resort != null) {
+          final w = await ref.read(weatherProvider(resort).future);
+          if (w != null) await _repo.setWeather(dayId, w);
+        }
+      }
+    } catch (_) {}
+    ref.invalidate(dayDetailProvider(dayId));
   }
 
   Future<void> discardDay() async {
@@ -352,8 +385,9 @@ class RecordingController extends Notifier<RecordingState> {
       ref.read(recoveryRefreshProvider.notifier).bump();
       return null;
     }
-    await _repo.finishDay(dayId, endedAt: d.lastFixAt ?? (points.isEmpty ? d.startedAt : points.last.ts), stats: result.stats, segments: result.segments);
+    await _repo.finishDay(dayId, endedAt: d.lastFixAt ?? (points.isEmpty ? d.startedAt : points.last.ts), stats: result.stats, segments: result.segments, trackedOnWatch: d.trackedOnWatch);
     ref.read(recoveryRefreshProvider.notifier).bump();
+    await _enrichFinishedDay(dayId);
     return dayId;
   }
 

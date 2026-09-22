@@ -1,0 +1,80 @@
+import 'package:flutter/widgets.dart';
+
+import '../../app/l10n/app_locale.dart';
+import '../../platform/permission_service.dart';
+
+/// Copy for the Einstellungen sheet and the hidden Diagnose page.
+class SettingsStrings {
+  const SettingsStrings(this.l);
+  final AppLocale l;
+
+  static SettingsStrings of(BuildContext context) => SettingsStrings(AppLocale.of(context));
+
+  String get title => l.pick(de: 'Einstellungen', en: 'Settings');
+  String get language => l.pick(de: 'Sprache', en: 'Language');
+  String get system => l.pick(de: 'System', en: 'System');
+  String get german => 'Deutsch';
+  String get english => 'English';
+  String get units => l.pick(de: 'Einheiten', en: 'Units');
+  String get unitsValue => l.pick(de: 'Folgt der Sprache', en: 'Follows the language');
+  String get location => l.pick(de: 'Standortzugriff', en: 'Location access');
+  String get openSettings => l.pick(de: 'Einstellungen öffnen', en: 'Open settings');
+  String get notifications => l.pick(de: 'Benachrichtigungen', en: 'Notifications');
+  String get notificationsHint => l.pick(
+        de: 'Erinnerung nach 4 Stunden und Akku-Warnung — sonst nie.',
+        en: 'Reminder after 4 hours and a battery warning — nothing else.',
+      );
+  String get deleteAll => l.pick(de: 'Alle Daten löschen', en: 'Delete all data');
+  String get privacy => l.pick(de: 'Datenschutz', en: 'Privacy');
+  String get version => l.pick(de: 'Version', en: 'Version');
+  String get diagnostics => l.pick(de: 'Diagnose', en: 'Diagnostics');
+  String get diagnosticsUnlockedToast => l.pick(de: 'Diagnose ist jetzt sichtbar', en: 'Diagnostics is now visible');
+
+  String locationState(LocationPermissionState s) => switch (s) {
+        LocationPermissionState.always => l.pick(de: 'Immer', en: 'Always'),
+        LocationPermissionState.whileInUse => l.pick(de: 'Beim Verwenden', en: 'While using'),
+        LocationPermissionState.denied => l.pick(de: 'Nicht erlaubt', en: 'Not allowed'),
+        LocationPermissionState.deniedForever => l.pick(de: 'Abgelehnt', en: 'Denied'),
+        LocationPermissionState.unknown => l.pick(de: 'Unbekannt', en: 'Unknown'),
+      };
+
+  // --- delete all (two confirmations) -------------------------------------
+  String get deleteTitle => l.pick(de: 'Alle Skitage löschen?', en: 'Delete all ski days?');
+  String get deleteBody => l.pick(
+        de: 'Jeder aufgezeichnete Tag, jede Abfahrt und alle Rekorde verschwinden von diesem iPhone.',
+        en: 'Every recorded day, every run and all records disappear from this iPhone.',
+      );
+  String get deleteConfirmTitle => l.pick(de: 'Wirklich endgültig löschen?', en: 'Really delete for good?');
+  String get deleteConfirmBody => l.pick(
+        de: 'Das lässt sich nicht rückgängig machen. Es gibt keine Kopie in der Cloud.',
+        en: 'This cannot be undone. There is no copy in the cloud.',
+      );
+  String get deleteConfirm => l.pick(de: 'Endgültig löschen', en: 'Delete for good');
+  String get cancel => l.pick(de: 'Abbrechen', en: 'Cancel');
+  String get delete => l.pick(de: 'Löschen', en: 'Delete');
+  String get deletedToast => l.pick(de: 'Alle Daten gelöscht', en: 'All data deleted');
+
+  // --- notification opt-in -------------------------------------------------
+  String get notificationsDenied => l.pick(
+        de: 'In den iPhone-Einstellungen erlauben.',
+        en: 'Allow this in the iPhone settings.',
+      );
+
+  // --- diagnostics ---------------------------------------------------------
+  String get gps => l.pick(de: 'Standort', en: 'Location');
+  String get precise => l.pick(de: 'Genauer Standort', en: 'Precise location');
+  String get barometer => l.pick(de: 'Barometer', en: 'Barometer');
+  String get yes => l.pick(de: 'Ja', en: 'Yes');
+  String get no => l.pick(de: 'Nein', en: 'No');
+  String get fixesToday => l.pick(de: 'Fixes heute', en: 'Fixes today');
+  String get streamRestarts => l.pick(de: 'Stream-Neustarts', en: 'Stream restarts');
+  String get selectedDay => l.pick(de: 'Ausgewählter Tag', en: 'Selected day');
+  String get recompute => l.pick(de: 'Neu berechnen', en: 'Recompute');
+  String get recomputed => l.pick(de: 'Neu berechnet', en: 'Recomputed');
+  String get shareDiagnostics => l.pick(de: 'Diagnosepaket teilen', en: 'Share diagnostics bundle');
+  String get noDays => l.pick(de: 'Noch kein Skitag gespeichert.', en: 'No ski day stored yet.');
+
+  /// '1.234 akzeptiert · 12 verworfen'
+  String fixes({required String accepted, required String rejected}) =>
+      l.pick(de: '$accepted akzeptiert · $rejected verworfen', en: '$accepted accepted · $rejected rejected');
+}

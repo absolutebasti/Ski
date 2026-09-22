@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/settings.dart';
 import 'l10n/app_locale.dart';
+import 'demo.dart';
 import 'router.dart';
 import 'theme/tokens.dart';
 
@@ -14,7 +15,7 @@ class RootShell extends ConsumerStatefulWidget {
 }
 
 class _RootShellState extends ConsumerState<RootShell> {
-  int _index = 0;
+  int _index = demoInitialTab();
 
   @override
   Widget build(BuildContext context) {

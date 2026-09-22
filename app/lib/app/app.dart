@@ -10,11 +10,20 @@ import 'router.dart';
 import 'shell.dart';
 import 'theme/theme.dart';
 
-class SchwungApp extends ConsumerWidget {
+class SchwungApp extends ConsumerStatefulWidget {
   const SchwungApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SchwungApp> createState() => _SchwungAppState();
+}
+
+class _SchwungAppState extends ConsumerState<SchwungApp> {
+  /// Read once: OnboardingFlow navigates to RootShell itself, so `home` must
+  /// not flip underneath it when the flag is written.
+  late final bool _onboardingDone = ref.read(settingsProvider).onboardingDone;
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final locale = AppLocale.fromSetting(settings.locale);
     return MaterialApp(
@@ -37,7 +46,7 @@ class SchwungApp extends ConsumerWidget {
         return resolved;
       },
       onGenerateRoute: AppRouter.onGenerateRoute,
-      home: settings.onboardingDone ? const RootShell() : AppRouter.onboarding(),
+      home: _onboardingDone ? const RootShell() : AppRouter.onboarding(),
     );
   }
 }
