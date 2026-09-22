@@ -1,5 +1,5 @@
 name: schwung
-description: "A new Flutter project."
+description: "Schwung — one-tap ski day tracker."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -7,13 +7,70 @@ environment:
   sdk: ^3.12.2
 
 dependencies:
+  battery_plus: ^7.1.1
+  collection: ^1.19.1
+  dio: ^5.11.1
+  dio_cache_interceptor: ^4.0.7
+  drift: ^2.35.0
+  drift_flutter: ^0.3.1
+  fl_chart: ^1.2.0
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_local_notifications: ^22.3.1
+  flutter_map: ^8.3.2
+  flutter_map_cache: ^2.1.0
+  flutter_map_location_marker: ^10.3.0
+  flutter_riverpod: ^3.4.3
+  geolocator: ^14.0.3
+  http: ^1.6.0
+  http_cache_file_store: ^2.0.2
+  intl: ^0.20.2
+  latlong2: ^0.9.1
+  package_info_plus: ^10.2.1
+  path_provider: ^2.1.6
+  permission_handler: ^13.0.2
+  sensors_plus: ^7.1.0
+  share_plus: ^13.3.0
+  shared_preferences: ^2.5.5
+  url_launcher: ^6.3.2
+  uuid: ^4.6.0
+  video_player: ^2.14.0
+  watch_connectivity: ^0.2.10
+  xml: ^7.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  drift_dev: ^2.35.0
+  build_runner: ^2.15.1
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/mascot/
+    - assets/icon/
+    - assets/data/
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+    - family: InterDisplay
+      fonts:
+        - asset: assets/fonts/InterDisplay-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/InterDisplay-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/InterDisplay-Black.ttf
+          weight: 900
