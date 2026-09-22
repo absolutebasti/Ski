@@ -53,7 +53,7 @@ class _MascotCardState extends State<MascotCard> {
     final c = AppColors.of(context);
     final ctrl = _ctrl;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(Tokens.radiusLg),
+      borderRadius: BorderRadius.circular(Tokens.r28),
       child: AspectRatio(
         aspectRatio: widget.aspectRatio,
         child: Stack(

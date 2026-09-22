@@ -1,4 +1,4 @@
-import 'package:schwung/core/core.dart';
+import 'package:dropline/core/core.dart';
 
 /// Kitzbühel-ish synthetic track: lift up (NE), run down (SW), short stop, second run.
 List<TrackPoint> fixtureTrack({int startTs = 1735288800000}) {

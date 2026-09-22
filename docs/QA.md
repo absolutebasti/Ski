@@ -1,4 +1,4 @@
-# Schwung — device QA protocol (before every TestFlight build)
+# Dropline — device QA protocol (before every TestFlight build)
 
 Physical iPhone, Release build (`flutter run --release` or the TestFlight build itself). Tick every box.
 

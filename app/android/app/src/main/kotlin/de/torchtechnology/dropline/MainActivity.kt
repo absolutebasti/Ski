@@ -1,4 +1,4 @@
-package de.torchtechnology.schwung
+package de.torchtechnology.dropline
 
 import io.flutter.embedding.android.FlutterActivity
 

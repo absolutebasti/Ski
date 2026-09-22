@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -9,8 +10,8 @@ import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
 import 'days_strings.dart';
 
-/// One finished ski day in the Tage list: date, resort, the three numbers,
-/// the pre-rendered map thumbnail and a record badge.
+/// 112 pt list row: route thumbnail, date + resort, a 3-up metric strip,
+/// crest for records, chevron. Used on Tage and as "Letzter Tag" on Heute.
 class DayCard extends StatelessWidget {
   const DayCard({super.key, required this.day, this.onTap, this.onLongPress});
 
@@ -27,7 +28,7 @@ class DayCard extends StatelessWidget {
     final isPb = day.isTopSpeedPb || day.isBiggestDayPb;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: Tokens.cardGap),
       child: AppCard(
         onTap: onTap,
         onLongPress: onLongPress,
@@ -35,6 +36,8 @@ class DayCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            Hero(tag: 'route-${day.id}', child: DayThumb(path: day.mapThumbPath, width: 84, square: true)),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,40 +45,30 @@ class DayCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Flexible(
-                        child: Text(
-                          Fmt.dateShort(day.startedAt, locale: l.code),
-                          style: AppText.title(c.textPrimary, size: 17),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      Expanded(
+                        child: Text(Fmt.dateShort(day.startedAt, locale: l.code), style: AppText.title(c.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
                       ),
-                      if (isPb) ...[const SizedBox(width: 8), StateChip(text: s.pbBadge, tone: ChipTone.accent, icon: Icons.star_rounded)],
+                      if (isPb) ...[
+                        Semantics(label: s.pbBadge, child: GlyphIcon(Glyph.crest, size: 16, color: c.accent)),
+                        const SizedBox(width: 8),
+                      ],
+                      GlyphIcon(Glyph.chevronRight, size: 16, color: c.textTertiary),
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    day.resortName ?? s.freeTerrain,
-                    style: AppText.bodyText(c.textSecondary, size: 15),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    s.dayLine(
-                      runs: st.runCount,
-                      dropM: Fmt.metres(st.dropM, locale: l.code),
-                      kmh: Fmt.kmh(st.maxSpeedMs, locale: l.code),
-                    ),
-                    style: AppText.label(c.textPrimary, size: 13),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Text(day.resortName ?? s.freeTerrain, style: AppText.caption(c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 10),
+                  MetricStrip(
+                    size: 15,
+                    items: [
+                      ('${st.runCount}', s.runs),
+                      (Fmt.metres(st.dropM, locale: l.code), s.unitHm),
+                      (Fmt.kmh(st.maxSpeedMs, locale: l.code), s.unitKmh),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            DayThumb(path: day.mapThumbPath),
           ],
         ),
       ),
@@ -83,11 +76,13 @@ class DayCard extends StatelessWidget {
   }
 }
 
-/// The 600×400 PNG written at End, or a quiet placeholder while it is missing.
+/// Route thumbnail: the PNG written at End, else a quiet contour pattern.
+/// There is no state in which a placeholder pictogram ships.
 class DayThumb extends StatefulWidget {
-  const DayThumb({super.key, required this.path, this.width = 108});
+  const DayThumb({super.key, required this.path, this.width = 108, this.square = false});
   final String? path;
   final double width;
+  final bool square;
 
   @override
   State<DayThumb> createState() => _DayThumbState();
@@ -115,25 +110,44 @@ class _DayThumbState extends State<DayThumb> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final height = widget.width / 1.5;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(Tokens.radius - 4),
-      child: SizedBox(
-        width: widget.width,
-        height: height,
-        child: _exists
-            ? Image.file(
-                File(widget.path!),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stack) => _placeholder(c),
-              )
-            : _placeholder(c),
-      ),
+    final height = widget.square ? widget.width : widget.width / 1.5;
+    return Container(
+      width: widget.width,
+      height: height,
+      clipBehavior: Clip.antiAlias,
+      decoration: ShapeDecoration(color: const Color(0xFF101216), shape: Squircle.border(Tokens.r10, side: c.hairline, width: c.hairlineWidth)),
+      child: _exists
+          ? Image.file(File(widget.path!), fit: BoxFit.cover, errorBuilder: (context, error, stack) => const ContourPattern())
+          : const ContourPattern(),
     );
   }
+}
 
-  Widget _placeholder(AppColors c) => ColoredBox(
-        color: c.elevated,
-        child: Center(child: Icon(Icons.downhill_skiing_rounded, size: 20, color: c.textTertiary)),
-      );
+/// Faint diagonal contour hatch — the "no track" surface.
+class ContourPattern extends StatelessWidget {
+  const ContourPattern({super.key});
+  @override
+  Widget build(BuildContext context) => CustomPaint(painter: _ContourPainter(AppColors.of(context).textTertiary.withValues(alpha: 0.18)), size: Size.infinite);
+}
+
+class _ContourPainter extends CustomPainter {
+  _ContourPainter(this.color);
+  final Color color;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = 1;
+    final n = (math.max(size.width, size.height) / 9).ceil();
+    for (var i = 0; i < n * 2; i++) {
+      final path = Path();
+      final y0 = i * 9.0 - size.height * 0.5;
+      path.moveTo(0, y0);
+      for (var x = 0.0; x <= size.width; x += 8) {
+        path.lineTo(x, y0 + math.sin((x + i * 13) / 22) * 3 + x * 0.35);
+      }
+      canvas.drawPath(path, p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ContourPainter old) => old.color != color;
 }

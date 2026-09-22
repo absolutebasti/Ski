@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/app/widgets/widgets.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/data/db/providers.dart';
-import 'package:schwung/features/days/day_detail_screen.dart';
-import 'package:schwung/features/days/run_list.dart';
-import 'package:schwung/features/days/stats_grid.dart';
-import 'package:schwung/features/map/track_map.dart';
-import 'package:schwung/features/profile/altitude_profile.dart';
+import 'package:dropline/app/widgets/widgets.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/data/db/providers.dart';
+import 'package:dropline/features/days/day_detail_screen.dart';
+import 'package:dropline/features/days/run_list.dart';
+import 'package:dropline/features/days/stats_grid.dart';
+import 'package:dropline/features/map/track_map.dart';
+import 'package:dropline/features/profile/altitude_profile.dart';
 
 import '../../support/pump.dart';
 import 'day_fixtures.dart';
@@ -52,12 +52,12 @@ void main() {
     // eight stat tiles, in the order of PLAN §3
     expect(find.byType(StatsGrid), findsOneWidget);
     expect(find.byType(StatTile), findsNWidgets(8));
-    expect(find.text('Ski-km'), findsOneWidget);
-    expect(find.text('Lift-km'), findsOneWidget);
-    expect(find.text('Aufstieg'), findsOneWidget);
-    expect(find.text('Ø Speed beim Skifahren'), findsOneWidget);
-    expect(find.text('Höchster/Tiefster Punkt'), findsOneWidget);
-    expect(find.text('Lifte'), findsOneWidget);
+    expect(find.text('SKI-KM'), findsOneWidget);
+    expect(find.text('LIFT-KM'), findsOneWidget);
+    expect(find.text('AUFSTIEG'), findsOneWidget);
+    expect(find.text('Ø SPEED BEIM SKIFAHREN'), findsOneWidget);
+    expect(find.text('HÖCHSTER/TIEFSTER PUNKT'), findsOneWidget);
+    expect(find.text('LIFTE'), findsOneWidget);
 
     // run rows: 'Abfahrt 1 · 09:21 · 312 hm · 2,1 km · 61 km/h · 14 %'
     expect(find.byType(RunList), findsOneWidget);

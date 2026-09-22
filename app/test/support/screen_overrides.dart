@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/misc.dart' show Override;
-import 'package:schwung/core/core.dart';
-import 'package:schwung/core/settings.dart';
-import 'package:schwung/data/db/providers.dart';
-import 'package:schwung/data/resorts/resort_repository.dart';
-import 'package:schwung/features/recording/recovery_service.dart';
-import 'package:schwung/features/settings/settings_providers.dart';
-import 'package:schwung/platform/permission_service.dart';
-import 'package:schwung/platform/providers.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/core/settings.dart';
+import 'package:dropline/data/db/providers.dart';
+import 'package:dropline/data/resorts/resort_repository.dart';
+import 'package:dropline/features/recording/recovery_service.dart';
+import 'package:dropline/features/settings/settings_providers.dart';
+import 'package:dropline/platform/permission_service.dart';
+import 'package:dropline/platform/providers.dart';
 
 import 'fakes.dart';
 

@@ -1,4 +1,4 @@
-# Schwung — ski day tracker
+# Dropline — ski day tracker
 
 One tap records your whole ski day. Runs, lifts and stops are detected automatically, tracking keeps
 running while the phone stays locked in your jacket, and the evening summary shows honest vertical,
@@ -6,7 +6,7 @@ runs and top speed. iOS first (TestFlight), Apple Watch companion, Android build
 
 | Folder | What |
 |---|---|
-| `app/` | Flutter app (`flutter run` inside `app/`). Package `schwung`, bundle id `de.torchtechnology.schwung`. |
+| `app/` | Flutter app (`flutter run` inside `app/`). Package `dropline`, bundle id `de.torchtechnology.dropline`. |
 | `docs/PLAN.md` | Product definition, screens, accuracy pipeline, background tracking, work packages. Start here. |
 | `docs/ANALYSIS.md` | Audit of the legacy PWA, competitor critique, founder-data insights, keep/drop matrix. |
 | `docs/competitors/` | bergfex Ski, Slopes, Skiline benchmark notes. |

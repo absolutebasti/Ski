@@ -5,7 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router.dart';
-import '../../app/theme/tokens.dart';
+import '../../app/widgets/widgets.dart';
+import '../../data/resorts/resort_repository.dart';
+import '../../core/settings.dart';
+import '../../app/l10n/app_locale.dart';
 import '../../core/core.dart';
 import '../../platform/providers.dart';
 import '../recording/live_state_provider.dart';
@@ -109,36 +112,35 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c = AppColors.of(context);
     final s = TodayStrings.of(context);
     final recording = ref.watch(recordingControllerProvider);
     ref.listen<LiveState>(liveStateProvider, _onLive);
 
     final recovery = recording.isRecording ? null : ref.watch(recoveryProvider).asData?.value;
 
+    final l = AppLocale.of(context);
+    final resortName = ref.watch(settingsProvider).lastResortId;
+    final caption = [Fmt.dateShort(DateTime.now().millisecondsSinceEpoch, locale: l.code), if (resortName != null) ref.watch(resortRepositoryProvider).asData?.value.byId(resortName)?.name].whereType<String>().join(' · ');
     return Scaffold(
-      backgroundColor: c.bg,
-      appBar: AppBar(
-        title: Text(s.title),
-        actions: [
-          IconButton(
-            tooltip: s.settings,
-            onPressed: () => SettingsSheet.show(context),
-            icon: const Icon(Icons.settings_rounded),
-          ),
-        ],
-      ),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
-        top: false,
+        bottom: false,
         child: recording.isRecording
             ? LiveView(banner: _banner, busy: _busy, onEnd: _end)
-            : IdleView(
+            : Column(
+                children: [
+                  ScreenHeader(title: s.title, caption: caption, trailing: [HeaderButton(glyph: Glyph.gear, tooltip: s.settings, onTap: () => SettingsSheet.show(context))]),
+                  Expanded(
+                    child: IdleView(
                 error: _startError,
                 busy: _busy,
                 onStart: _start,
                 onOpenSettings: _openSettingsApp,
                 onRequestPrecise: _requestPrecise,
                 recovery: recovery == null ? null : RecoveryCard(info: recovery),
+              ),
+                  ),
+                ],
               ),
       ),
     );

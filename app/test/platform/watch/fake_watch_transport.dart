@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:schwung/platform/watch/watch.dart';
+import 'package:dropline/platform/watch/watch.dart';
 
 /// In-memory stand-in for WatchConnectivity.
 class FakeWatchTransport implements WatchTransport {

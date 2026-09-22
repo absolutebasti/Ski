@@ -8,15 +8,15 @@ import '../../core/core.dart';
 class GpxExporter {
   const GpxExporter._();
 
-  static const String creator = 'Schwung';
+  static const String creator = 'Dropline';
   static const String nsGpx = 'http://www.topografix.com/GPX/1/1';
   static const String nsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
   static const String nsGpxtpx = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v2';
   static const String schemaLocation = '$nsGpx http://www.topografix.com/GPX/1/1/gpx.xsd '
       '$nsGpxtpx http://www.garmin.com/xmlschemas/TrackPointExtensionv2.xsd';
 
-  /// 'schwung-2024-12-27-0192ab.gpx' (local date of the start, first 6 id chars).
-  static String fileName(DayDetail d) => 'schwung-${isoDate(d.day.startedAt)}-${shortId(d.day.id)}.gpx';
+  /// 'dropline-2024-12-27-0192ab.gpx' (local date of the start, first 6 id chars).
+  static String fileName(DayDetail d) => 'dropline-${isoDate(d.day.startedAt)}-${shortId(d.day.id)}.gpx';
 
   static String build(DayDetail d, {String resortFallback = 'Freies Gelände'}) {
     final day = d.day;

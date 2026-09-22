@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/app/widgets/widgets.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/data/db/providers.dart';
-import 'package:schwung/features/days/day_card.dart';
-import 'package:schwung/features/days/tage_screen.dart';
+import 'package:dropline/app/widgets/widgets.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/data/db/providers.dart';
+import 'package:dropline/features/days/day_card.dart';
+import 'package:dropline/features/days/tage_screen.dart';
 
 import '../../support/pump.dart';
 import 'day_fixtures.dart';
@@ -58,17 +58,18 @@ void main() {
     await pumpApp(tester, const TageScreen(), overrides: overrides(days: days));
     await tester.pump();
 
-    expect(find.text('2025/26 · 6 Tage · 41 Abfahrten · 18.240 hm'), findsOneWidget);
-    expect(find.text('Top-Speed 61 km/h'), findsOneWidget);
-    expect(find.text('Größter Tag 1.804 hm'), findsOneWidget);
-    expect(find.text('Längste Abfahrt 312 hm'), findsOneWidget);
+    expect(find.text('SAISON 2025/26'), findsOneWidget);
+    expect(find.text('18.240'), findsOneWidget); // season vertical in the hero card
+    expect(find.text('TOP-SPEED'), findsOneWidget);
+    expect(find.text('GRÖSSTER TAG'), findsOneWidget);
+    expect(find.text('LÄNGSTE ABFAHRT'), findsOneWidget);
 
     expect(find.text('Kitzbühel'), findsOneWidget);
-    expect(find.text('7 Abfahrten · 1.804 hm · 61 km/h'), findsOneWidget);
-    expect(find.text('Rekord'), findsOneWidget);
+    expect(find.text('1.804'), findsWidgets); // day row vertical
+    expect(find.byWidgetPredicate((w) => w is GlyphIcon && w.glyph == Glyph.crest), findsOneWidget);
 
     // Last season is collapsed behind its header.
-    expect(find.text('2024/25 · 3 Tage · 19 Abfahrten · 8.100 hm'), findsOneWidget);
+    expect(find.text('SAISON 2024/25'), findsOneWidget);
     expect(find.text('Ischgl'), findsNothing);
     expect(find.byType(DayCard), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -82,7 +83,7 @@ void main() {
     await pumpApp(tester, const TageScreen(), overrides: overrides(days: days));
     await tester.pump();
 
-    await tester.tap(find.text('2024/25 · 3 Tage · 19 Abfahrten · 8.100 hm'));
+    await tester.tap(find.text('SAISON 2024/25'));
     await tester.pumpAndSettle();
     expect(find.text('Ischgl'), findsOneWidget);
     expect(find.byType(DayCard), findsNWidgets(2));
@@ -160,6 +161,7 @@ void main() {
     );
     await tester.pump();
     expect(find.text('Days'), findsOneWidget);
-    expect(find.text('2025/26 · 6 days · 41 runs · 18,240 m'), findsOneWidget);
+    expect(find.text('SEASON 2025/26'), findsOneWidget);
+    expect(find.text('18,240'), findsOneWidget);
   });
 }

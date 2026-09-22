@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
-import 'package:schwung/core/core.dart';
-import 'package:schwung/core/settings.dart';
-import 'package:schwung/data/db/providers.dart';
-import 'package:schwung/features/recording/live_state_provider.dart';
-import 'package:schwung/features/recording/recording_controller.dart';
-import 'package:schwung/features/recording/recovery_service.dart';
-import 'package:schwung/features/settings/settings_providers.dart';
-import 'package:schwung/platform/permission_service.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/core/settings.dart';
+import 'package:dropline/data/db/providers.dart';
+import 'package:dropline/features/recording/live_state_provider.dart';
+import 'package:dropline/features/recording/recording_controller.dart';
+import 'package:dropline/features/recording/recovery_service.dart';
+import 'package:dropline/features/settings/settings_providers.dart';
+import 'package:dropline/platform/permission_service.dart';
 
 /// 2026-01-15 09:00 — inside season 2025/26.
 final int tsDay = DateTime(2026, 1, 15, 9).millisecondsSinceEpoch;
@@ -108,6 +108,7 @@ List<Override> todayOverrides({
   LiveState live = LiveState.empty,
   RecoveryInfo? recovery,
   Settings settings = const Settings(),
+  PersonalBests? bests,
 }) =>
     [
       recordingControllerProvider.overrideWith(() => controller),
@@ -115,6 +116,8 @@ List<Override> todayOverrides({
       daysListProvider.overrideWith((ref) => Stream.value(days)),
       seasonTotalsProvider.overrideWith((ref) => Stream.value(totals)),
       recoveryProvider.overrideWith((ref) async => recovery),
+      personalBestsProvider.overrideWith((ref) => Stream.value(bests ?? const PersonalBests())),
+      preciseLocationProvider.overrideWith((ref) async => true),
       settingsProvider.overrideWith(() => TestSettings(settings)),
       locationStatusProvider.overrideWith((ref) async => LocationPermissionState.always),
       appVersionProvider.overrideWith((ref) async => '0.1.0 (1)'),

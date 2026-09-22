@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/data/db/database.dart';
-import 'package:schwung/data/db/days_repository.dart';
-import 'package:schwung/features/share/share_service.dart';
+import 'package:dropline/data/db/database.dart';
+import 'package:dropline/data/db/days_repository.dart';
+import 'package:dropline/features/share/share_service.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../support/pump.dart';
@@ -22,7 +22,7 @@ void main() {
     addTearDown(tester.view.reset);
 
     final db = AppDatabase(NativeDatabase.memory());
-    final tmp = Directory.systemTemp.createTempSync('schwung-card-');
+    final tmp = Directory.systemTemp.createTempSync('dropline-card-');
     addTearDown(() => tmp.deleteSync(recursive: true));
     final shared = <(List<XFile>, String?, String?)>[];
     final service = ShareService(

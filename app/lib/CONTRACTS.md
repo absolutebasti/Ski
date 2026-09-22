@@ -4,7 +4,7 @@ Lead-owned files: `pubspec.yaml`, `lib/main.dart`, `lib/app/**`, `lib/core/**`, 
 Do **not** edit them; if a contract is missing, add a note to your final report and code against your best
 interpretation. Everything below already exists and compiles.
 
-## Core (`package:schwung/core/core.dart`)
+## Core (`package:dropline/core/core.dart`)
 
 | Symbol | File | Notes |
 |---|---|---|
@@ -24,7 +24,7 @@ interpretation. Everything below already exists and compiles.
 | `settingsProvider`, `Settings`, `SettingsNotifier` | core/settings.dart | locale / onboardingDone / notificationsOptIn / lastResortId / diagnosticsUnlocked |
 | `isRecordingProvider` | core/settings.dart | `ref.read(isRecordingProvider.notifier).set(true/false)` — WP-05 must call this |
 
-## App layer (`package:schwung/app/...`)
+## App layer (`package:dropline/app/...`)
 
 | Symbol | File | Notes |
 |---|---|---|
@@ -77,3 +77,19 @@ interpretation. Everything below already exists and compiles.
 5. Tests live under `test/<your package>/`; use `test/support/fakes.dart` and `pump.dart`.
 6. Run `flutter analyze` and `flutter test test/<your package>` before reporting; zero analyzer issues.
 7. Widget tests that mount `RootShell`, `HeuteScreen` or `TageScreen` use `test/support/screen_overrides.dart` so no database or plugin is touched.
+
+## Backend (v1.5, Supabase project `svzmmpzevmpodcelzvit`, schema in `supabase/migrations/0001_dropline.sql`)
+
+| Symbol | Type / signature | Owner | File |
+|---|---|---|---|
+| `supabaseProvider` | `Provider<SupabaseClient?>` — null when the backend is unavailable; every feature must work with null | lead (done) | data/supabase/supabase_client.dart |
+| `authStateProvider` | `StreamProvider<AuthUser?>` (`id`, `email?`, `displayName`) — signed-in user or null | WP-14 | data/sync/auth_service.dart |
+| `authServiceProvider` | `Provider<AuthService>` — `Future<AuthUser?> signInWithApple()`, `signOut()`, `Future<void> deleteAccount()` (deletes rows via RPC/table deletes then signs out) | WP-14 | data/sync/auth_service.dart |
+| `syncServiceProvider` | `Provider<SyncService>` — `Future<void> pushDay(String dayId)`, `Future<void> pullAll()`, `Future<void> syncNow()`, `Stream<SyncStatus> status` (`idle`, `syncing`, `offline`, `error`, `lastSyncAt`) | WP-14 | data/sync/sync_service.dart |
+| `profileProvider` | `FutureProvider<Profile?>` (`displayName`, `avatarUrl`, `homeResortId`, `shareLeaderboards`) + `profileServiceProvider` with `update(...)` | WP-15 | features/account/profile_service.dart |
+| `AccountSheet.show(context)` | Sign in with Apple / profile / opt-in toggle / sign out / delete account | WP-15 | features/account/account_sheet.dart |
+| `SocialScreen` | third tab: Gebiets-Top-10 (season, metric chips, own rank), Tagesduell (create/join by code, live board), Wochen-Challenge | WP-16 | features/social/social_screen.dart |
+| `leaderboardProvider` | `FutureProvider.family<List<LeaderboardEntry>, LeaderboardQuery>` via RPC `leaderboard(p_resort_id, p_season_key, p_metric, p_limit)` | WP-16 | features/social/leaderboard_providers.dart |
+| `groupBoardProvider` | `FutureProvider.family<List<GroupMemberStats>, String groupId>` via RPC `group_board(p_group_id)` | WP-16 | features/social/group_providers.dart |
+
+Rules for backend packages: never block the UI on the network; every remote call has a 10 s timeout and degrades to the local state; Sign in with Apple is the only provider (`supabase.auth.signInWithApple()` from supabase_flutter, iOS entitlement is configured); leaderboards need `profiles.share_leaderboards = true`, which the user switches on explicitly in the Account sheet (default off).

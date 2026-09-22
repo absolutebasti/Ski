@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/app/widgets/widgets.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/features/recording/live_state_provider.dart';
-import 'package:schwung/features/recording/recording_controller.dart';
-import 'package:schwung/features/recording/recovery_service.dart';
-import 'package:schwung/features/today/heute_screen.dart';
+import 'package:dropline/app/widgets/widgets.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/features/recording/live_state_provider.dart';
+import 'package:dropline/features/recording/recording_controller.dart';
+import 'package:dropline/features/recording/recovery_service.dart';
+import 'package:dropline/features/today/heute_screen.dart';
 
 import '../../support/pump.dart';
 import 'today_fixtures.dart';
@@ -42,8 +42,9 @@ void main() {
     await tester.pump();
 
     expect(find.text('Zuletzt'.toUpperCase()), findsOneWidget);
-    expect(find.text('7 Abfahrten · 1.804 hm · 61 km/h'), findsOneWidget);
-    expect(find.text('2025/26 · 6 Tage · 41 Abfahrten · 18.240 hm'), findsOneWidget);
+    expect(find.text('1.804'), findsWidgets); // last day vertical
+    expect(find.text('SAISON 2025/26'), findsOneWidget);
+    expect(find.text('18.240'), findsOneWidget);
     expect(find.text('Tag starten'), findsOneWidget);
     expect(find.byType(EmptyState), findsNothing);
     expect(tester.takeException(), isNull);
@@ -65,7 +66,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(ctrl.startCalls, 1);
     // The screen flipped to the live face.
-    expect(find.text('Tag beenden'), findsOneWidget);
+    expect(find.byType(HoldToConfirmButton), findsOneWidget);
   });
 
   testWidgets('denied location shows the inline card with the settings action', (tester) async {
@@ -155,7 +156,7 @@ void main() {
     expect(find.text('1.830'), findsOneWidget); // Höhe
     expect(find.text('4:37:00'), findsOneWidget); // Zeit
     expect(find.text('Karte'), findsOneWidget);
-    expect(find.text('Tag beenden'), findsOneWidget);
+    expect(find.byType(HoldToConfirmButton), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

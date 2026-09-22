@@ -2,11 +2,11 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/data/db/database.dart';
-import 'package:schwung/data/db/days_repository.dart';
-import 'package:schwung/features/share/diagnostics_bundle.dart';
-import 'package:schwung/features/share/gpx_exporter.dart';
-import 'package:schwung/features/share/share_service.dart';
+import 'package:dropline/data/db/database.dart';
+import 'package:dropline/data/db/days_repository.dart';
+import 'package:dropline/features/share/diagnostics_bundle.dart';
+import 'package:dropline/features/share/gpx_exporter.dart';
+import 'package:dropline/features/share/share_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:xml/xml.dart';
 
@@ -21,7 +21,7 @@ void main() {
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     repo = DaysRepository(db);
-    tmp = await Directory.systemTemp.createTemp('schwung-share-');
+    tmp = await Directory.systemTemp.createTemp('dropline-share-');
     shared.clear();
   });
   tearDown(() async {
@@ -56,7 +56,7 @@ void main() {
 
     await service().shareDiagnostics(detail.day.id);
     final file = shared.single.$1.single;
-    expect(file.path, endsWith('schwung-diag-0192ab.json.gz'));
+    expect(file.path, endsWith('dropline-diag-0192ab.json.gz'));
     expect(file.mimeType, 'application/gzip');
     final json = DiagnosticsBundle.decode(await File(file.path).readAsBytes());
     expect((json['day'] as Map)['id'], detail.day.id);

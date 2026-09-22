@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/features/map/track_geometry.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/features/map/track_geometry.dart';
 
 import 'track_fixture.dart';
 

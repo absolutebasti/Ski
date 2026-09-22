@@ -1,6 +1,6 @@
-import 'package:schwung/core/core.dart';
-import 'package:schwung/tracking/synthetic.dart';
-import 'package:schwung/tracking/tracking.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/tracking/synthetic.dart';
+import 'package:dropline/tracking/tracking.dart';
 
 /// Runs a seeded synthetic day through the engine (1 Hz live ticks) and wraps
 /// the result as a finished [DayDetail], exactly like the repository would.

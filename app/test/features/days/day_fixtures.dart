@@ -1,9 +1,9 @@
 import 'package:drift/native.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/data/db/database.dart';
-import 'package:schwung/data/db/days_repository.dart';
-import 'package:schwung/tracking/synthetic.dart';
-import 'package:schwung/tracking/tracking.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/data/db/database.dart';
+import 'package:dropline/data/db/days_repository.dart';
+import 'package:dropline/tracking/synthetic.dart';
+import 'package:dropline/tracking/tracking.dart';
 
 /// 2026-01-15 09:00 — inside season 2025/26.
 final int tsThisSeason = DateTime(2026, 1, 15, 9).millisecondsSinceEpoch;

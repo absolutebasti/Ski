@@ -4,14 +4,14 @@ import Foundation
 
 /// Significant-location-change monitor. With "Always" authorization iOS relaunches
 /// the app in the background after a kill once the user moves ~500 m; the Dart side
-/// (main.dart) then resumes the active day. Channel: de.torchtechnology.schwung/watchdog
+/// (main.dart) then resumes the active day. Channel: de.torchtechnology.dropline/watchdog
 final class TrackingWatchdog: NSObject, CLLocationManagerDelegate {
   static let shared = TrackingWatchdog()
   private let manager = CLLocationManager()
   var launchedFromLocation = false
 
   func register(with messenger: FlutterBinaryMessenger) {
-    let channel = FlutterMethodChannel(name: "de.torchtechnology.schwung/watchdog", binaryMessenger: messenger)
+    let channel = FlutterMethodChannel(name: "de.torchtechnology.dropline/watchdog", binaryMessenger: messenger)
     channel.setMethodCallHandler { [weak self] call, result in
       guard let self else { result(false); return }
       switch call.method {

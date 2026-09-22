@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/features/days/day_card.dart';
-import 'package:schwung/features/map/thumbnail_renderer.dart';
+import 'package:dropline/features/days/day_card.dart';
+import 'package:dropline/features/map/thumbnail_renderer.dart';
 
 import '../../support/pump.dart';
 import 'day_fixtures.dart';
@@ -16,12 +16,12 @@ void main() {
     );
     await tester.pump();
     expect(find.byType(Image), findsNothing);
-    expect(find.byIcon(Icons.downhill_skiing_rounded), findsOneWidget);
+    expect(find.byType(ContourPattern), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('the rendered map PNG is shown on the card', (tester) async {
-    final tmp = Directory.systemTemp.createTempSync('schwung-days-');
+    final tmp = Directory.systemTemp.createTempSync('dropline-days-');
     addTearDown(() => tmp.deleteSync(recursive: true));
     final file = File('${tmp.path}/thumb.png');
 

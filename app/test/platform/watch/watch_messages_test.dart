@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:schwung/core/core.dart';
-import 'package:schwung/platform/watch/watch.dart';
+import 'package:dropline/core/core.dart';
+import 'package:dropline/platform/watch/watch.dart';
 
 void main() {
   group('WatchLivePayload', () {

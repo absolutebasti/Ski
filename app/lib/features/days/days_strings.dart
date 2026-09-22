@@ -12,6 +12,9 @@ class DaysStrings {
   // --- titles / states -----------------------------------------------------
   String get title => l.pick(de: 'Tage', en: 'Days');
   String get dayTitle => l.pick(de: 'Skitag', en: 'Ski day');
+  String get emptyHeadline => l.pick(de: 'Noch kein Skitag.', en: 'No ski day yet.');
+  String get seasonWord => l.pick(de: 'Saison', en: 'Season');
+  String get dayTitlePlural => l.pick(de: 'Skitage', en: 'Ski days');
   String get emptyLine =>
       l.pick(de: 'Noch kein Skitag aufgezeichnet. Dein erster Tag wartet auf Heute.', en: 'No ski day recorded yet. Your first day is waiting on Today.');
   String get loadFailed => l.pick(de: 'Der Tag konnte nicht geladen werden.', en: 'This day could not be loaded.');

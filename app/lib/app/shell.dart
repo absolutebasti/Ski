@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/settings.dart';
-import 'l10n/app_locale.dart';
 import 'demo.dart';
+import 'l10n/app_locale.dart';
 import 'router.dart';
-import 'theme/tokens.dart';
+import 'theme/surfaces.dart';
+import 'widgets/glyphs.dart';
+import 'widgets/tab_bar.dart';
 
-/// Two tabs: Heute · Tage. The Heute icon carries a dot while a day is recording.
+/// Three tabs: Heute · Tage · Rangliste. Content scrolls under the glass tab
+/// bar; the Heute icon pulses ice while a day is recording.
 class RootShell extends ConsumerStatefulWidget {
   const RootShell({super.key});
   @override
@@ -21,27 +24,27 @@ class _RootShellState extends ConsumerState<RootShell> {
   Widget build(BuildContext context) {
     final l = AppLocale.of(context);
     final recording = ref.watch(isRecordingProvider);
-    final c = AppColors.of(context);
     return Scaffold(
-      body: IndexedStack(index: _index, children: [AppRouter.heute(), AppRouter.tage()]),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: recording,
-              smallSize: 8,
-              backgroundColor: c.ice,
-              child: const Icon(Icons.radio_button_checked_rounded),
-            ),
-            label: l.pick(de: 'Heute', en: 'Today'),
+      extendBody: true,
+      body: PageBackground(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: KeyedSubtree(
+            key: ValueKey(_index),
+            child: IndexedStack(index: _index, children: [AppRouter.heute(), AppRouter.tage(), AppRouter.social()]),
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.calendar_month_rounded),
-            label: l.pick(de: 'Tage', en: 'Days'),
-          ),
+        ),
+      ),
+      bottomNavigationBar: AppTabBar(
+        index: _index,
+        recording: recording,
+        onSelect: (i) => setState(() => _index = i),
+        tabs: [
+          AppTab(label: l.pick(de: 'Heute', en: 'Today'), glyph: Glyph.chevron),
+          AppTab(label: l.pick(de: 'Tage', en: 'Days'), glyph: Glyph.calendar),
+          AppTab(label: l.pick(de: 'Rangliste', en: 'Ranks'), glyph: Glyph.podium),
         ],
       ),
     );

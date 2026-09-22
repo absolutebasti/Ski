@@ -1,13 +1,13 @@
-# Schwung backend (Supabase) — design for v1.5
+# Dropline backend (Supabase) — design for v1.5
 
 Principle: **local-first, cloud-second.** The phone remains the source of truth for a day; the backend stores day aggregates (and optionally the raw track as a gzip file in Storage) so users can restore, compare and compete. Nothing in v1 depends on the backend.
 
 ## Project
-- New Supabase project `schwung` (EU, Frankfurt). Not the Torch platform project.
+- New Supabase project `dropline` (EU, Frankfurt). Not the Torch platform project.
 - Auth: **Sign in with Apple** (only provider; satisfies App Review) + anonymous sessions for read-only leaderboards.
 - Keys in the app via `--dart-define-from-file=env/prod.json` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`); `env/` is gitignored.
 
-## Schema (`supabase/migrations/0001_schwung.sql`)
+## Schema (`supabase/migrations/0001_dropline.sql`)
 | Table | Purpose | RLS |
 |---|---|---|
 | `profiles` | display name, avatar, home resort, `share_leaderboards` opt-in | owner read/write; public read of display_name/avatar for group members and leaderboards |
@@ -28,4 +28,4 @@ Views/RPC (SQL, `security invoker`): `leaderboard(resort_id, season_key, metric,
 1. **Tagesduell**: create group → code → friends join → live board for the day (polling every 60 s during recording; Realtime later).
 2. **Gebiets-Top-10 der Saison** per metric, with "you are 14 of 312".
 3. **Wochen-Challenge**: one target per week, progress vs. friends.
-4. Later: follows, kudos, share links (`schwung.app/d/<id>`).
+4. Later: follows, kudos, share links (`dropline.app/d/<id>`).
