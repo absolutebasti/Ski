@@ -1,0 +1,12 @@
+flutter_native_splash:
+  color: "#F4F1EA"
+  color_dark: "#0A0B0E"
+  image: "assets/icon/splash-mark.png"
+  image_dark: "assets/icon/splash-mark-dark.png"
+  ios: true
+  android: true
+  android_12:
+    color: "#F4F1EA"
+    color_dark: "#0A0B0E"
+    image: "assets/icon/splash-mark.png"
+    image_dark: "assets/icon/splash-mark-dark.png"

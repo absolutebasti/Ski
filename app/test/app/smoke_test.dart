@@ -17,9 +17,12 @@ void main() {
     var fired = 0;
     await pumpApp(tester, Scaffold(body: Center(child: HoldToConfirmButton(label: 'Tag beenden', onConfirmed: () => fired++))));
     final gesture = await tester.startGesture(tester.getCenter(find.text('Tag beenden')));
+    await tester.pump(); // ticker t0
     await tester.pump(const Duration(milliseconds: 400));
     expect(fired, 0);
-    await tester.pump(const Duration(milliseconds: 1000));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(fired, 0);
+    await tester.pump(const Duration(milliseconds: 400));
     expect(fired, 1);
     await gesture.up();
     await tester.pumpAndSettle();
