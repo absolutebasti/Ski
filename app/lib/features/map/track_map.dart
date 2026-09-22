@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
@@ -255,7 +256,7 @@ class _TrackMapState extends ConsumerState<TrackMap> {
                   points: l.points,
                   strokeWidth: TrackMap.liftWidth,
                   color: c.liftGrey,
-                  pattern: const StrokePattern.dashed(segments: [8, 6]),
+                  pattern: StrokePattern.dashed(segments: const [8, 6]),
                 ),
           ],
         ),

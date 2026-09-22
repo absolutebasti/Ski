@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/l10n/app_locale.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
@@ -97,6 +98,7 @@ class _LiveReadout extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final s = MapStrings.of(context);
+    final locale = AppLocale.of(context).code;
     if (!hasFix) {
       return AppCard(
         elevated: true,
@@ -109,9 +111,9 @@ class _LiveReadout extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Expanded(child: _Stat(label: s.speed, value: Fmt.kmh(live.speedMs), unit: 'km/h')),
+          Expanded(child: _Stat(label: s.speed, value: Fmt.kmh(live.speedMs, locale: locale), unit: 'km/h')),
           Container(width: 1, height: 28, color: c.hairline),
-          Expanded(child: _Stat(label: s.altitude, value: live.altM == null ? '–' : Fmt.metres(live.altM!), unit: 'm')),
+          Expanded(child: _Stat(label: s.altitude, value: live.altM == null ? '–' : Fmt.metres(live.altM!, locale: locale), unit: 'm')),
         ],
       ),
     );

@@ -51,14 +51,14 @@ class TrackGeometry {
     int? lastTs;
 
     void flush() {
-      if (current != null && buf.length >= 2) out.add(TrackLine(current!, buf));
+      if (current != null && buf.length >= 2) out.add(TrackLine(current, buf));
       buf = <LatLng>[];
     }
 
     for (final p in points) {
       if (!p.accepted || !p.hasPosition) continue;
       final k = kindOf(p, segments);
-      final gap = lastTs != null && p.ts - lastTs! > gapMs;
+      final gap = lastTs != null && p.ts - lastTs > gapMs;
       if (k != current || gap) {
         flush();
         current = k;
