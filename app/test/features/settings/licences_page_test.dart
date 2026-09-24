@@ -4,8 +4,15 @@ import 'package:slopetrack/features/settings/licences_page.dart';
 
 import '../../support/pump.dart';
 
+void tall(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 2400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
 void main() {
   testWidgets('lists every data and font source with its licence', (tester) async {
+    tall(tester);
     await pumpApp(tester, const LicencesPage());
     await tester.pump();
     for (final src in LicencesPage.sources) {
@@ -18,6 +25,7 @@ void main() {
   });
 
   testWidgets('the package licences button opens Flutter\'s licence page', (tester) async {
+    tall(tester);
     await pumpApp(tester, const LicencesPage());
     await tester.pump();
     await tester.tap(find.text('Alle Paket-Lizenzen'));
