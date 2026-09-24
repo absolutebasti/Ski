@@ -22,7 +22,7 @@ class ShareStrings {
   String get unitKm => 'km';
   String get shareCardSubject => l.pick(de: 'Mein Skitag', en: 'My ski day');
   String get gpxSubject => l.pick(de: 'Skitag als GPX', en: 'Ski day as GPX');
-  String get diagnosticsSubject => l.pick(de: 'Dropline Diagnosepaket', en: 'Dropline diagnostics bundle');
+  String get diagnosticsSubject => l.pick(de: 'SlopeTrack Diagnosepaket', en: 'SlopeTrack diagnostics bundle');
 
   /// 'Skitag in Kitzbühel · 3 Abfahrten · 1.900 hm'
   String summaryLine({required String resort, required String runCount, required String dropM}) =>

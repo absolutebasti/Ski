@@ -10,7 +10,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   /// Production database in the app's documents directory, WAL mode.
-  AppDatabase.open() : super(driftDatabase(name: 'dropline'));
+  AppDatabase.open() : super(driftDatabase(name: 'slopetrack'));
 
   @override
   int get schemaVersion => 2;

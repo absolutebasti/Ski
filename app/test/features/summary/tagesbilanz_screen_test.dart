@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/core/settings.dart';
-import 'package:dropline/data/db/providers.dart';
-import 'package:dropline/features/summary/route_block.dart';
-import 'package:dropline/features/summary/tagesbilanz_screen.dart';
-import 'package:dropline/platform/providers.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/core/settings.dart';
+import 'package:slopetrack/data/db/providers.dart';
+import 'package:slopetrack/features/summary/route_block.dart';
+import 'package:slopetrack/features/summary/tagesbilanz_screen.dart';
+import 'package:slopetrack/platform/providers.dart';
 
 import '../../support/fakes.dart';
 import '../../support/pump.dart';
@@ -16,7 +16,7 @@ import 'summary_fixture.dart';
 
 const _noBests = PersonalBests();
 const _asked = Settings(notificationsAsked: true, onboardingDone: true);
-const _defaultLine = 'Sauber gefahren. Bis zum nächsten Dropline.';
+const _defaultLine = 'Sauber gefahren. Bis zum nächsten SlopeTrack.';
 final _twoDays = [daySummary(), daySummary(id: 'day-0')];
 
 List<Override> summaryOverrides({

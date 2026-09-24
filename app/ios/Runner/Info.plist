@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Dropline</string>
+	<string>SlopeTrack</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>dropline</string>
+	<string>slopetrack</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -65,7 +65,7 @@
 		<string>en</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Dropline braucht deinen Standort, um Geschwindigkeit, Abfahrten und Höhenmeter aufzuzeichnen.</string>
+	<string>SlopeTrack braucht deinen Standort, um Geschwindigkeit, Abfahrten und Höhenmeter aufzuzeichnen.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Nur so läuft die Aufnahme weiter, wenn dein iPhone gesperrt in der Jacke steckt, und kann nach einem Neustart fortgesetzt werden.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/features/account/account.dart';
+import 'package:slopetrack/features/account/account.dart';
 
 void main() {
   test('without an api everything stays local and uses the auth fallback name', () async {

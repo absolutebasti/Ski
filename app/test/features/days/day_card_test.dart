@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/features/days/day_card.dart';
-import 'package:dropline/features/map/thumbnail_renderer.dart';
+import 'package:slopetrack/features/days/day_card.dart';
+import 'package:slopetrack/features/map/thumbnail_renderer.dart';
 
 import '../../support/pump.dart';
 import 'day_fixtures.dart';
@@ -21,7 +21,7 @@ void main() {
   });
 
   testWidgets('the rendered map PNG is shown on the card', (tester) async {
-    final tmp = Directory.systemTemp.createTempSync('dropline-days-');
+    final tmp = Directory.systemTemp.createTempSync('slopetrack-days-');
     addTearDown(() => tmp.deleteSync(recursive: true));
     final file = File('${tmp.path}/thumb.png');
 

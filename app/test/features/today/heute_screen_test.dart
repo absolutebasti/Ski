@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/app/widgets/widgets.dart';
-import 'package:dropline/app/theme/tokens.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/features/recording/live_state_provider.dart';
-import 'package:dropline/features/recording/recording_controller.dart';
-import 'package:dropline/features/recording/recovery_service.dart';
-import 'package:dropline/features/today/heute_screen.dart';
-import 'package:dropline/features/today/live_view.dart';
+import 'package:slopetrack/app/widgets/widgets.dart';
+import 'package:slopetrack/app/theme/tokens.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/features/recording/live_state_provider.dart';
+import 'package:slopetrack/features/recording/recording_controller.dart';
+import 'package:slopetrack/features/recording/recovery_service.dart';
+import 'package:slopetrack/features/today/heute_screen.dart';
+import 'package:slopetrack/features/today/live_view.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../../support/pump.dart';

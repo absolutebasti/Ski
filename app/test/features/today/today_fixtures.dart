@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
-import 'package:dropline/core/core.dart';
-import 'package:dropline/core/settings.dart';
-import 'package:dropline/data/db/providers.dart';
-import 'package:dropline/features/recording/live_state_provider.dart';
-import 'package:dropline/features/recording/recording_controller.dart';
-import 'package:dropline/features/recording/recovery_service.dart';
-import 'package:dropline/features/settings/settings_providers.dart';
-import 'package:dropline/platform/permission_service.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/core/settings.dart';
+import 'package:slopetrack/data/db/providers.dart';
+import 'package:slopetrack/features/recording/live_state_provider.dart';
+import 'package:slopetrack/features/recording/recording_controller.dart';
+import 'package:slopetrack/features/recording/recovery_service.dart';
+import 'package:slopetrack/features/settings/settings_providers.dart';
+import 'package:slopetrack/platform/permission_service.dart';
 
 /// 2026-01-15 09:00 — inside season 2025/26.
 final int tsDay = DateTime(2026, 1, 15, 9).millisecondsSinceEpoch;

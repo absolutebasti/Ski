@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/features/map/track_geometry.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/features/map/track_geometry.dart';
 
 import 'track_fixture.dart';
 

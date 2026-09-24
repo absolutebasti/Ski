@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,10 +18,12 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final prefs = await SharedPreferences.getInstance();
   await SupabaseBoot.init(); // backend is optional; the app is local-first
+  await Demo.load(); // debug-only launch switches (demo.json / dart-define)
   final container = ProviderContainer(
     overrides: [
       settingsProvider.overrideWith(() => SettingsNotifier(prefs)),
       heartRateSourceProvider.overrideWith((ref) => WatchHeartRateSource(ref.watch(watchTransportProvider))),
+      if (kDebugMode && Demo.seedDays) permissionServiceProvider.overrideWithValue(DemoPermissionService()),
     ],
   );
   // Apple Watch bridge follows the recording state; attach before resume so a
@@ -36,5 +39,5 @@ Future<void> main() async {
   } catch (_) {
     // never block launch on recovery problems
   }
-  runApp(UncontrolledProviderScope(container: container, child: const DroplineApp()));
+  runApp(UncontrolledProviderScope(container: container, child: const SlopeTrackApp()));
 }

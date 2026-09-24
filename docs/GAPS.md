@@ -7,7 +7,7 @@ Evidence-based audit of the merged state (main = PR #4, 258 tests green). Owner:
 | # | Gap | Why it blocks | Owner | Effort | Ref |
 |---|---|---|---|---|---|
 | 1 | No Apple access on this Mac: no Apple ID for team 5GDU97KSQU in Xcode and no App Store Connect API key; no App Store Connect app record | Archive signs, but export/upload is impossible | founder | S | tools/testflight.sh, docs/APP-STORE.md |
-| 2 | Name not cleared: "Dropline" is held by Oberalp/Salewa (EUTM cl. 18/25) and Bell Sports/Giro (cl. 9, ski goggles); bundle id becomes permanent with the first upload | Rename after upload means a new app record | founder + legal | S | docs/NAMING.md |
+| 2 | ~~Name~~ decided 2026-09-24: **SlopeTrack** (renamed in code, bundle id de.torchtechnology.slopetrack). Residual risk: CH mark "SLOPE TRACK" (SUVA, cl. 9), proximity to "Slopes". Register slopetrack.app and file the word mark | — | founder + legal | S | docs/NAMING.md |
 | 3 | Nothing proven on a real device: background continuity with the screen locked, kill → resume, watchdog relaunch, barometer fusion, battery per hour, car auto-end | The whole value proposition is untested outside the simulator (`Location is off` even in the simulator screenshots) | device-qa | M | docs/QA.md (14 checks) |
 | 4 | Sign in with Apple never exercised end-to-end: 0 users, 0 profiles, 0 days in the Supabase project; the Apple client secret Supabase needs is a JWT that expires after ≤ 6 months and must be renewed | First real sign-in may fail; sync is untested against the live project | founder + device-qa | S | supabase project svzmmpzevmpodcelzvit › Auth › Apple |
 | 5 | Wochen-Challenge card is empty: `challenges` table has 0 rows and nothing creates weekly challenges | The third competition feature shows nothing | backend | S | supabase/migrations, features/social/challenge_card.dart |
@@ -48,7 +48,7 @@ Evidence-based audit of the merged state (main = PR #4, 258 tests green). Owner:
 | 30 | Mascot pose set: 6 of 9 poses are head variants; full-body poses for celebrate/thumbs/point would carry the Tagesbilanz better | design | M |
 
 ## Founder decisions
-1. Name: keep Dropline (risk) or switch (Dropcount / Vertdrop / Droprun / Pistelab; SlopeTrack rejected: CH cl. 9 mark, collides with "Slopes"). Recommendation: switch now.
+1. Name: SlopeTrack decided (2026-09-24). Still needed: register slopetrack.app, file the DE/EU word mark.
 2. Apple access: Xcode sign-in with the team Apple ID, or an App Store Connect API key for `tools/testflight.sh`.
 3. Hosting for privacy policy + Impressum + support page (one static page under torchtechnology.de is enough).
 4. Watch app in build 1 (delays by ~1–2 weeks and needs the watchOS SDK) or build 2. Recommendation: build 2.

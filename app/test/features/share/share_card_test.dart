@@ -2,10 +2,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/app/brand.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/features/share/share_card.dart';
-import 'package:dropline/features/share/share_card_renderer.dart';
+import 'package:slopetrack/app/brand.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/features/share/share_card.dart';
+import 'package:slopetrack/features/share/share_card_renderer.dart';
 
 import '../../support/pump.dart';
 import 'synthetic_detail.dart';

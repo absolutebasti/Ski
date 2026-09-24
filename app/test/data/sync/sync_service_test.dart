@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/data/db/database.dart';
-import 'package:dropline/data/db/days_repository.dart';
-import 'package:dropline/data/sync/sync_service.dart';
-import 'package:dropline/data/sync/sync_store.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/data/db/database.dart';
+import 'package:slopetrack/data/db/days_repository.dart';
+import 'package:slopetrack/data/sync/sync_service.dart';
+import 'package:slopetrack/data/sync/sync_store.dart';
 
 import 'sync_fixtures.dart';
 

@@ -85,7 +85,10 @@ class _PressableState extends State<Pressable> {
   @override
   Widget build(BuildContext context) {
     final active = widget.enabled && (widget.onTap != null || widget.onLongPress != null);
-    return GestureDetector(
+    return Semantics(
+      button: active,
+      enabled: active,
+      child: GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: active ? (_) => setState(() => _down = true) : null,
       onTapUp: (_) => setState(() => _down = false),
@@ -97,6 +100,7 @@ class _PressableState extends State<Pressable> {
         duration: Tokens.fast,
         curve: Curves.easeOut,
         child: AnimatedOpacity(opacity: _down ? 0.9 : 1, duration: Tokens.fast, child: widget.child),
+      ),
       ),
     );
   }

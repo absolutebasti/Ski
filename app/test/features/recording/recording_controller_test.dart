@@ -2,15 +2,15 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/core/settings.dart';
-import 'package:dropline/data/db/database.dart';
-import 'package:dropline/data/db/providers.dart';
-import 'package:dropline/data/resorts/resort_repository.dart';
-import 'package:dropline/features/recording/recording.dart';
-import 'package:dropline/platform/permission_service.dart';
-import 'package:dropline/platform/providers.dart';
-import 'package:dropline/tracking/synthetic.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/core/settings.dart';
+import 'package:slopetrack/data/db/database.dart';
+import 'package:slopetrack/data/db/providers.dart';
+import 'package:slopetrack/data/resorts/resort_repository.dart';
+import 'package:slopetrack/features/recording/recording.dart';
+import 'package:slopetrack/platform/permission_service.dart';
+import 'package:slopetrack/platform/providers.dart';
+import 'package:slopetrack/tracking/synthetic.dart';
 
 import '../../support/fakes.dart';
 

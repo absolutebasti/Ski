@@ -3,12 +3,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/app/widgets/widgets.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/features/map/map_sheet.dart';
-import 'package:dropline/features/map/track_map.dart';
-import 'package:dropline/features/recording/live_state_provider.dart';
-import 'package:dropline/features/recording/live_track_provider.dart';
+import 'package:slopetrack/app/widgets/widgets.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/features/map/map_sheet.dart';
+import 'package:slopetrack/features/map/track_map.dart';
+import 'package:slopetrack/features/recording/live_state_provider.dart';
+import 'package:slopetrack/features/recording/live_track_provider.dart';
 
 import '../../support/pump.dart';
 import 'track_fixture.dart';

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/app/l10n/app_locale.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/features/summary/count_up.dart';
-import 'package:dropline/features/summary/mascot_line.dart';
-import 'package:dropline/features/summary/summary_strings.dart';
+import 'package:slopetrack/app/l10n/app_locale.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/features/summary/count_up.dart';
+import 'package:slopetrack/features/summary/mascot_line.dart';
+import 'package:slopetrack/features/summary/summary_strings.dart';
 import 'package:flutter/widgets.dart' show Locale;
 
 const _de = SummaryStrings(AppLocale(Locale('de')));

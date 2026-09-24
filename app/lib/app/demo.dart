@@ -8,15 +8,17 @@ import 'package:path_provider/path_provider.dart';
 import '../core/settings.dart';
 import '../data/db/providers.dart';
 import '../features/map/thumbnail_renderer.dart';
+import '../platform/permission_service.dart';
 import '../tracking/synthetic.dart';
 import '../tracking/tracking.dart';
 
 /// Debug-only launch switches (simulator QA and screenshots), in priority order:
 ///   1. `<Documents>/demo.json` inside the app container, e.g.
-///      {"DROPLINE_SKIP_ONBOARDING":"1","DROPLINE_DEMO":"1","DROPLINE_TAB":"tage","DROPLINE_ROUTE":"/day/demo-0"}
+///      {"SLOPETRACK_SKIP_ONBOARDING":"1","SLOPETRACK_DEMO":"1","SLOPETRACK_TAB":"tage","SLOPETRACK_ROUTE":"/day/demo-0"}
 ///      — written with `xcrun simctl get_app_container <udid> <bundle> data`, no rebuild needed (tools/shots.sh)
-///   2. `--dart-define=DROPLINE_SKIP_ONBOARDING=1` etc. at build time
-///   DROPLINE_ROUTE: a named route pushed after the first frame, or `settings` / `account` for the sheets.
+///   2. `--dart-define=SLOPETRACK_SKIP_ONBOARDING=1` etc. at build time
+///   SLOPETRACK_ROUTE: a named route pushed after the first frame, or `settings` / `account` for the sheets.
+///   SLOPETRACK_APPEARANCE: system | light | dark (screenshots of the light theme).
 class Demo {
   const Demo._();
 
@@ -30,10 +32,11 @@ class Demo {
     final runtime = Platform.environment[key];
     if (runtime != null && runtime.isNotEmpty) return runtime;
     final defined = switch (key) {
-      'DROPLINE_SKIP_ONBOARDING' => const String.fromEnvironment('DROPLINE_SKIP_ONBOARDING'),
-      'DROPLINE_DEMO' => const String.fromEnvironment('DROPLINE_DEMO'),
-      'DROPLINE_TAB' => const String.fromEnvironment('DROPLINE_TAB'),
-      'DROPLINE_ROUTE' => const String.fromEnvironment('DROPLINE_ROUTE'),
+      'SLOPETRACK_SKIP_ONBOARDING' => const String.fromEnvironment('SLOPETRACK_SKIP_ONBOARDING'),
+      'SLOPETRACK_DEMO' => const String.fromEnvironment('SLOPETRACK_DEMO'),
+      'SLOPETRACK_TAB' => const String.fromEnvironment('SLOPETRACK_TAB'),
+      'SLOPETRACK_ROUTE' => const String.fromEnvironment('SLOPETRACK_ROUTE'),
+      'SLOPETRACK_APPEARANCE' => const String.fromEnvironment('SLOPETRACK_APPEARANCE'),
       _ => '',
     };
     return defined.isEmpty ? null : defined;
@@ -50,16 +53,24 @@ class Demo {
       debugPrint('demo: demo.json ignored ($e)');
     }
   }
-  static bool get skipOnboarding => _env('DROPLINE_SKIP_ONBOARDING') == '1';
-  static bool get seedDays => _env('DROPLINE_DEMO') == '1';
-  static int get initialTab => switch (_env('DROPLINE_TAB')) { 'tage' => 1, 'rangliste' || 'social' => 2, _ => 0 };
-  static String? get initialRoute => _env('DROPLINE_ROUTE');
+  static bool get skipOnboarding => _env('SLOPETRACK_SKIP_ONBOARDING') == '1';
+  static bool get seedDays => _env('SLOPETRACK_DEMO') == '1';
+  static int get initialTab => switch (_env('SLOPETRACK_TAB')) { 'tage' => 1, 'rangliste' || 'social' => 2, _ => 0 };
+  static String? get initialRoute => _env('SLOPETRACK_ROUTE');
+
+  /// Call before the ProviderContainer is built so [seedDays] can decide the
+  /// permission override (simulators never grant Always).
+  static Future<void> load() async {
+    if (!kDebugMode) return;
+    await _loadFile();
+  }
 
   static Future<void> apply(ProviderContainer container) async {
     if (!kDebugMode) return;
-    await _loadFile();
     debugPrint('demo: skipOnboarding=$skipOnboarding seedDays=$seedDays tab=$initialTab route=$initialRoute');
     if (skipOnboarding) await container.read(settingsProvider.notifier).setOnboardingDone();
+    final appearance = _env('SLOPETRACK_APPEARANCE');
+    if (appearance != null) await container.read(settingsProvider.notifier).setAppearance(appearance);
     if (seedDays) await _seed(container);
   }
 
@@ -100,3 +111,28 @@ int demoInitialTab() => Demo.initialTab;
 
 /// Used by RootShell to push a screen after the first frame (debug only).
 String? demoInitialRoute() => Demo.initialRoute;
+
+/// Demo mode: every permission granted, so screenshots show the product and
+/// not the permission cards. Debug builds only (main.dart).
+class DemoPermissionService implements PermissionService {
+  @override
+  Future<LocationPermissionState> status() async => LocationPermissionState.always;
+  @override
+  Future<LocationPermissionState> requestWhenInUse() async => LocationPermissionState.always;
+  @override
+  Future<LocationPermissionState> requestAlways() async => LocationPermissionState.always;
+  @override
+  Future<bool> requestMotion() async => true;
+  @override
+  Future<bool> requestNotifications() async => true;
+  @override
+  Future<bool> notificationsGranted() async => true;
+  @override
+  Future<bool> hasPreciseLocation() async => true;
+  @override
+  Future<bool> requestTemporaryFullAccuracy() async => true;
+  @override
+  Future<bool> isLocationServiceEnabled() async => true;
+  @override
+  Future<void> openSettings() async {}
+}

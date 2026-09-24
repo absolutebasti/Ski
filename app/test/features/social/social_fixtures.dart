@@ -1,7 +1,7 @@
-import 'package:dropline/core/core.dart';
-import 'package:dropline/data/sync/auth_service.dart';
-import 'package:dropline/features/social/fake_social_api.dart';
-import 'package:dropline/features/social/social.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/data/sync/auth_service.dart';
+import 'package:slopetrack/features/social/fake_social_api.dart';
+import 'package:slopetrack/features/social/social.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
 const kUser = AuthUser(id: 'u1', displayName: 'Sebastian Fackelmann');

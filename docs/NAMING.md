@@ -1,4 +1,13 @@
-# Naming — trademark check "Dropline" (2026-09-22)
+# Naming — SlopeTrack (decided 2026-09-24) and the Dropline screen (2026-09-22)
+
+## Decision: SlopeTrack
+Founder's pick 2026-09-24 ("richtig toller Name"). App name `SlopeTrack`, Dart package `slopetrack`, bundle id `de.torchtechnology.slopetrack`, Watch target `SlopeTrackWatch`, Supabase Apple client ids `de.torchtechnology.slopetrack` (+ the old dropline id kept as a secondary id until the first upload).
+
+Screen result (TMview 2026-09-23): no "SLOPETRACK" mark anywhere; **"SLOPE TRACK" is registered in Switzerland, class 9, by SUVA (2011)**; the direct competitor **Slopes** (Breakpoint Studio, US cl. 9; Consumed By Code, CA/WO cl. 9) is phonetically close; the term is descriptive for a ski tracker, so an EU word mark may be refused as descriptive and App Store search will rank "Slopes" and "Ski Tracks" next to us. No App Store app named SlopeTrack. Domains: slopetrack.com taken, slopetrack.app / .io / .de free (register now).
+
+Residual risk accepted by the founder. Recommended mitigations: register slopetrack.app; file a DE/EU word mark early in classes 9/41/42 (a refusal is cheap information); avoid the CH market in the first marketing wave; use the title "SlopeTrack – Ski-Tracker & Duelle" so the descriptor carries discoverability.
+
+## Earlier candidate "Dropline" (rejected)
 
 Source: TMview search API (EUIPO/WIPO/national offices), EUIPO eSearch record, USPTO TSDR, iTunes Search API. This is a screening, not legal advice — a lawyer's clearance is still needed before the first upload.
 

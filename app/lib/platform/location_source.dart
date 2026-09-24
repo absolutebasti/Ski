@@ -8,7 +8,7 @@ import '../core/core.dart';
 /// geolocator-backed [LocationSource] with the exact background settings from
 /// docs/PLAN.md §6. Restartable; counts restarts for diagnostics.
 class GeolocatorLocationSource implements LocationSource {
-  GeolocatorLocationSource({this.notificationTitle = 'Aufnahme läuft', this.notificationText = 'Dropline zeichnet deinen Skitag auf'});
+  GeolocatorLocationSource({this.notificationTitle = 'Aufnahme läuft', this.notificationText = 'SlopeTrack zeichnet deinen Skitag auf'});
 
   final String notificationTitle;
   final String notificationText;

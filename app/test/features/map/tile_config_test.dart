@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/features/map/tile_config.dart';
+import 'package:slopetrack/features/map/tile_config.dart';
 
 void main() {
   test('without a branded URL the raster is OpenTopoMap + the piste overlay', () {

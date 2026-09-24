@@ -56,6 +56,13 @@ class SettingsStrings {
   String get privacy => l.pick(de: 'Datenschutz', en: 'Privacy');
   String get privacyHint => l.pick(de: 'Alles bleibt auf dem Gerät.', en: 'Everything stays on the device.');
   String get version => l.pick(de: 'Version', en: 'Version');
+  String get licences => l.pick(de: 'Quellen & Lizenzen', en: 'Sources & licences');
+  String get licencesHint => l.pick(de: 'Karten, Wetter, Schrift, Pakete', en: 'Maps, weather, font, packages');
+  String get licencesIntro => l.pick(
+        de: 'SlopeTrack baut auf offenen Daten und Software auf. Danke an alle, die sie pflegen.',
+        en: 'SlopeTrack is built on open data and software. Thanks to everyone who maintains them.',
+      );
+  String get packageLicences => l.pick(de: 'Alle Paket-Lizenzen', en: 'All package licences');
   String get diagnostics => l.pick(de: 'Diagnose', en: 'Diagnostics');
   String get diagnosticsHint => l.pick(de: 'Sensoren, Zähler und Reparatur.', en: 'Sensors, counters and repair.');
   String get diagnosticsUnlockedToast => l.pick(de: 'Diagnose ist jetzt sichtbar', en: 'Diagnostics is now visible');

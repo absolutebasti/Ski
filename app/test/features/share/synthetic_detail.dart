@@ -1,6 +1,6 @@
-import 'package:dropline/core/core.dart';
-import 'package:dropline/tracking/synthetic.dart';
-import 'package:dropline/tracking/tracking.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/tracking/synthetic.dart';
+import 'package:slopetrack/tracking/tracking.dart';
 
 /// Runs a seeded synthetic day through the engine (1 Hz live ticks) and wraps
 /// the result as a finished [DayDetail], exactly like the repository would.

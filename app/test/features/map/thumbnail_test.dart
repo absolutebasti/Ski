@@ -3,8 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/features/map/thumbnail_renderer.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/features/map/thumbnail_renderer.dart';
 
 import '../../support/pump.dart';
 import 'track_fixture.dart';
@@ -60,7 +60,7 @@ void main() {
   });
 
   test('ThumbnailRenderer.render writes thumbs/<dayId>.png and returns the path', () async {
-    final dir = await Directory.systemTemp.createTemp('dropline_thumbs_');
+    final dir = await Directory.systemTemp.createTemp('slopetrack_thumbs_');
     try {
       final path = await ThumbnailRenderer.render(fixtureDetail(dayId: 'abc'), dir: dir);
       expect(path, '${dir.path}/thumbs/abc.png');

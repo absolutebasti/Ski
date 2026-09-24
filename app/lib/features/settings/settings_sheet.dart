@@ -12,6 +12,7 @@ import '../../platform/permission_service.dart';
 import '../../platform/providers.dart';
 import '../account/account.dart';
 import 'diagnostics_page.dart';
+import 'licences_page.dart';
 import 'settings_providers.dart';
 import 'settings_strings.dart';
 
@@ -231,6 +232,13 @@ class _SettingsSheetBodyState extends ConsumerState<SettingsSheetBody> {
                   chevron: true,
                   onTap: _openDiagnostics,
                 ),
+              SettingsRow(
+                glyph: Glyph.crest,
+                label: s.licences,
+                caption: s.licencesHint,
+                chevron: true,
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LicencesPage())),
+              ),
             ],
           ),
           _Footer(version: version, onTap: _tapVersion),

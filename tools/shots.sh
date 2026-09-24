@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/app"
 UDID="${UDID:-$(cat /tmp/schwung_sim_udid)}"
-BUNDLE=de.torchtechnology.dropline
+BUNDLE=de.torchtechnology.slopetrack
 OUT="$ROOT/.context/shots"
 mkdir -p "$OUT"
 
@@ -27,14 +27,17 @@ shot() { # name json wait
   echo "$name"
 }
 
-D='"DROPLINE_SKIP_ONBOARDING":"1","DROPLINE_DEMO":"1"'
+D='"SLOPETRACK_SKIP_ONBOARDING":"1","SLOPETRACK_DEMO":"1"'
 shot heute      "{$D}" 6
-shot tage       "{$D,\"DROPLINE_TAB\":\"tage\"}"
-shot rangliste  "{$D,\"DROPLINE_TAB\":\"social\"}"
-shot tag-detail "{$D,\"DROPLINE_ROUTE\":\"/day/demo-0\"}" 5
-shot tagesbilanz "{$D,\"DROPLINE_ROUTE\":\"/summary/demo-0\"}" 5
-shot settings   "{$D,\"DROPLINE_ROUTE\":\"settings\"}"
-shot account    "{$D,\"DROPLINE_ROUTE\":\"account\"}"
+shot tage       "{$D,\"SLOPETRACK_TAB\":\"tage\"}"
+shot rangliste  "{$D,\"SLOPETRACK_TAB\":\"social\"}"
+shot tag-detail "{$D,\"SLOPETRACK_ROUTE\":\"/day/demo-0\"}" 5
+shot tagesbilanz "{$D,\"SLOPETRACK_ROUTE\":\"/summary/demo-0\"}" 5
+shot settings   "{$D,\"SLOPETRACK_ROUTE\":\"settings\"}"
+shot account    "{$D,\"SLOPETRACK_ROUTE\":\"account\"}"
+shot light-heute  "{$D,\"SLOPETRACK_APPEARANCE\":\"light\"}" 5
+shot light-tage   "{$D,\"SLOPETRACK_APPEARANCE\":\"light\",\"SLOPETRACK_TAB\":\"tage\"}"
+shot light-detail "{$D,\"SLOPETRACK_APPEARANCE\":\"light\",\"SLOPETRACK_ROUTE\":\"/day/demo-0\"}" 5
 # fresh install → onboarding page 1
 xcrun simctl terminate "$UDID" "$BUNDLE" >/dev/null 2>&1 || true
 xcrun simctl uninstall "$UDID" "$BUNDLE" >/dev/null 2>&1 || true

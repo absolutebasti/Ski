@@ -80,7 +80,7 @@ class IdleView extends ConsumerWidget {
                 const SizedBox(height: 8),
                 EmptyState(headline: s.emptyHeadline, line: s.emptyLine),
               ] else ...[
-                if (season != null) SeasonCard(totals: season, days: seasonDays, previous: previous),
+                if (season != null) SeasonCard(totals: season, days: seasonDays, previous: previous, goalHm: ref.watch(settingsProvider).seasonGoalHm),
                 SectionLabel(s.lastDay, padding: const EdgeInsets.fromLTRB(0, Tokens.sectionGap, 0, 10)),
                 DayCard(day: days.first, onTap: () => AppNav.openDay(context, days.first.id)),
                 if (bests != null && (bests.topSpeedMs != null || bests.biggestDayDropM != null || bests.longestRunDropM != null)) ...[

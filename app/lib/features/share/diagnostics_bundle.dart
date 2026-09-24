@@ -12,7 +12,7 @@ class DiagnosticsBundle {
 
   static const int formatVersion = 1;
 
-  static String fileName(String dayId) => 'dropline-diag-${GpxExporter.shortId(dayId)}.json.gz';
+  static String fileName(String dayId) => 'slopetrack-diag-${GpxExporter.shortId(dayId)}.json.gz';
 
   static Map<String, Object?> toJson({
     required DayRecord day,
@@ -22,7 +22,7 @@ class DiagnosticsBundle {
   }) =>
       {
         'format': formatVersion,
-        'app': 'dropline',
+        'app': 'slopetrack',
         'exportedAt': DateTime.now().toUtc().toIso8601String(),
         'engineVersion': TrackingConfig.engineVersion,
         'device': device ?? Platform.operatingSystemVersion,
