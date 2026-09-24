@@ -54,7 +54,7 @@ class SettingsStrings {
   String get deleteAll => l.pick(de: 'Alle Daten löschen', en: 'Delete all data');
   String get deleteAllHint => l.pick(de: 'Jeder Skitag auf diesem iPhone.', en: 'Every ski day on this iPhone.');
   String get privacy => l.pick(de: 'Datenschutz', en: 'Privacy');
-  String get privacyHint => l.pick(de: 'Alles bleibt auf dem Gerät.', en: 'Everything stays on the device.');
+  String get privacyHint => l.pick(de: 'Lokal zuerst. Backup und Ranglisten nur mit Konto.', en: 'Local first. Backup and leaderboards only with an account.');
   String get version => l.pick(de: 'Version', en: 'Version');
   String get licences => l.pick(de: 'Quellen & Lizenzen', en: 'Sources & licences');
   String get licencesHint => l.pick(de: 'Karten, Wetter, Schrift, Pakete', en: 'Maps, weather, font, packages');
