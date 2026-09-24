@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/app/widgets/widgets.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/data/db/providers.dart';
-import 'package:dropline/features/days/day_card.dart';
-import 'package:dropline/features/days/tage_screen.dart';
+import 'package:slopetrack/app/widgets/widgets.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/data/db/providers.dart';
+import 'package:slopetrack/features/days/day_card.dart';
+import 'package:slopetrack/features/days/tage_screen.dart';
 
 import '../../support/pump.dart';
 import 'day_fixtures.dart';

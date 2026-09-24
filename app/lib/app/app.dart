@@ -10,14 +10,14 @@ import 'router.dart';
 import 'shell.dart';
 import 'theme/theme.dart';
 
-class DroplineApp extends ConsumerStatefulWidget {
-  const DroplineApp({super.key});
+class SlopeTrackApp extends ConsumerStatefulWidget {
+  const SlopeTrackApp({super.key});
 
   @override
-  ConsumerState<DroplineApp> createState() => _DroplineAppState();
+  ConsumerState<SlopeTrackApp> createState() => _SlopeTrackAppState();
 }
 
-class _DroplineAppState extends ConsumerState<DroplineApp> {
+class _SlopeTrackAppState extends ConsumerState<SlopeTrackApp> {
   /// Read once: OnboardingFlow navigates to RootShell itself, so `home` must
   /// not flip underneath it when the flag is written.
   late final bool _onboardingDone = ref.read(settingsProvider).onboardingDone;
@@ -45,6 +45,8 @@ class _DroplineAppState extends ConsumerState<DroplineApp> {
         Intl.defaultLocale = resolved.languageCode;
         return resolved;
       },
+      // Dynamic Type safety net: numerals and docks are laid out for ≤ 1.3×.
+      builder: (context, child) => MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3, child: child ?? const SizedBox.shrink()),
       onGenerateRoute: AppRouter.onGenerateRoute,
       home: _onboardingDone ? const RootShell() : AppRouter.onboarding(),
     );

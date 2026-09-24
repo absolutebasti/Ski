@@ -143,12 +143,16 @@ class LeaderboardEntry {
     required this.displayName,
     required this.value,
     this.avatarUrl,
+    this.total = 0,
   });
 
   final int rank;
   final String userId;
   final String displayName;
   final String? avatarUrl;
+
+  /// Participant count of the whole board (server window count); 0 = unknown.
+  final int total;
 
   /// SI — metres, m/s or a plain count, depending on the query metric.
   final double value;
@@ -159,6 +163,7 @@ class LeaderboardEntry {
         displayName: (j['display_name'] as String?) ?? 'Skifahrer',
         avatarUrl: j['avatar_url'] as String?,
         value: _double(j['value']),
+        total: _int(j['total']),
       );
 
   @override
@@ -180,8 +185,8 @@ class MyRank {
   const MyRank({required this.rank, required this.total, required this.value});
   final int rank;
 
-  /// Number of fetched rows — the true total needs a server-side count
-  /// (see the WP-16 report).
+  /// Participants on the board: the server-side count when the RPC provides
+  /// it (migration 0003), otherwise the size of the fetched slice.
   final int total;
 
   /// The user's own value, same unit as the query metric.
@@ -198,7 +203,7 @@ class MyRank {
 MyRank? myRankOf(List<LeaderboardEntry> entries, String? userId) {
   if (userId == null) return null;
   for (final e in entries) {
-    if (e.userId == userId) return MyRank(rank: e.rank, total: entries.length, value: e.value);
+    if (e.userId == userId) return MyRank(rank: e.rank, total: e.total > 0 ? e.total : entries.length, value: e.value);
   }
   return null;
 }

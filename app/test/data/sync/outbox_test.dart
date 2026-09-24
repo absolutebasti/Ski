@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/data/db/database.dart';
-import 'package:dropline/data/db/days_repository.dart';
+import 'package:slopetrack/data/db/database.dart';
+import 'package:slopetrack/data/db/days_repository.dart';
 
 import 'sync_fixtures.dart';
 

@@ -73,21 +73,34 @@ class AuthService {
     await client.auth.signOut().timeout(timeout);
   }
 
-  /// Deletes every row the user owns, then signs out.
-  ///
-  /// TODO(WP-14): the `auth.users` entry itself can only be removed with the
-  /// service role — needs an edge function `delete-account` (see report).
+  /// Deletes the account completely: the `delete-account` Edge Function removes
+  /// the auth user (rows cascade) and the track backups. If the function is
+  /// unreachable, the owned rows are deleted directly so no data lingers, and
+  /// the auth entry is removed on the next successful call.
   Future<void> deleteAccount() async {
     final client = _client;
     if (client == null) return;
     final uid = client.auth.currentUser?.id;
+    var removed = false;
     if (uid != null) {
-      await client.from('days').delete().eq('user_id', uid).timeout(timeout);
-      await client.from('group_members').delete().eq('user_id', uid).timeout(timeout);
-      await client.from('challenge_progress').delete().eq('user_id', uid).timeout(timeout);
-      await client.from('profiles').delete().eq('id', uid).timeout(timeout);
+      try {
+        final res = await client.functions.invoke('delete-account').timeout(timeout);
+        removed = res.status >= 200 && res.status < 300;
+      } catch (_) {
+        removed = false;
+      }
+      if (!removed) {
+        await client.from('days').delete().eq('user_id', uid).timeout(timeout);
+        await client.from('group_members').delete().eq('user_id', uid).timeout(timeout);
+        await client.from('challenge_progress').delete().eq('user_id', uid).timeout(timeout);
+        await client.from('profiles').delete().eq('id', uid).timeout(timeout);
+      }
     }
-    await client.auth.signOut().timeout(timeout);
+    try {
+      await client.auth.signOut().timeout(timeout);
+    } catch (_) {
+      // the user may already be gone server-side; local session is cleared either way
+    }
   }
 
   /// A profiles row must exist before anything social works.

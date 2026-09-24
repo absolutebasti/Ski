@@ -191,7 +191,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                               key: const ValueKey('onboarding-back'),
                               button: true,
                               label: s.back,
-                              child: HeaderButton(glyph: Glyph.back, onTap: canGoBack ? () => _goTo(_index - 1) : null),
+                              child: HeaderButton(glyph: Glyph.back, tooltip: s.back, onTap: canGoBack ? () => _goTo(_index - 1) : null),
                             ),
                           ),
                         ),

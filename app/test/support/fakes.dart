@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:dropline/core/core.dart';
-import 'package:dropline/platform/notification_service.dart';
-import 'package:dropline/platform/permission_service.dart';
-import 'package:dropline/platform/watchdog_channel.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/platform/notification_service.dart';
+import 'package:slopetrack/platform/permission_service.dart';
+import 'package:slopetrack/platform/watchdog_channel.dart';
 
 /// Replays fixes at [speedup]× real time (100× by default). Timestamps are kept.
 class FakeLocationSource implements LocationSource {

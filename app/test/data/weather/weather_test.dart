@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/data/weather/open_meteo_client.dart';
-import 'package:dropline/data/weather/wmo.dart';
-import 'package:dropline/features/weather/weather_line.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/data/weather/open_meteo_client.dart';
+import 'package:slopetrack/data/weather/wmo.dart';
+import 'package:slopetrack/features/weather/weather_line.dart';
 
 const resort = Resort(id: 'kitz', name: 'Kitzbühel', country: 'AT', lat: 47.4467, lon: 12.3923, radiusKm: 12, baseAltM: 800, summitAltM: 2000);
 

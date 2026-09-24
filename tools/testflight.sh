@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Archive Dropline, export a signed App Store IPA and (optionally) upload it to TestFlight.
+# Archive SlopeTrack, export a signed App Store IPA and (optionally) upload it to TestFlight.
 #
 #   tools/testflight.sh            # archive + export IPA → app/build/ios/ipa/
 #   tools/testflight.sh --upload   # archive + upload straight to App Store Connect

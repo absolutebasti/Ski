@@ -97,8 +97,8 @@ class TodayStrings {
   // --- blocking states -----------------------------------------------------
   String get deniedTitle => l.pick(de: 'Standort ist aus', en: 'Location is off');
   String get deniedBody => l.pick(
-        de: 'Ohne Standort kann Dropline keinen Skitag aufzeichnen.',
-        en: 'Without location Dropline cannot record a ski day.',
+        de: 'Ohne Standort kann SlopeTrack keinen Skitag aufzeichnen.',
+        en: 'Without location SlopeTrack cannot record a ski day.',
       );
   String get serviceOffTitle => l.pick(de: 'Ortungsdienste sind aus', en: 'Location services are off');
   String get serviceOffBody => l.pick(

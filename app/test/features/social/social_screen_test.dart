@@ -1,7 +1,7 @@
-import 'package:dropline/core/core.dart';
-import 'package:dropline/core/settings.dart';
-import 'package:dropline/features/social/fake_social_api.dart';
-import 'package:dropline/features/social/social.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/core/settings.dart';
+import 'package:slopetrack/features/social/fake_social_api.dart';
+import 'package:slopetrack/features/social/social.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

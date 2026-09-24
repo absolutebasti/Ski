@@ -1,10 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/app/theme/tokens.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/features/profile/altitude_profile.dart';
-import 'package:dropline/features/profile/profile_series.dart';
+import 'package:slopetrack/app/theme/tokens.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/features/profile/altitude_profile.dart';
+import 'package:slopetrack/features/profile/profile_series.dart';
 
 import '../../support/pump.dart';
 import '../share/synthetic_detail.dart';

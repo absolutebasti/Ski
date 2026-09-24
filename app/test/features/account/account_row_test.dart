@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/app/l10n/app_locale.dart';
-import 'package:dropline/data/sync/auth_service.dart';
-import 'package:dropline/features/account/account.dart';
+import 'package:slopetrack/app/l10n/app_locale.dart';
+import 'package:slopetrack/data/sync/auth_service.dart';
+import 'package:slopetrack/features/account/account.dart';
 
 import '../../support/pump.dart';
 

@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/tracking/synthetic.dart';
-import 'package:dropline/tracking/tracking.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/tracking/synthetic.dart';
+import 'package:slopetrack/tracking/tracking.dart';
 
 /// Feeds a synthetic day live (1 Hz ticks with the wall clock at each second).
 DayComputation runLive(SyntheticDay day, TrackingEngine e) {

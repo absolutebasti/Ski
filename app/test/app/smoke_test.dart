@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/app/shell.dart';
-import 'package:dropline/app/widgets/widgets.dart';
-import 'package:dropline/core/core.dart';
+import 'package:slopetrack/app/shell.dart';
+import 'package:slopetrack/app/widgets/widgets.dart';
+import 'package:slopetrack/core/core.dart';
 
 import '../support/pump.dart';
 import '../support/screen_overrides.dart';

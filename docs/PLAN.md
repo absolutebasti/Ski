@@ -20,7 +20,7 @@ The sections below were produced by the design panel (3 proposals → 3 judges �
 | A8 | **Opt-in social (v1.5)** added to the roadmap: per-resort / per-country leaderboards (km, top speed, vertical) and private group days for up to 3 people, only when the user switches sharing on. Needs anonymous Supabase auth + two tables; v1's `days` aggregates are the publishable unit. | Founder idea (2026-09-22); see `docs/competitors/skiline.md`. |
 | A9 | Competitor benchmarks extended: `docs/competitors/bergfex-ski.md`, `slopes.md`, `skiline.md`. Parity items pulled into v1: ski/lift/rest time split, altitude profile, share card, GPS-quality pill, resort auto-naming. v1.1 candidates: 'Gebiet' info (5-day forecast + fresh snow), Live Activity, season trends vs last season, Skiline-style altitude 'skyline' chart. | Founder supplied 21 screenshots after the panel had started. |
 | A10 | Package versions refreshed to pub.dev of 2026-09-22: battery_plus 7.1, drift_flutter 0.3.1, package_info_plus 10.2, xml 7.0, uuid 4.6, http 1.6. | The panel quoted slightly older versions. |
-| A12 | **App name Dropline** (2026-09-22 evening, founder's pick; international; bundle id `de.torchtechnology.dropline`, Dart package `dropline`). Schwung/Schuss are history. Trademark clearance (DPMA/EUIPO/WIPO 9/41/42) still to be done by the founder before the App Store Connect record. |
+| A12 | **App name SlopeTrack** (2026-09-22 evening, founder's pick; international; bundle id `de.torchtechnology.slopetrack`, Dart package `slopetrack`). Schwung/Schuss are history. Trademark clearance (DPMA/EUIPO/WIPO 9/41/42) still to be done by the founder before the App Store Connect record. |
 | A11 | Legacy PWA moved to `legacy-pwa/` (history preserved via git mv). The exposed Mapbox token in `legacy-pwa/reviews/initial-assessment.md` must be **rotated** by the founder (public repo). | Housekeeping and security. |
 
 ---
@@ -302,7 +302,7 @@ Generation (`tools/fal_generate_mascot.py`, `FAL_KEY` from env, prompts + seeds 
 | 2 | WP-06 Onboarding | lib/features/onboarding/**, test/features/onboarding/** | 00, 03, 04 |
 | 2 | WP-08 Tage list + Tag detail | lib/features/days/**, test/features/days/** | 02, 09, 10 |
 | 3 | WP-07 Heute + Tagesbilanz + Settings/Diagnostics | lib/features/today/**, lib/features/summary/**, lib/features/settings/**, test/features/today/** | 05, 09, 10, 11 |
-| 3 | WP-13 Apple Watch companion (SwiftUI watchOS target `SchwungWatch` in `ios/`, `watch_connectivity` bridge, `lib/platform/watch/**`): Start/End from the wrist, live Höhenmeter · Abfahrten · Top-Speed · Zeit, HKWorkoutSession for heart rate, HR stored per point | ios/SchwungWatch/**, lib/platform/watch/**, test/platform/watch/** | 03, 05 |
+| 3 | WP-13 Apple Watch companion (SwiftUI watchOS target `SlopeTrackWatch` in `ios/`, `watch_connectivity` bridge, `lib/platform/watch/**`): Start/End from the wrist, live Höhenmeter · Abfahrten · Top-Speed · Zeit, HKWorkoutSession for heart rate, HR stored per point | ios/SlopeTrackWatch/**, lib/platform/watch/**, test/platform/watch/** | 03, 05 |
 | 4 (serial, lead) | WP-12 Integration, device QA, TestFlight | lib/app/router.dart (swap placeholders), integration_test/**, docs/QA.md | all |
 
 Estimated effort: wave 0 ½ day; wave 1 2–3 days in parallel; wave 2 2 days; wave 3 2 days; wave 4 2–3 days including two device days.

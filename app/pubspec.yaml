@@ -1,5 +1,5 @@
-name: dropline
-description: "Dropline — one-tap ski day tracker."
+name: slopetrack
+description: "SlopeTrack — one-tap ski day tracker."
 publish_to: 'none'
 version: 0.1.0+1
 

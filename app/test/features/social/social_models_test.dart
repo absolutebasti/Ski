@@ -1,4 +1,4 @@
-import 'package:dropline/features/social/social.dart';
+import 'package:slopetrack/features/social/social.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'social_fixtures.dart';

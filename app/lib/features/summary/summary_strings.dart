@@ -73,5 +73,5 @@ class SummaryStrings {
   String get mascotShortDay =>
       l.pick(de: 'Kurzer Tag. Zählt trotzdem.', en: 'Short day. Counts anyway.');
   String get mascotDefault =>
-      l.pick(de: 'Sauber gefahren. Bis zum nächsten Dropline.', en: 'Nicely done. See you for the next turn.');
+      l.pick(de: 'Sauber gefahren. Bis zum nächsten SlopeTrack.', en: 'Nicely done. See you for the next turn.');
 }

@@ -96,8 +96,8 @@ class SocialStrings {
       );
   String get invite => l.pick(de: 'Freunde einladen', en: 'Invite friends');
   String get inviteText => l.pick(
-        de: 'Fahr gegen mich in Dropline – Abfahrten, Höhenmeter, Top-Speed.',
-        en: 'Race me in Dropline – runs, vertical, top speed.',
+        de: 'Fahr gegen mich in SlopeTrack – Abfahrten, Höhenmeter, Top-Speed.',
+        en: 'Race me in SlopeTrack – runs, vertical, top speed.',
       );
 
   // --- Tagesduell ----------------------------------------------------------
@@ -115,8 +115,8 @@ class SocialStrings {
   String get duelDefaultName => l.pick(de: 'Tagesduell', en: 'Day duel');
   String get duelCodeHint => l.pick(de: 'Sechs Zeichen, z. B. KMJ4F2', en: 'Six characters, e.g. KMJ4F2');
   String duelShareText(String code) => l.pick(
-        de: 'Duell in Dropline: Code $code. Wer holt heute die meisten Höhenmeter?',
-        en: 'Duel in Dropline: code $code. Who grabs the most vertical today?',
+        de: 'Duell in SlopeTrack: Code $code. Wer holt heute die meisten Höhenmeter?',
+        en: 'Duel in SlopeTrack: code $code. Who grabs the most vertical today?',
       );
   String get duelWaiting => l.pick(de: 'Wartet auf Mitfahrer', en: 'Waiting for riders');
   String get duelLeader => l.pick(de: 'Führt', en: 'Leading');

@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/misc.dart' show Override;
-import 'package:dropline/core/core.dart';
-import 'package:dropline/core/settings.dart';
-import 'package:dropline/data/db/providers.dart';
-import 'package:dropline/data/resorts/resort_repository.dart';
-import 'package:dropline/features/recording/recovery_service.dart';
-import 'package:dropline/features/settings/settings_providers.dart';
-import 'package:dropline/platform/permission_service.dart';
-import 'package:dropline/platform/providers.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/core/settings.dart';
+import 'package:slopetrack/data/db/providers.dart';
+import 'package:slopetrack/data/resorts/resort_repository.dart';
+import 'package:slopetrack/features/recording/recovery_service.dart';
+import 'package:slopetrack/features/settings/settings_providers.dart';
+import 'package:slopetrack/platform/permission_service.dart';
+import 'package:slopetrack/platform/providers.dart';
 
 import 'fakes.dart';
 

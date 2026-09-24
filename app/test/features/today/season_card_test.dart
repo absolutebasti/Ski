@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dropline/core/core.dart';
-import 'package:dropline/features/today/season_card.dart';
+import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/features/today/season_card.dart';
 
 import '../../support/pump.dart';
 
