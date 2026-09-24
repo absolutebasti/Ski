@@ -127,7 +127,7 @@ class _DiagnosticsPageState extends ConsumerState<DiagnosticsPage> {
               ScreenHeader(
                 title: s.diagnostics,
                 caption: s.diagnosticsCaption,
-                leading: HeaderButton(glyph: Glyph.back, onTap: () => Navigator.of(context).maybePop()),
+                leading: HeaderButton(glyph: Glyph.back, tooltip: MaterialLocalizations.of(context).backButtonTooltip, onTap: () => Navigator.of(context).maybePop()),
               ),
               Expanded(
                 child: ListView(
