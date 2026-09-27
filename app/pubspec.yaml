@@ -1,7 +1,7 @@
 name: slopetrack
 description: "SlopeTrack — one-tap ski day tracker."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.12.2

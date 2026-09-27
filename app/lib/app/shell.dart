@@ -22,6 +22,8 @@ class RootShell extends ConsumerStatefulWidget {
 
 class _RootShellState extends ConsumerState<RootShell> {
   int _index = demoInitialTab();
+  // Built once: the tabs must keep their identity across rebuilds.
+  late final List<Widget> _pages = [AppRouter.heute(), AppRouter.tage(), AppRouter.social()];
 
   @override
   void initState() {
@@ -50,21 +52,15 @@ class _RootShellState extends ConsumerState<RootShell> {
     return Scaffold(
       extendBody: true,
       body: PageBackground(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 180),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          child: KeyedSubtree(
-            key: ValueKey(_index),
-            child: IndexedStack(
-              index: _index,
-              children: [
-                // TickerMode: hidden tabs stop their tickers (duel polling, pulses).
-                for (final (i, page) in [AppRouter.heute(), AppRouter.tage(), AppRouter.social()].indexed)
-                  TickerMode(enabled: i == _index, child: page),
-              ],
-            ),
-          ),
+        // A plain IndexedStack keeps every tab's state (scroll position, sheets,
+        // polling) across switches; the previous AnimatedSwitcher re-keyed the
+        // whole stack on every tap and rebuilt all three tabs.
+        child: IndexedStack(
+          index: _index,
+          children: [
+            // TickerMode: hidden tabs stop their tickers (duel polling, pulses).
+            for (final (i, page) in _pages.indexed) TickerMode(enabled: i == _index, child: page),
+          ],
         ),
       ),
       bottomNavigationBar: AppTabBar(
