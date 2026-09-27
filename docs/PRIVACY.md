@@ -1,39 +1,55 @@
 # Datenschutzerklärung / Privacy Policy — SlopeTrack
 
-Stand / last updated: 2026-09-22 · Verantwortlich / controller: Sebastian Fackelmann, Torch Technology, hello@torchtechnology.de
+Stand / last updated: 2026-09-27 · Hosted at https://absolutebasti.github.io/Ski/privacy.html (source: this file → docs/privacy.html)
 
 ## Deutsch
 
-**Kurz gesagt:** SlopeTrack speichert deine Skitage nur auf deinem iPhone. Es gibt kein Konto, keine Werbung, kein Tracking und keine Cloud.
+**Kurz gesagt:** Ohne Konto bleiben deine Skitage auf deinem iPhone. Mit Konto (Sign in with Apple) sichern wir deine Skitage in der EU und zeigen dich – nur wenn du es einschaltest – in Ranglisten. Keine Werbung, kein Tracking, keine Weitergabe an Dritte.
 
-**Standortdaten.** SlopeTrack zeichnet deinen GPS-Standort auf, solange du einen Skitag aufnimmst – auch im Hintergrund, wenn das iPhone gesperrt ist. Daraus berechnet die App Abfahrten, Höhenmeter, Distanz und Geschwindigkeit. Die Daten bleiben in der lokalen Datenbank der App auf deinem Gerät. Beendest du den Skitag, endet auch die Standortnutzung.
+**Verantwortlich:** Sebastian Fackelmann, Torch Technology, hello@torchtechnology.de (Anschrift im Impressum).
 
-**Sensoren.** Der Luftdrucksensor (über die Berechtigung „Bewegung & Fitness“) verbessert die Höhenmessung. Mit einer Apple Watch kann die Herzfrequenz in den Skitag übernommen werden. Auch diese Daten bleiben auf dem Gerät.
+**1. Standort und Sensoren.** Während du einen Skitag aufzeichnest, erfasst die App deinen GPS-Standort – auch im Hintergrund bei gesperrtem iPhone – und den Luftdrucksensor (Berechtigung „Bewegung & Fitness“). Daraus berechnet sie Abfahrten, Höhenmeter, Distanz und Geschwindigkeit. Mit Apple Watch kann die Herzfrequenz hinzukommen. Die Rohdaten liegen in der lokalen Datenbank der App. Beendest du den Tag, endet die Standortnutzung.
 
-**Wetter.** Für die Wetterzeile fragt die App den Dienst Open-Meteo (open-meteo.com) mit den Koordinaten des Skigebiets ab – nicht mit deiner genauen Position. Kartenkacheln werden von OpenTopoMap und OpenSnowMap (OpenStreetMap-Daten) geladen; dabei erfahren diese Server, welche Kartenausschnitte du ansiehst.
+**2. Konto (optional).** Meldest du dich mit Apple an, erhalten wir eine anonyme Nutzer-ID und – je nach deiner Wahl bei Apple – deinen Namen und eine (Weiterleitungs-)E-Mail-Adresse. Wir speichern dann dein Profil (Anzeigename, Land, Heimatgebiet, Rangliste-Einstellung) und deine Skitage als Kennzahlen (Datum, Skigebiet, Abfahrten, Höhenmeter, Distanz, Geschwindigkeit, Zeiten) sowie die aufgezeichnete Spur als Datei bei unserem Auftragsverarbeiter Supabase Inc. in einem Rechenzentrum in Frankfurt (EU), auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertrag: Backup und Wettbewerb).
 
-**Teilen.** Wenn du eine Tagesbilanz oder GPX-Datei teilst, entscheidest du selbst, wohin sie geht.
+**3. Ranglisten, Duelle, Challenges.** Nur wenn du „In Ranglisten erscheinen“ einschaltest, sehen andere Nutzer deinen Anzeigenamen, dein Land und deine Kennzahlen in Ranglisten. In einem Tagesduell sehen die bis zu drei Mitglieder gegenseitig Namen und Tageswerte. Punkte, Level, Streak und Medaillen werden auf deinem Gerät berechnet. Du kannst die Rangliste jederzeit in Konto ausschalten; deine Daten verschwinden dann sofort aus den Listen.
 
-**Löschen.** In den Einstellungen kannst du einzelne Tage oder alle Daten löschen. Deinstallierst du die App, sind alle Daten weg.
+**4. Karten und Wetter.** Kartenkacheln kommen von OpenTopoMap und OpenSnowMap (OpenStreetMap-Daten), das Wetter von Open-Meteo mit den Koordinaten des Skigebiets, nicht mit deiner genauen Position. Diese Server sehen deine IP-Adresse und die angefragten Ausschnitte.
 
-**Keine Weitergabe.** Wir erheben keine personenbezogenen Daten auf Servern, verkaufen nichts und nutzen keine Analyse- oder Werbe-SDKs. TestFlight/App Store übermitteln Absturzberichte an Apple und an uns gemäß deinen iOS-Einstellungen.
+**5. Teilen.** Teilst du eine Tagesbilanz, eine Medaille oder eine GPX-Datei, entscheidest du selbst, wohin sie geht.
 
-**Rechte.** Da wir keine Daten über dich speichern, gibt es bei uns nichts zu berichtigen oder herauszugeben. Fragen: hello@torchtechnology.de.
+**6. Löschen.** In den Einstellungen löschst du einzelne Tage oder alles auf dem Gerät. In Konto › „Konto löschen“ entfernen wir dein Profil, alle Skitage und Spuren und dein Login sofort und vollständig. Deinstallierst du die App ohne Konto, sind alle Daten weg.
+
+**7. Keine Weitergabe, keine Analyse-SDKs.** Wir verkaufen keine Daten und nutzen keine Werbe- oder Analyse-SDKs. Absturzberichte gehen gemäß deinen iOS-Einstellungen an Apple und an uns.
+
+**8. Speicherdauer.** Kontodaten bleiben, bis du das Konto löschst. Server-Logs unseres Auftragsverarbeiters werden nach kurzer Zeit gelöscht.
+
+**9. Deine Rechte.** Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit (GPX-Export in der App) und Widerspruch: hello@torchtechnology.de. Beschwerden nimmt die für dich zuständige Datenschutzaufsichtsbehörde entgegen.
+
+**10. Kinder.** Die App richtet sich nicht an Kinder unter 16; Konten von Kindern werden auf Hinweis gelöscht.
 
 ## English
 
-**In short:** SlopeTrack keeps your ski days on your iPhone only. No account, no ads, no tracking, no cloud.
+**In short:** Without an account your ski days stay on your iPhone. With an account (Sign in with Apple) we back up your ski days in the EU and show you in leaderboards only if you switch that on. No ads, no tracking, no selling of data.
 
-**Location.** SlopeTrack records your GPS position while a ski day is being recorded – including in the background with the phone locked – to compute runs, vertical, distance and speed. Data stays in the app's local database on your device. Location use ends when you end the day.
+**Controller:** Sebastian Fackelmann, Torch Technology, hello@torchtechnology.de (postal address in the imprint).
 
-**Sensors.** The barometer (via the "Motion & Fitness" permission) improves altitude accuracy. With an Apple Watch, heart rate can be added to a day. This data also stays on the device.
+**1. Location and sensors.** While you record a ski day the app collects your GPS position – also in the background with the phone locked – and the barometer (“Motion & Fitness” permission) to compute runs, vertical, distance and speed. With an Apple Watch, heart rate can be added. Raw data lives in the app's local database. Location use ends when you end the day.
 
-**Weather and maps.** The weather line queries Open-Meteo (open-meteo.com) with the resort's coordinates, not your exact position. Map tiles come from OpenTopoMap and OpenSnowMap (OpenStreetMap data); those servers see which map areas you view.
+**2. Account (optional).** If you sign in with Apple we receive an anonymous user id and – depending on your choice at Apple – your name and a (relay) e-mail address. We then store your profile (display name, country, home resort, leaderboard setting) and your ski days as figures (date, resort, runs, vertical, distance, speed, times) plus the recorded track file with our processor Supabase Inc. in a data centre in Frankfurt (EU), based on Art. 6 (1) (b) GDPR (contract: backup and competition).
 
-**Sharing.** When you share a day card or GPX file, you choose where it goes.
+**3. Leaderboards, duels, challenges.** Only if you enable “Appear in leaderboards” do other users see your display name, country and figures. In a day duel the up to three members see each other's names and day figures. Points, levels, streak and medals are computed on your device. You can switch leaderboards off in Account at any time; your data disappears from the lists immediately.
 
-**Deletion.** Delete single days or all data in Settings. Uninstalling removes everything.
+**4. Maps and weather.** Map tiles come from OpenTopoMap and OpenSnowMap (OpenStreetMap data), weather from Open-Meteo using the resort's coordinates, not your exact position. Those servers see your IP address and the requested areas.
 
-**No third parties.** We store no personal data on servers, sell nothing and use no analytics or ad SDKs. TestFlight/App Store send crash reports to Apple and to us according to your iOS settings.
+**5. Sharing.** When you share a day card, a medal or a GPX file, you decide where it goes.
 
-**Your rights.** Since we hold no data about you, there is nothing for us to correct or export. Questions: hello@torchtechnology.de.
+**6. Deletion.** Delete single days or everything on the device in Settings. Account › “Delete account” removes your profile, all ski days and tracks and your login immediately and completely. Uninstalling without an account removes everything.
+
+**7. No third parties, no analytics SDKs.** We sell no data and use no ad or analytics SDKs. Crash reports go to Apple and to us according to your iOS settings.
+
+**8. Retention.** Account data is kept until you delete the account. Our processor's server logs are deleted after a short period.
+
+**9. Your rights.** Access, rectification, erasure, restriction, portability (GPX export in the app) and objection: hello@torchtechnology.de. Complaints can be lodged with your data protection authority.
+
+**10. Children.** The app is not directed at children under 16; children's accounts are deleted on notice.
