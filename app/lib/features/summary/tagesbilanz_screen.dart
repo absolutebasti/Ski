@@ -12,7 +12,6 @@ import '../../core/core.dart';
 import '../../core/settings.dart';
 import '../../data/db/providers.dart';
 import '../../platform/providers.dart';
-import '../onboarding/mascot_hero.dart';
 import '../share/share_service.dart';
 import 'count_up.dart';
 import 'mascot_line.dart';
@@ -405,9 +404,9 @@ class _MascotBlock extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Leo(pose: celebrate ? 'celebrate' : 'thumbs', size: 84),
+            Rider(pose: celebrate ? 'celebrate' : 'lean', size: 84),
             const SizedBox(width: 6),
-            Expanded(child: MascotLine(line)),
+            Expanded(child: RiderLine(line)),
           ],
         ),
       );
