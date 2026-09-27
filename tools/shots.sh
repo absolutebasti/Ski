@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/app"
 UDID="${UDID:-$(cat /tmp/schwung_sim_udid)}"
 BUNDLE=de.torchtechnology.slopetrack
-OUT="$ROOT/.context/shots"
+OUT="${OUT:-$ROOT/.context/shots}"
 mkdir -p "$OUT"
 
 if [[ "${1:-}" == "build" ]]; then
