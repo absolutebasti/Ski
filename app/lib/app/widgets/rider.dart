@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import '../theme/typography.dart';
 
-/// The mascot: a rider in an all-black outfit with a mirrored gold visor.
-/// Faceless, minimal, adult. Assets are transparent cut-outs in
-/// `assets/mascot/rider-<pose>.png` (tools/assets/generate_rider.py).
+/// The mascot: a rider in an all-black outfit with gold seams and a mirrored gold visor
+/// (founder's pick 2026-09-27: the 'point' image). Faceless, adult. Transparent cut-outs in
+/// `assets/mascot/rider-<pose>.png`, pose set via tools/assets/generate_pointer.py (Kontext edits of point.png).
 ///
 /// Poses: `hero` (standing on skis, poles planted), `lean` (leaning on crossed
 /// poles), `carve` (mid-turn, side view), `celebrate` (poles raised),
