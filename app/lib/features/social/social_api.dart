@@ -34,8 +34,12 @@ abstract class SocialApi {
   /// `profiles.share_leaderboards` of the signed-in user; false when signed out.
   Future<bool> shareLeaderboards();
 
-  /// RPC `leaderboard(p_resort_id, p_season_key, p_metric, p_limit)`.
+  /// RPC `leaderboard(p_resort_id, p_season_key, p_metric, p_limit, p_country)`.
   Future<List<LeaderboardEntry>> leaderboard(LeaderboardQuery query);
+
+  /// RPC `country_board(p_season_key)` — the Länder-Wertung, points desc.
+  /// [seasonKey] takes the same season/month/week keys as the leaderboard.
+  Future<List<CountryEntry>> countryBoard(String seasonKey);
 
   /// The duel of [day] the user is a member of, null when there is none.
   Future<DuelGroup?> myDuel(DateTime day);
@@ -94,8 +98,15 @@ class SupabaseSocialApi implements SocialApi {
           'p_season_key': query.wireKey,
           'p_metric': query.metric.wire,
           'p_limit': query.limit,
+          'p_country': query.countryCode,
         });
         return _rows(rows).map(LeaderboardEntry.fromJson).toList();
+      });
+
+  @override
+  Future<List<CountryEntry>> countryBoard(String seasonKey) => _guard(() async {
+        final rows = await _client.rpc<dynamic>('country_board', params: {'p_season_key': seasonKey});
+        return _rows(rows).map(CountryEntry.fromJson).toList()..sort(compareCountries);
       });
 
   @override

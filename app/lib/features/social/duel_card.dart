@@ -9,7 +9,6 @@ import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
-import '../onboarding/mascot_hero.dart';
 import 'group_providers.dart';
 import 'social_api.dart';
 import 'social_controls.dart';
@@ -148,7 +147,7 @@ class _DuelCardState extends ConsumerState<DuelCard> with WidgetsBindingObserver
         mainAxisSize: MainAxisSize.min,
         children: [
           if (board.isEmpty)
-            Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: MascotLine(s.duelWaiting))
+            Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: RiderLine(s.duelWaiting))
           else
             for (final (i, m) in board.indexed) ...[
               if (i > 0) const Padding(padding: EdgeInsets.symmetric(vertical: 2), child: Hairline()),
@@ -183,7 +182,7 @@ class _DuelIdle extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          MascotLine(s.duelIdleLine),
+          RiderLine(s.duelIdleLine),
           const SizedBox(height: 16),
           Row(
             children: [

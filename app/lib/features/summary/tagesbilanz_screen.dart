@@ -12,7 +12,8 @@ import '../../core/core.dart';
 import '../../core/settings.dart';
 import '../../data/db/providers.dart';
 import '../../platform/providers.dart';
-import '../onboarding/mascot_hero.dart';
+import '../achievements/achievements.dart';
+import '../achievements/ui/ui.dart';
 import '../share/share_service.dart';
 import 'count_up.dart';
 import 'mascot_line.dart';
@@ -114,6 +115,7 @@ class _TagesbilanzScreenState extends ConsumerState<TagesbilanzScreen> with Sing
             controller: _ctrl,
             steps: _steps,
             pbs: pbs,
+            newMedals: ref.watch(achievementsProvider).newMedalIds,
             isFirstDay: days != null && days.length <= 1,
             onShare: () => _share(d),
             onDone: _done,
@@ -143,6 +145,7 @@ class _Body extends StatelessWidget {
     required this.controller,
     required this.steps,
     required this.pbs,
+    required this.newMedals,
     required this.isFirstDay,
     required this.onShare,
     required this.onDone,
@@ -152,6 +155,8 @@ class _Body extends StatelessWidget {
   final AnimationController controller;
   final int steps;
   final List<Pb> pbs;
+  /// Medal ids earned by this (most recent) day — docs/GAMIFICATION.md §5.
+  final List<String> newMedals;
   final bool isFirstDay;
   final VoidCallback onShare;
   final VoidCallback onDone;
@@ -228,6 +233,10 @@ class _Body extends StatelessWidget {
               if (pbs.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 _Gutter(child: RecordCard(pbs: pbs)),
+              ],
+              if (newMedals.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _Gutter(child: NewMedalsBanner(ids: newMedals)),
               ],
               const SizedBox(height: 24),
               _Gutter(child: _BestRunCard(detail: detail)),
@@ -405,9 +414,9 @@ class _MascotBlock extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Leo(pose: celebrate ? 'celebrate' : 'thumbs', size: 84),
+            Rider(pose: celebrate ? 'celebrate' : 'lean', size: 84),
             const SizedBox(width: 6),
-            Expanded(child: MascotLine(line)),
+            Expanded(child: RiderLine(line)),
           ],
         ),
       );

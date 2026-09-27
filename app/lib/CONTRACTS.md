@@ -112,3 +112,14 @@ Rules for backend packages: never block the UI on the network; every remote call
 | `profileServiceProvider`, `profileApiProvider` | providers | `FakeProfileApi` for tests |
 | `accountSyncStatusProvider`, `accountSyncTriggerProvider`, `accountSignInProvider`, `accountSignOutProvider`, `accountDeleteProvider` | providers | indirections so tests never build SyncService |
 
+### Gamification (2026-09-27) — features/achievements, docs/GAMIFICATION.md
+| Symbol | Type | Notes |
+|---|---|---|
+| `Achievements`, `LevelState`, `StreakState`, `MedalState`, `MedalDef`, `MedalTier`, `AchievementMetric` | models | `achievement_models.dart`, lead-owned |
+| `computeAchievements(days, {countryOf, nowMs})` | pure function | `achievements_engine.dart` (engine package) |
+| `achievementsProvider` | `Provider<Achievements>` | from `daysListProvider` + resort countries; override in tests |
+| `AchievementsHeader`, `MedalsSheet.show(context)`, `NewMedalsBanner(ids)`, `StreakChip` | widgets | `ui/` (UI package); lead wires into Rangliste, Tagesbilanz, season card |
+| `Settings.countryCode`, `setCountry()` | setting | onboarding v3 'Team'; ISO-3166 alpha-2 |
+| `Rider(pose:)`, `RiderLine` | widgets | app/widgets/rider.dart — the mascot (replaces `Leo`/`MascotLine`) |
+| `OnboardingFlow({deviceCountry})` | widget | v3: 3 pages; keys `onboarding-country-<CODE>`, `onboarding-country-other`, `onboarding-resort-toggle`, `onboarding-resort-search`, `onboarding-apple`, `onboarding-primary`, `onboarding-skip`, `onboarding-back` |
+| `LeaderboardQuery.countryCode`, `SocialMetric.points`, `countryBoardProvider` | social | migration 0004: `days.country_code`, `days.points` (generated, no streak bonus), `profiles.country_code`, RPC `country_board(p_season_key)` |

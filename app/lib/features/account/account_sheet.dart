@@ -13,7 +13,6 @@ import '../../core/settings.dart';
 import '../../data/resorts/resort_repository.dart';
 import '../../data/sync/auth_service.dart';
 import '../../data/sync/sync_service.dart';
-import '../onboarding/mascot_hero.dart' show Leo;
 import 'account_providers.dart';
 import 'account_strings.dart';
 import 'profile_service.dart';
@@ -207,7 +206,7 @@ class _AccountSheetBodyState extends ConsumerState<AccountSheetBody> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 4),
-        const Center(child: Leo(pose: 'wave', size: 132)),
+        const Center(child: Rider(pose: 'look', size: 132)),
         const SizedBox(height: 12),
         Text(s.signedOutLine, textAlign: TextAlign.center, style: AppText.bodyText(c.textSecondary, size: 15)),
         const SizedBox(height: 20),

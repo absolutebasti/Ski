@@ -37,6 +37,7 @@ double localProgress(List<DaySummary> days, Challenge c) {
       SocialMetric.skiDistanceM => d.stats.skiDistanceM,
       SocialMetric.dayCount => 1,
       SocialMetric.maxSpeedMs => 0,
+      SocialMetric.points => dayPointsOf(dropM: d.stats.dropM, skiDistanceM: d.stats.skiDistanceM, runCount: d.stats.runCount),
     };
     if (c.metric == SocialMetric.maxSpeedMs) sum = sum < d.stats.maxSpeedMs ? d.stats.maxSpeedMs : sum;
   }

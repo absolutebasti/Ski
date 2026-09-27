@@ -179,6 +179,7 @@ class DaysRepository {
           for (final r in rows)
             DaySummary(
               id: r.id, startedAt: r.startedAt, endedAt: r.endedAt, resortName: r.resortName,
+                                                                    resortId: r.resortId,
               mapThumbPath: r.mapThumbPath, stats: statsFromRow(r),
               isTopSpeedPb: r.maxSpeedMs > 0 && r.maxSpeedMs == maxSpeed,
               isBiggestDayPb: r.dropM > 0 && r.dropM == maxDrop,

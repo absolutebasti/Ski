@@ -5,11 +5,13 @@ import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
+import '../achievements/achievement_models.dart';
+import '../achievements/ui/streak_chip.dart';
 
 /// SAISON hero card: overline, 64 pt champagne vertical, 3-up footer and a
 /// per-day bar sparkline bleeding to the card edges. `compact` = Tage variant.
 class SeasonCard extends StatelessWidget {
-  const SeasonCard({super.key, required this.totals, required this.days, this.previous, this.compact = false, this.goalHm});
+  const SeasonCard({super.key, required this.totals, required this.days, this.previous, this.compact = false, this.goalHm, this.streak});
 
   final SeasonTotals totals;
   /// Days of this season (any order) for the sparkline.
@@ -18,6 +20,8 @@ class SeasonCard extends StatelessWidget {
   final bool compact;
   /// Season goal from onboarding (vertical metres); null hides the goal line.
   final int? goalHm;
+  /// Consecutive ski days; the chip shows from 2 (features/achievements).
+  final StreakState? streak;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +41,12 @@ class SeasonCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${l.pick(de: 'Saison', en: 'Season')} ${totals.seasonKey}'.overline, style: AppText.label(c.textTertiary)),
+                Row(
+                  children: [
+                    Expanded(child: Text('${l.pick(de: 'Saison', en: 'Season')} ${totals.seasonKey}'.overline, style: AppText.label(c.textTertiary))),
+                    if (streak != null) StreakChip(streak: streak!, compact: true),
+                  ],
+                ),
                 SizedBox(height: compact ? 8 : 10),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,

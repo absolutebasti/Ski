@@ -11,3 +11,4 @@ export 'sheet.dart';
 export 'sparkline.dart';
 export 'tab_bar.dart';
 export 'toast.dart';
+export 'rider.dart';

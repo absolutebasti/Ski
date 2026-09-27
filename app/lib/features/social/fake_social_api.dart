@@ -11,6 +11,7 @@ class FakeSocialApi implements SocialApi {
     this.duel,
     this.board = const [],
     this.challenges = const [],
+    this.countries = const [],
     Map<String, double>? progress,
     this.failWith,
     this.entriesFor,
@@ -31,6 +32,9 @@ class FakeSocialApi implements SocialApi {
   DuelGroup? duel;
   List<GroupMemberStats> board;
   List<Challenge> challenges;
+
+  /// Rows of `country_board`, returned sorted by points.
+  List<CountryEntry> countries;
   final Map<String, double> progress;
 
   /// When set, every call throws it — used for the offline state.
@@ -38,6 +42,9 @@ class FakeSocialApi implements SocialApi {
 
   final List<LeaderboardQuery> queries = [];
   final List<String> boardCalls = [];
+
+  /// Season keys `countryBoard` was asked for.
+  final List<String> countryBoardCalls = [];
   final List<String> created = [];
   final List<String> joined = [];
   final List<String> left = [];
@@ -59,6 +66,13 @@ class FakeSocialApi implements SocialApi {
     _guard();
     queries.add(query);
     return entriesFor?.call(query) ?? entries;
+  }
+
+  @override
+  Future<List<CountryEntry>> countryBoard(String seasonKey) async {
+    _guard();
+    countryBoardCalls.add(seasonKey);
+    return [...countries]..sort(compareCountries);
   }
 
   @override

@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/settings.dart';
+import '../../features/account/profile_service.dart';
 import '../../features/share/diagnostics_bundle.dart';
 import '../db/database.dart';
 import '../db/days_repository.dart';
 import '../db/mappers.dart';
 import '../db/providers.dart';
+import '../resorts/resort_repository.dart';
 import 'auth_service.dart';
 import 'remote_day.dart';
 import 'sync_api.dart';
@@ -54,6 +57,11 @@ class SyncStatus {
 /// upload.
 typedef TrackEncoder = Future<List<int>?> Function(String dayId);
 
+/// Resolves the team country (ISO alpha-2) a day counts for, given its resort
+/// id; null = unknown. The default in [syncServiceProvider] takes the resort's
+/// country and falls back to `Settings.countryCode`.
+typedef CountryResolver = String? Function(String? resortId);
+
 /// Local-first sync: drift is the truth, the backend is a copy.
 ///
 /// Nothing here ever blocks the UI — callers fire and forget; failures land in
@@ -66,7 +74,8 @@ class SyncService {
     TrackEncoder? trackEncoder,
     this.sleep = _realSleep,
     this.maxAttempts = 3,
-  }) {
+    CountryResolver? countryFor,
+  }) : countryFor = countryFor ?? _noCountry {
     _trackEncoder = trackEncoder ?? _defaultTrackEncoder;
   }
 
@@ -75,6 +84,9 @@ class SyncService {
   /// Null while the backend is unavailable — every call becomes a no-op.
   final SyncApi? api;
   final SyncStore store;
+
+  /// Fills `days.country_code` on push (migration 0004).
+  final CountryResolver countryFor;
 
   /// Injected so tests do not wait out the backoff.
   final Future<void> Function(Duration) sleep;
@@ -124,6 +136,7 @@ class SyncService {
       userId: uid,
       deviceUpdatedAtMs: deviceUpdatedAt,
       deleted: deleted || row.deletedAt != null,
+      countryCode: countryFor(row.resortId),
     ));
     await repo.markSynced(dayId, deviceUpdatedAt);
     if (!deleted && row.deletedAt == null) await _backupTrack(api, dayId);
@@ -244,10 +257,21 @@ class SyncService {
   }
 
   static Future<void> _realSleep(Duration d) => Future<void>.delayed(d);
+
+  static String? _noCountry(String? resortId) => null;
 }
 
 final syncServiceProvider = Provider<SyncService>((ref) {
-  final service = SyncService(repo: ref.watch(daysRepositoryProvider), api: ref.watch(syncApiProvider));
+  final service = SyncService(
+    repo: ref.watch(daysRepositoryProvider),
+    api: ref.watch(syncApiProvider),
+    // Read lazily per push: the resort list loads async and the settings may
+    // change; neither should rebuild (and dispose) the service.
+    countryFor: (resortId) {
+      final resort = resortId == null ? null : ref.read(resortRepositoryProvider).asData?.value.byId(resortId);
+      return resort?.country ?? ref.read(settingsProvider).countryCode;
+    },
+  );
   ref.onDispose(service.dispose);
   return service;
 });
@@ -266,6 +290,8 @@ void startAutoSync(Ref ref) {
     if (user.id == lastUserId) return;
     lastUserId = user.id;
     unawaited(service.syncNow());
+    // Team country → profiles.country_code (migration 0004); fire and forget.
+    unawaited(ref.read(profileServiceProvider).pushCountry(ref.read(settingsProvider).countryCode, userId: user.id));
   }, fireImmediately: true);
 
   unawaited(service.syncNow());

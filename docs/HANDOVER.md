@@ -1,4 +1,4 @@
-# SlopeTrack — Handover (2026-09-22, 16:00)
+# SlopeTrack — Handover (2026-09-27)
 
 ## What this is
 The ski-day tracker rebuilt from the 2025 PWA as a Flutter app (iOS first, Android builds, native Apple Watch companion). One tap records the whole day; runs, lifts and stops are detected automatically; tracking keeps running with the phone locked. Brand: **SlopeTrack**, bundle id `de.torchtechnology.dropline`, Team 5GDU97KSQU.
@@ -27,6 +27,9 @@ Onboarding (3 steps, mascot hero + cards, two-step Always flow) · Heute idle/li
 Onboarding v2 (4 interactive pages: self-drawing route + vertical slider, home resort + season goal, Sign in with Apple + invite code, permissions) · snow-leopard mascot "Leo" as transparent cut-outs (`tools/assets/cutout_leopard.py`, poses in `app/assets/mascot/`) · design v2 on every remaining screen (Tag detail with collapsing map hero, Tagesbilanz with route reveal, live view in glare theme, settings sheet, share card in three formats, altitude profile, map sheet) · Konto sheet (`features/account`) · Rangliste tab (`features/social`: Saison/Monat/Woche leaderboard, Tagesduell with codes, Wochen-Challenge; fake API for tests) · appearance setting · Supabase migration 0002 (join_group RPC, membership helper, month/week leaderboard keys) applied · screenshot tooling `tools/shots.sh` (writes `demo.json` into the app container, no rebuild per screen; screens in `.context/shots/`). 258 tests, analyzer clean.
 
 **Name:** SlopeTrack (founder's decision 2026-09-24; residual trademark risk documented in `docs/NAMING.md`). Renamed in code on 2026-09-24.
+
+## Also done 2026-09-24 → 2026-09-27
+Rename to SlopeTrack · gap audit (`docs/GAPS.md`) with most code items closed · Supabase 0003/0004 (weekly challenges via pg_cron, profile read policy, leaderboard participant count, `country_code` on profiles/days, server points, `country_board` RPC) · Edge Function `delete-account` · **Onboarding v3** (3 pages: hook → Team = country you ride for → sign-in + permissions; season goal no longer asked) · **Gamification** (`docs/GAMIFICATION.md`, `features/achievements`): points, 14 levels by km, streak, 48 medals; level card on Rangliste, medal banner on Tagesbilanz, streak chip on the season card, Medaillen sheet · **Country teams** in the Rangliste tab (scope Mein Land / Gebiet / Alle, metric Punkte, Länder card) · **Mascot v4**: faceless rider in black with gold seams and a mirrored gold visor (founder's pick: the 'point' image; pose set via FLUX Kontext, `tools/assets/generate_pointer.py`; the leopard is deleted). 334 tests, analyzer clean; screenshots in `.context/shots/` incl. `medals.png`.
 
 ## Next steps, in order
 1. Founder: Xcode account for Team 5GDU97KSQU **or** App Store Connect API key; create the App Store Connect record "SlopeTrack"; confirm the name. Then `tools/testflight.sh --upload`.

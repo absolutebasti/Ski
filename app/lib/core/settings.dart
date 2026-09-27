@@ -13,6 +13,7 @@ class Settings {
     this.diagnosticsUnlocked = false,
     this.seasonGoalHm = 20000,
     this.appearance = 'dark',
+    this.countryCode,
   });
 
   /// 'system' | 'de' | 'en'
@@ -26,6 +27,8 @@ class Settings {
   final int seasonGoalHm;
   /// 'system' | 'light' | 'dark' — dark is the product default (docs/DESIGN.md).
   final String appearance;
+  /// ISO-3166 alpha-2 of the country the user rides for (onboarding v3 'Team'); null = not chosen.
+  final String? countryCode;
 
   ThemeMode get themeMode => switch (appearance) {
         'light' => ThemeMode.light,
@@ -35,7 +38,7 @@ class Settings {
 
   Settings copyWith({
     String? locale, bool? onboardingDone, bool? notificationsOptIn, bool? notificationsAsked,
-    String? lastResortId, bool? diagnosticsUnlocked, int? seasonGoalHm, String? appearance,
+    String? lastResortId, bool? diagnosticsUnlocked, int? seasonGoalHm, String? appearance, String? countryCode,
   }) => Settings(
         locale: locale ?? this.locale,
         onboardingDone: onboardingDone ?? this.onboardingDone,
@@ -45,6 +48,7 @@ class Settings {
         diagnosticsUnlocked: diagnosticsUnlocked ?? this.diagnosticsUnlocked,
         seasonGoalHm: seasonGoalHm ?? this.seasonGoalHm,
         appearance: appearance ?? this.appearance,
+        countryCode: countryCode ?? this.countryCode,
       );
 
   static Settings fromPrefs(SharedPreferences p) => Settings(
@@ -56,6 +60,7 @@ class Settings {
         diagnosticsUnlocked: p.getBool('diagnosticsUnlocked') ?? false,
         seasonGoalHm: p.getInt('seasonGoalHm') ?? 20000,
         appearance: p.getString('appearance') ?? 'dark',
+        countryCode: p.getString('countryCode'),
       );
 }
 
@@ -84,6 +89,11 @@ class SettingsNotifier extends Notifier<Settings> {
     await p.setBool('diagnosticsUnlocked', next.diagnosticsUnlocked);
     await p.setInt('seasonGoalHm', next.seasonGoalHm);
     await p.setString('appearance', next.appearance);
+    if (next.countryCode != null) {
+      await p.setString('countryCode', next.countryCode!);
+    } else {
+      await p.remove('countryCode');
+    }
   }
 
   Future<void> setLocale(String v) => update((s) => s.copyWith(locale: v));
@@ -94,10 +104,11 @@ class SettingsNotifier extends Notifier<Settings> {
   Future<void> setLastResort(String? id) => update((s) => id == null ? s : s.copyWith(lastResortId: id));
   Future<void> setDiagnosticsUnlocked() => update((s) => s.copyWith(diagnosticsUnlocked: true));
   Future<void> setAppearance(String v) => update((s) => s.copyWith(appearance: v));
+  Future<void> setCountry(String? code) => update((s) => code == null ? s : s.copyWith(countryCode: code.toUpperCase()));
   Future<void> clearLastResort() => update((s) => Settings(
         locale: s.locale, onboardingDone: s.onboardingDone, notificationsOptIn: s.notificationsOptIn,
         notificationsAsked: s.notificationsAsked, lastResortId: null, diagnosticsUnlocked: s.diagnosticsUnlocked, seasonGoalHm: s.seasonGoalHm,
-        appearance: s.appearance,
+        appearance: s.appearance, countryCode: s.countryCode,
       ));
 }
 

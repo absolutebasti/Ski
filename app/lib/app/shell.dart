@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/settings.dart';
 import '../features/account/account.dart';
+import '../features/achievements/ui/ui.dart';
 import '../features/settings/settings.dart';
 import 'demo.dart';
 import 'l10n/app_locale.dart';
@@ -34,6 +35,8 @@ class _RootShellState extends ConsumerState<RootShell> {
           SettingsSheet.show(context);
         case 'account':
           AccountSheet.show(context);
+        case 'medals':
+          MedalsSheet.show(context);
         default:
           Navigator.of(context).pushNamed(route);
       }

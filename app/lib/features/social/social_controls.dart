@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
-import '../onboarding/mascot_hero.dart';
 import 'social_models.dart';
 
 /// Text tabs with a champagne underline — never a Material TabBar
@@ -145,7 +144,7 @@ class AvatarCircle extends StatelessWidget {
   }
 }
 
-/// Signed-out / not-opted-in / offline / empty: Leo, one line, one action.
+/// Signed-out / not-opted-in / offline / empty: the Rider, one line, one action.
 class SocialStateBlock extends StatelessWidget {
   const SocialStateBlock({
     super.key,
@@ -158,6 +157,7 @@ class SocialStateBlock extends StatelessWidget {
     this.onSecondary,
   });
 
+  /// One of [Rider.poses].
   final String pose;
   final String headline;
   final String line;
@@ -175,11 +175,11 @@ class SocialStateBlock extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Center(child: Leo(pose: pose, size: 128)),
+          Center(child: Rider(pose: pose, size: 128)),
           const SizedBox(height: 16),
           Text(headline, style: AppText.headline(c.textPrimary)),
           const SizedBox(height: 10),
-          MascotLine(line),
+          RiderLine(line),
           if (actionLabel != null) ...[
             const SizedBox(height: 18),
             PrimaryButton(label: actionLabel!, onPressed: onAction, height: 52, glow: false),

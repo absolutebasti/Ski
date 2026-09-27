@@ -46,6 +46,7 @@ class DaySummary {
     required this.stats,
     this.endedAt,
     this.resortName,
+    this.resortId,
     this.mapThumbPath,
     this.isTopSpeedPb = false,
     this.isBiggestDayPb = false,
@@ -55,6 +56,8 @@ class DaySummary {
   final int startedAt;
   final int? endedAt;
   final String? resortName;
+  /// Resort id from assets/data/resorts.json (null when none was near).
+  final String? resortId;
   final String? mapThumbPath;
   final DayStats stats;
   final bool isTopSpeedPb;

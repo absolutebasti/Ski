@@ -98,4 +98,48 @@ void main() {
       expect(currentChallenge(const [], kNow), isNull);
     });
   });
+
+  group('country teams (migration 0004)', () {
+    test('points is a leaderboard metric on the wire, not a challenge one', () {
+      expect(SocialMetric.points.wire, 'points');
+      expect(SocialMetric.leaderboard, contains(SocialMetric.points));
+      expect(SocialMetric.challenge, isNot(contains(SocialMetric.points)));
+      expect(SocialMetric.fromWire('points'), SocialMetric.points);
+    });
+
+    test('dayPointsOf matches the server formula without the streak bonus', () {
+      expect(dayPointsOf(dropM: 1849, skiDistanceM: 14100, runCount: 12), 436);
+      expect(dayPointsOf(dropM: 0, skiDistanceM: 0, runCount: 0), 50);
+    });
+
+    test('LeaderboardQuery carries the country and derives its scope', () {
+      final country = LeaderboardQuery.at(kNow, countryCode: 'AT');
+      final resort = LeaderboardQuery.at(kNow, resortId: 'kitzbuehel');
+      final all = LeaderboardQuery.at(kNow);
+      expect(country.scope, LeaderboardScope.country);
+      expect(resort.scope, LeaderboardScope.resort);
+      expect(all.scope, LeaderboardScope.all);
+      expect(country, isNot(all), reason: 'the family must not share a cache entry');
+      expect(country.copyWith(clearCountry: true), all);
+      expect(resort.copyWith(countryCode: 'AT').scope, LeaderboardScope.country);
+    });
+
+    test('CountryEntry.fromJson and the points order', () {
+      final at = CountryEntry.fromJson({'country_code': 'at', 'riders': 250, 'points': 91234.0, 'drop_m': 812000.0});
+      final ch = CountryEntry.fromJson({'country_code': 'CH', 'riders': 90, 'points': 120000, 'drop_m': 500000});
+      expect(at.countryCode, 'AT');
+      expect(at.riders, 250);
+      expect(at.points, 91234);
+      expect(([at, ch]..sort(compareCountries)).first, ch);
+    });
+
+    test('flagEmoji builds regional indicators and rejects junk', () {
+      expect(flagEmoji('AT'), '\u{1F1E6}\u{1F1F9}');
+      expect(flagEmoji('ch'), '\u{1F1E8}\u{1F1ED}');
+      expect(flagEmoji(''), '');
+      expect(flagEmoji(null), '');
+      expect(flagEmoji('A1'), '');
+      expect(flagEmoji('AUT'), '');
+    });
+  });
 }

@@ -16,6 +16,13 @@ class SocialStrings {
   // --- chrome --------------------------------------------------------------
   String get title => l.pick(de: 'Rangliste', en: 'Leaderboard');
   String get allResorts => l.pick(de: 'Alle Gebiete', en: 'All resorts');
+
+  /// Scope row above the metric chips: 'Mein Land 🇦🇹' · 'Gebiet' · 'Alle'.
+  String scope(LeaderboardScope sc, {String? countryCode}) => switch (sc) {
+        LeaderboardScope.country => '${l.pick(de: 'Mein Land', en: 'My country')} ${flagEmoji(countryCode)}'.trimRight(),
+        LeaderboardScope.resort => l.pick(de: 'Gebiet', en: 'Resort'),
+        LeaderboardScope.all => l.pick(de: 'Alle', en: 'All'),
+      };
   String get you => l.pick(de: 'Du', en: 'You');
   String get rank => l.pick(de: 'Platz', en: 'Rank');
   String get retry => l.pick(de: 'Erneut versuchen', en: 'Try again');
@@ -35,6 +42,7 @@ class SocialStrings {
         SocialMetric.skiDistanceM => l.pick(de: 'Ski-km', en: 'Ski km'),
         SocialMetric.maxSpeedMs => l.pick(de: 'Top-Speed', en: 'Top speed'),
         SocialMetric.dayCount => l.pick(de: 'Skitage', en: 'Ski days'),
+        SocialMetric.points => l.pick(de: 'Punkte', en: 'Points'),
       };
 
   /// Numeral and unit for a metric value; the unit is drawn as separate
@@ -45,6 +53,7 @@ class SocialStrings {
         SocialMetric.skiDistanceM => (Fmt.km(v, locale: l.code), 'km'),
         SocialMetric.maxSpeedMs => (Fmt.kmh(v, locale: l.code), 'km/h'),
         SocialMetric.dayCount => (v.round().toString(), l.pick(de: 'Tage', en: 'days')),
+        SocialMetric.points => (Fmt.metres(v, locale: l.code), unitPoints),
       };
 
   String valueLine(SocialMetric m, double v) {
@@ -53,6 +62,7 @@ class SocialStrings {
   }
 
   String get unitHm => l.pick(de: 'hm', en: 'm');
+  String get unitPoints => l.pick(de: 'Pkt.', en: 'pts');
 
   String caption(LeaderboardPeriod p, String seasonKey, String? resortName) {
     final head = switch (p) {
@@ -63,8 +73,60 @@ class SocialStrings {
     return resortName == null ? '$head · $allResorts' : '$head · $resortName';
   }
 
-  /// 'Du · Platz 14 · 12.480 hm'
-  String ownRow(int place, SocialMetric m, double v) => '$you · $rank $place · ${valueLine(m, v)}';
+  /// 'Platz 14 von 250' — the server count when known, else just the place.
+  String rankOf(int place, int total) =>
+      total > 0 ? l.pick(de: '$rank $place von $total', en: '$rank $place of $total') : '$rank $place';
+
+  /// 'Du · Platz 14 von 250 · 12.480 hm'
+  String ownRow(int place, SocialMetric m, double v, {int total = 0}) => '$you · ${rankOf(place, total)} · ${valueLine(m, v)}';
+
+  // --- Länder-Wertung ------------------------------------------------------
+  String get countries => l.pick(de: 'Länder', en: 'Countries');
+  String countriesCaption(LeaderboardPeriod p) => '${l.pick(de: 'Team-Wertung', en: 'Team ranking')} · ${period(p)}';
+  String get countriesEmpty => l.pick(de: 'Noch kein Land gewertet.', en: 'No country ranked yet.');
+  String riders(int n) => l.pick(de: '$n Fahrer', en: n == 1 ? '1 rider' : '$n riders');
+
+  /// Country name for the codes riders realistically ride for; the code
+  /// itself for everything else.
+  String countryName(String? code) {
+    final c = code?.toUpperCase();
+    if (c == null || c.isEmpty) return '';
+    final names = _countryNames[c];
+    return names == null ? c : l.pick(de: names.$1, en: names.$2);
+  }
+
+  static const Map<String, (String, String)> _countryNames = {
+    'AT': ('Österreich', 'Austria'),
+    'CH': ('Schweiz', 'Switzerland'),
+    'DE': ('Deutschland', 'Germany'),
+    'IT': ('Italien', 'Italy'),
+    'FR': ('Frankreich', 'France'),
+    'NL': ('Niederlande', 'Netherlands'),
+    'BE': ('Belgien', 'Belgium'),
+    'GB': ('Großbritannien', 'United Kingdom'),
+    'IE': ('Irland', 'Ireland'),
+    'DK': ('Dänemark', 'Denmark'),
+    'SE': ('Schweden', 'Sweden'),
+    'NO': ('Norwegen', 'Norway'),
+    'FI': ('Finnland', 'Finland'),
+    'PL': ('Polen', 'Poland'),
+    'CZ': ('Tschechien', 'Czechia'),
+    'SK': ('Slowakei', 'Slovakia'),
+    'SI': ('Slowenien', 'Slovenia'),
+    'HU': ('Ungarn', 'Hungary'),
+    'HR': ('Kroatien', 'Croatia'),
+    'ES': ('Spanien', 'Spain'),
+    'AD': ('Andorra', 'Andorra'),
+    'LI': ('Liechtenstein', 'Liechtenstein'),
+    'LU': ('Luxemburg', 'Luxembourg'),
+    'US': ('USA', 'United States'),
+    'CA': ('Kanada', 'Canada'),
+    'JP': ('Japan', 'Japan'),
+    'AU': ('Australien', 'Australia'),
+    'NZ': ('Neuseeland', 'New Zealand'),
+    'CL': ('Chile', 'Chile'),
+    'AR': ('Argentinien', 'Argentina'),
+  };
 
   String get notRankedYet => l.pick(de: 'Du bist noch nicht gewertet', en: 'You are not ranked yet');
 

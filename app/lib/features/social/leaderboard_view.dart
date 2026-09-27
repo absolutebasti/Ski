@@ -201,7 +201,7 @@ class OwnRankStrip extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '${s.you} · ${s.rank} ${rank.rank}',
+                    '${s.you} · ${s.rankOf(rank.rank, rank.total)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppText.bodyStrong(c.textPrimary, size: 15),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/settings.dart';
 import '../../data/sync/auth_service.dart';
 import 'profile_api.dart';
 
@@ -22,6 +23,7 @@ class Profile {
     this.avatarUrl,
     this.homeResortId,
     this.shareLeaderboards = false,
+    this.countryCode,
   });
 
   /// Same default as the server column.
@@ -35,6 +37,10 @@ class Profile {
   /// Opt-in for Rangliste and Tagesduell; off until the user switches it on.
   final bool shareLeaderboards;
 
+  /// Team country (ISO-3166 alpha-2, upper case) — mirrors
+  /// `Settings.countryCode` on the server (migration 0004). Null = not set.
+  final String? countryCode;
+
   factory Profile.fromRow(Map<String, Object?> row) => Profile(
         id: row['id'] as String,
         displayName: (row['display_name'] as String?)?.trim().isNotEmpty == true
@@ -43,7 +49,14 @@ class Profile {
         avatarUrl: row['avatar_url'] as String?,
         homeResortId: row['home_resort_id'] as String?,
         shareLeaderboards: row['share_leaderboards'] as bool? ?? false,
+        countryCode: normaliseCountry(row['country_code'] as String?),
       );
+
+  /// Upper-case alpha-2 or null; anything else would trip the server check.
+  static String? normaliseCountry(String? code) {
+    final c = code?.trim().toUpperCase();
+    return c == null || c.length != 2 ? null : c;
+  }
 
   /// First letter for the avatar circle; '?' when the name is empty.
   String get initial {
@@ -56,6 +69,7 @@ class Profile {
     Object? avatarUrl = keep,
     Object? homeResortId = keep,
     bool? shareLeaderboards,
+    Object? countryCode = keep,
   }) =>
       Profile(
         id: id,
@@ -63,6 +77,7 @@ class Profile {
         avatarUrl: avatarUrl is Keep ? this.avatarUrl : avatarUrl as String?,
         homeResortId: homeResortId is Keep ? this.homeResortId : homeResortId as String?,
         shareLeaderboards: shareLeaderboards ?? this.shareLeaderboards,
+        countryCode: countryCode is Keep ? this.countryCode : normaliseCountry(countryCode as String?),
       );
 
   @override
@@ -72,13 +87,14 @@ class Profile {
       other.displayName == displayName &&
       other.avatarUrl == avatarUrl &&
       other.homeResortId == homeResortId &&
-      other.shareLeaderboards == shareLeaderboards;
+      other.shareLeaderboards == shareLeaderboards &&
+      other.countryCode == countryCode;
 
   @override
-  int get hashCode => Object.hash(id, displayName, avatarUrl, homeResortId, shareLeaderboards);
+  int get hashCode => Object.hash(id, displayName, avatarUrl, homeResortId, shareLeaderboards, countryCode);
 
   @override
-  String toString() => 'Profile($id, $displayName, resort: $homeResortId, share: $shareLeaderboards)';
+  String toString() => 'Profile($id, $displayName, resort: $homeResortId, share: $shareLeaderboards, country: $countryCode)';
 }
 
 /// Reads and writes the `profiles` row, cached in memory for the session.
@@ -128,24 +144,28 @@ class ProfileService {
 
   /// Applies the given columns locally first, then pushes them.
   ///
-  /// Pass `null` to clear [avatarUrl] / [homeResortId]; omit them to keep them.
-  /// Returns the new local value; never throws.
+  /// Pass `null` to clear [avatarUrl] / [homeResortId] / [countryCode]; omit
+  /// them to keep them. Returns the new local value; never throws.
   Future<Profile?> update({
     String? displayName,
     Object? avatarUrl = keep,
     Object? homeResortId = keep,
     bool? shareLeaderboards,
+    Object? countryCode = keep,
+    String? userId,
   }) async {
     final api = this.api;
-    final uid = _cached?.id ?? api?.userId;
+    final uid = _cached?.id ?? userId ?? api?.userId;
     if (uid == null) return null;
 
     final name = displayName?.trim();
+    final country = countryCode is Keep ? keep : Profile.normaliseCountry(countryCode as String?);
     final patch = <String, Object?>{
       if (name != null && name.isNotEmpty) 'display_name': name,
       if (avatarUrl is! Keep) 'avatar_url': avatarUrl,
       if (homeResortId is! Keep) 'home_resort_id': homeResortId,
       'share_leaderboards': ?shareLeaderboards,
+      if (country is! Keep) 'country_code': country,
     };
     if (patch.isEmpty) return _cached;
 
@@ -155,6 +175,7 @@ class ProfileService {
       avatarUrl: avatarUrl,
       homeResortId: homeResortId,
       shareLeaderboards: shareLeaderboards,
+      countryCode: country,
     );
     if (next != _cached) {
       _cached = next;
@@ -170,6 +191,21 @@ class ProfileService {
       }
     }
     return _cached;
+  }
+
+  /// Mirrors the team country onto `profiles.country_code` when it differs
+  /// from what the server has (or from the cache). No-op without a code, an
+  /// api or a user; never throws. Called on sign-in from the sync loop and
+  /// from [profileProvider] whenever the setting changes.
+  Future<void> pushCountry(String? code, {String? userId}) async {
+    final country = Profile.normaliseCountry(code);
+    final api = this.api;
+    if (country == null || api == null) return;
+    final uid = userId ?? _cached?.id ?? api.userId;
+    if (uid == null) return;
+    if (_cached?.id != uid) await load(userId: uid);
+    if (_cached?.countryCode == country) return;
+    await update(countryCode: country, userId: uid);
   }
 
   /// Drops the cache — called on sign out.
@@ -203,5 +239,13 @@ final FutureProvider<Profile?> profileProvider = FutureProvider<Profile?>((ref) 
     service.clear();
     return null;
   }
-  return service.load(userId: user.id, fallbackName: user.displayName);
+  final profile = await service.load(userId: user.id, fallbackName: user.displayName);
+  // Team country follows the setting (onboarding v3); a mismatch is pushed
+  // once — update() emits on [ProfileService.changes], which re-runs this
+  // provider with the codes now equal.
+  final country = Profile.normaliseCountry(ref.watch(settingsProvider.select((s) => s.countryCode)));
+  if (country != null && profile != null && profile.countryCode != country) {
+    return service.update(countryCode: country, userId: user.id);
+  }
+  return profile;
 });

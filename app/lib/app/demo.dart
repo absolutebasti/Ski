@@ -17,7 +17,7 @@ import '../tracking/tracking.dart';
 ///      {"SLOPETRACK_SKIP_ONBOARDING":"1","SLOPETRACK_DEMO":"1","SLOPETRACK_TAB":"tage","SLOPETRACK_ROUTE":"/day/demo-0"}
 ///      — written with `xcrun simctl get_app_container <udid> <bundle> data`, no rebuild needed (tools/shots.sh)
 ///   2. `--dart-define=SLOPETRACK_SKIP_ONBOARDING=1` etc. at build time
-///   SLOPETRACK_ROUTE: a named route pushed after the first frame, or `settings` / `account` for the sheets.
+///   SLOPETRACK_ROUTE: a named route pushed after the first frame, or `settings` / `account` / `medals` for the sheets.
 ///   SLOPETRACK_APPEARANCE: system | light | dark (screenshots of the light theme).
 class Demo {
   const Demo._();
@@ -80,7 +80,8 @@ class Demo {
     final resorts = [('kitzbuehel', 'Kitzbühel'), ('st-anton', 'St. Anton am Arlberg'), ('soelden', 'Sölden')];
     final now = DateTime.now();
     for (var i = 0; i < 3; i++) {
-      final start = DateTime(now.year, now.month, now.day - (i + 1) * 3, 9).millisecondsSinceEpoch;
+      // Consecutive days so the streak chip and the streak medal show up in demo mode.
+      final start = DateTime(now.year, now.month, now.day - (i + 1), 9).millisecondsSinceEpoch;
       final day = SyntheticDayGenerator(seed: 11 + i, startTs: start).generate();
       final engine = TrackingEngine(dayId: 'demo-$i');
       var fi = 0, pi = 0;
