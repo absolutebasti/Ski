@@ -35,6 +35,7 @@ shot tag-detail "{$D,\"SLOPETRACK_ROUTE\":\"/day/demo-0\"}" 5
 shot tagesbilanz "{$D,\"SLOPETRACK_ROUTE\":\"/summary/demo-0\"}" 5
 shot settings   "{$D,\"SLOPETRACK_ROUTE\":\"settings\"}"
 shot account    "{$D,\"SLOPETRACK_ROUTE\":\"account\"}"
+shot medals     "{$D,\"SLOPETRACK_ROUTE\":\"medals\"}" 5
 shot light-heute  "{$D,\"SLOPETRACK_APPEARANCE\":\"light\"}" 5
 shot light-tage   "{$D,\"SLOPETRACK_APPEARANCE\":\"light\",\"SLOPETRACK_TAB\":\"tage\"}"
 shot light-detail "{$D,\"SLOPETRACK_APPEARANCE\":\"light\",\"SLOPETRACK_ROUTE\":\"/day/demo-0\"}" 5
