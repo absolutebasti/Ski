@@ -11,6 +11,14 @@ import 'social_fixtures.dart';
 
 const _settings = Settings(onboardingDone: true, lastResortId: 'kitzbuehel', countryCode: 'AT');
 
+
+/// The metric chips scroll horizontally; drag their list until [label] is on screen.
+Future<void> _revealChip(WidgetTester tester, String label) async {
+  final chips = find.ancestor(of: find.text('Höhenmeter'), matching: find.byType(ListView)).first;
+  await tester.dragUntilVisible(find.text(label), chips, const Offset(-160, 0));
+  await tester.pumpAndSettle();
+}
+
 Future<void> _pump(
   WidgetTester tester, {
   FakeSocialApi? api,
@@ -19,6 +27,11 @@ Future<void> _pump(
   List<DaySummary> days = const [],
   Settings settings = _settings,
 }) async {
+  // Tall phone surface: the achievements header sits above the board, so the
+  // tabs and chips must stay on screen without scrolling.
+  tester.view.physicalSize = const Size(1179, 5400);
+  tester.view.devicePixelRatio = 3;
+  addTearDown(tester.view.reset);
   await pumpApp(
     tester,
     SocialScreen(now: kNow, onOpenAccount: onOpenAccount),
@@ -122,8 +135,7 @@ void main() {
     await _pump(tester, api: api);
     expect(api.queries.last.metric, SocialMetric.dropM);
 
-    await tester.ensureVisible(find.text('Top-Speed'));
-    await tester.pumpAndSettle();
+    await _revealChip(tester, 'Top-Speed');
     await tester.tap(find.text('Top-Speed'));
     await tester.pumpAndSettle();
 
@@ -135,12 +147,15 @@ void main() {
     final api = FakeSocialApi(userId: 'u1', entries: kEntries);
     await _pump(tester, api: api);
     expect(api.queries.last.wireKey, '2025/26');
+    await tester.ensureVisible(find.text('Woche'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Woche'));
     await tester.pumpAndSettle();
     expect(api.queries.last.wireKey, '2026-W03');
     expect(find.text('Diese Woche · Kitzbühel'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Monat'));
     await tester.tap(find.text('Monat'));
     await tester.pumpAndSettle();
     expect(api.queries.last.wireKey, '2026-01');
@@ -155,6 +170,7 @@ void main() {
     expect(find.text('Gebiet'), findsOneWidget);
     expect(find.text('Ischgl'), findsOneWidget, reason: 'the resort selector is visible under Gebiet');
 
+    await tester.ensureVisible(find.text('Alle'));
     await tester.tap(find.text('Alle'));
     await tester.pumpAndSettle();
     expect(api.queries.last.resortId, isNull);
@@ -191,8 +207,7 @@ void main() {
     final api = FakeSocialApi(userId: 'u1', entries: kEntries);
     await _pump(tester, api: api);
 
-    await tester.ensureVisible(find.text('Punkte'));
-    await tester.pumpAndSettle();
+    await _revealChip(tester, 'Punkte');
     await tester.tap(find.text('Punkte'));
     await tester.pumpAndSettle();
 

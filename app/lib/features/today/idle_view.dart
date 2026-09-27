@@ -13,6 +13,7 @@ import '../../data/resorts/resort_repository.dart';
 import '../../data/weather/weather_provider.dart';
 import '../../data/weather/wmo.dart';
 import '../../platform/permission_service.dart';
+import '../achievements/achievements.dart';
 import '../days/day_card.dart';
 import '../recording/recording_controller.dart';
 import '../settings/settings_providers.dart';
@@ -80,7 +81,7 @@ class IdleView extends ConsumerWidget {
                 const SizedBox(height: 8),
                 EmptyState(headline: s.emptyHeadline, line: s.emptyLine),
               ] else ...[
-                if (season != null) SeasonCard(totals: season, days: seasonDays, previous: previous, goalHm: ref.watch(settingsProvider).seasonGoalHm),
+                if (season != null) SeasonCard(totals: season, days: seasonDays, previous: previous, goalHm: ref.watch(settingsProvider).seasonGoalHm, streak: ref.watch(achievementsProvider).streak),
                 SectionLabel(s.lastDay, padding: const EdgeInsets.fromLTRB(0, Tokens.sectionGap, 0, 10)),
                 DayCard(day: days.first, onTap: () => AppNav.openDay(context, days.first.id)),
                 if (bests != null && (bests.topSpeedMs != null || bests.biggestDayDropM != null || bests.longestRunDropM != null)) ...[

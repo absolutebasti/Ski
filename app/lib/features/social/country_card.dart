@@ -90,7 +90,7 @@ class CountryRow extends StatelessWidget {
       label: '$rank · $name · ${s.riders(entry.riders)} · ${s.valueLine(SocialMetric.points, entry.points)}',
       container: true,
       child: Container(
-        height: 56,
+        constraints: const BoxConstraints(minHeight: 56),
         decoration: own
             ? ShapeDecoration(color: c.accentWash, shape: Squircle.plain(Tokens.r10))
             : null,

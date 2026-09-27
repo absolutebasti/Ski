@@ -74,15 +74,41 @@ class _ChallengeCardState extends ConsumerState<ChallengeCard> {
           Text(ch.title, style: AppText.title(c.textPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 14),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(valueText, style: AppText.numM(c.accent)),
-              if (unit != null) ...[const SizedBox(width: 5), Text(unit, style: AppText.unit(c.textTertiary, size: 13))],
-              const Spacer(),
-              Text('${s.challengeTarget.overline} ', style: AppText.label(c.textTertiary)),
-              Text(targetText, style: AppText.numXs(c.textPrimary)),
-              if (targetUnit != null) ...[const SizedBox(width: 4), Text(targetUnit, style: AppText.unit(c.textTertiary, size: 11))],
+              // Flexible on both sides: '4.120 hm' vs 'ZIEL 5.000 hm' must share 353 pt without overflow.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(valueText, style: AppText.numM(c.accent)),
+                      if (unit != null) ...[const SizedBox(width: 5), Text(unit, style: AppText.unit(c.textTertiary, size: 13))],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text('${s.challengeTarget.overline} ', style: AppText.label(c.textTertiary)),
+                      Text(targetText, style: AppText.numXs(c.textPrimary)),
+                      if (targetUnit != null) ...[const SizedBox(width: 4), Text(targetUnit, style: AppText.unit(c.textTertiary, size: 11))],
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),

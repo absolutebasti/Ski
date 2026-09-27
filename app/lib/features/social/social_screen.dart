@@ -8,6 +8,7 @@ import '../../core/core.dart';
 import '../../core/settings.dart';
 import '../../data/resorts/resort_repository.dart';
 import '../../data/sync/auth_service.dart';
+import '../achievements/ui/ui.dart';
 import 'challenge_card.dart';
 import 'challenge_providers.dart';
 import 'country_card.dart';
@@ -164,6 +165,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                   caption: s.caption(_period, query.seasonKey, where),
                   padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
                 ),
+                // Level · Punkte · Streak · Medaillen (docs/GAMIFICATION.md §5)
+                const AchievementsHeader(padding: EdgeInsets.zero),
+                const SizedBox(height: Tokens.cardGap),
                 body,
               ],
             ),

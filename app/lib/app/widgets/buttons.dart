@@ -33,7 +33,13 @@ class PrimaryButton extends StatelessWidget {
       children: [
         if (glyph != null) ...[GlyphIcon(glyph!, size: big ? 24 : 22, color: fg), const SizedBox(width: 10)],
         if (glyph == null && icon != null) ...[Icon(icon, color: fg, size: big ? 24 : 22), const SizedBox(width: 10)],
-        Text(this.label, style: AppText.button(fg, size: big ? 19 : 17)),
+        // Flexible + scaleDown: long labels ('Mit Apple anmelden', 1.3× text) never overflow the capsule.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(this.label, style: AppText.button(fg, size: big ? 19 : 17), maxLines: 1),
+          ),
+        ),
       ],
     );
     return Pressable(
@@ -87,7 +93,10 @@ class SecondaryButton extends StatelessWidget {
             if (glyph != null) GlyphIcon(glyph!, size: 20, color: fg),
             if (glyph == null && icon != null) Icon(icon, color: fg, size: 20),
             if (!iconOnly && (glyph != null || icon != null)) const SizedBox(width: 8),
-            if (!iconOnly) Text(label, style: AppText.button(fg, size: 16)),
+            if (!iconOnly)
+              Flexible(
+                child: FittedBox(fit: BoxFit.scaleDown, child: Text(label, style: AppText.button(fg, size: 16), maxLines: 1)),
+              ),
           ],
         ),
       ),
