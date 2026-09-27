@@ -111,14 +111,20 @@ class AuthService {
       if (existing == null) {
         await client
             .from('profiles')
-            .insert({'id': user.id, 'display_name': appleName ?? fallbackName}).timeout(timeout);
+            .insert({'id': user.id, 'display_name': _clipName(appleName ?? fallbackName)}).timeout(timeout);
       } else if (appleName != null && (existing['display_name'] as String?) == fallbackName) {
-        await client.from('profiles').update({'display_name': appleName}).eq('id', user.id).timeout(timeout);
+        await client.from('profiles').update({'display_name': _clipName(appleName)}).eq('id', user.id).timeout(timeout);
       }
     } catch (e) {
       // Never block the sign-in on the profile round-trip; WP-15 retries.
       debugPrint('ensure profile failed: $e');
     }
+  }
+
+  /// profiles.display_name is limited to 24 characters server-side (migration 0006).
+  static String _clipName(String name) {
+    final n = name.trim();
+    return n.length <= 24 ? n : n.substring(0, 24).trimRight();
   }
 
   static String? _fullName(String? given, String? family) {
