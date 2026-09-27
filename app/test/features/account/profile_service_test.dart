@@ -1,4 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:slopetrack/core/settings.dart';
+import 'package:slopetrack/data/sync/auth_service.dart';
 import 'package:slopetrack/features/account/account.dart';
 
 void main() {
@@ -79,5 +82,65 @@ void main() {
     expect(calls, 1);
     await service.update(shareLeaderboards: true);
     expect(calls, 1, reason: 'same value → no re-emit');
+  });
+
+  group('country_code (migration 0004)', () {
+    test('fromRow normalises, update patches, null clears', () async {
+      final api = FakeProfileApi(userId: 'u1', row: {'id': 'u1', 'display_name': 'Sebastian', 'country_code': 'at'});
+      final service = ProfileService(api: api);
+      final profile = await service.load(userId: 'u1');
+      expect(profile?.countryCode, 'AT');
+
+      await service.update(countryCode: 'ch');
+      expect(api.patches.last, {'country_code': 'CH'});
+      expect(service.cached?.countryCode, 'CH');
+
+      await service.update(countryCode: null);
+      expect(api.patches.last, {'country_code': null});
+      expect(service.cached?.countryCode, isNull);
+
+      await service.update(countryCode: 'AUT');
+      expect(api.patches.last, {'country_code': null}, reason: 'anything but alpha-2 would trip the server check');
+    });
+
+    test('pushCountry writes once, only when the server differs', () async {
+      final api = FakeProfileApi(userId: 'u1', row: {'id': 'u1', 'display_name': 'Sebastian'});
+      final service = ProfileService(api: api);
+
+      await service.pushCountry('AT', userId: 'u1');
+      expect(api.patches, [
+        {'country_code': 'AT'}
+      ]);
+
+      await service.pushCountry('AT', userId: 'u1');
+      expect(api.patches, hasLength(1), reason: 'already on the server');
+
+      await service.pushCountry(null, userId: 'u1');
+      await service.pushCountry('X', userId: 'u1');
+      expect(api.patches, hasLength(1), reason: 'no valid code → no write');
+
+      final offline = ProfileService();
+      await offline.pushCountry('AT', userId: 'u1');
+      expect(offline.cached, isNull, reason: 'without an api nothing happens');
+    });
+
+    test('profileProvider mirrors Settings.countryCode onto the profile', () async {
+      final api = FakeProfileApi(userId: 'u1', row: {'id': 'u1', 'display_name': 'Sebastian', 'country_code': 'DE'});
+      final container = ProviderContainer(overrides: [
+        profileApiProvider.overrideWithValue(api),
+        authStateProvider.overrideWith((ref) => Stream.value(const AuthUser(id: 'u1', displayName: 'Sebastian'))),
+        settingsProvider.overrideWith(() => SettingsNotifier(null, initial: const Settings(onboardingDone: true, countryCode: 'AT'))),
+      ]);
+      addTearDown(container.dispose);
+
+      final sub = container.listen(profileProvider, (_, _) {});
+      addTearDown(sub.close);
+      // First pass: auth stream resolves, profile loads, mismatch is pushed.
+      await container.read(profileProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final profile = await container.read(profileProvider.future);
+      expect(profile?.countryCode, 'AT');
+      expect(api.patches.where((p) => p['country_code'] == 'AT'), hasLength(1));
+    });
   });
 }

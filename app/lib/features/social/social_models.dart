@@ -11,14 +11,18 @@ enum SocialMetric {
   runCount('run_count'),
   skiDistanceM('ski_distance_m'),
   maxSpeedMs('max_speed_ms'),
-  dayCount('day_count');
+  dayCount('day_count'),
+
+  /// Server day points (migration 0004): hm ÷ 10 + km × 10 + runs × 5 + 50,
+  /// without the device-side streak bonus (docs/GAMIFICATION.md §1).
+  points('points');
 
   const SocialMetric(this.wire);
 
   final String wire;
 
   /// Order of the metric chips on the Rangliste.
-  static const List<SocialMetric> leaderboard = [dropM, runCount, skiDistanceM, maxSpeedMs, dayCount];
+  static const List<SocialMetric> leaderboard = [dropM, points, runCount, skiDistanceM, maxSpeedMs, dayCount];
 
   /// `challenges.metric` has no `max_speed_ms`.
   static const List<SocialMetric> challenge = [dropM, runCount, skiDistanceM, dayCount];
@@ -56,6 +60,17 @@ String isoWeekKey(DateTime at) {
   return '${thursday.year}-W${week.toString().padLeft(2, '0')}';
 }
 
+/// Who the Rangliste is ranked against — the scope row above the metric chips.
+///
+/// `country` = riders of the own team country ('Mein Land'), `resort` = one
+/// ski resort ('Gebiet'), `all` = everyone ('Alle').
+enum LeaderboardScope { country, resort, all }
+
+/// Points of one finished day as the server computes them
+/// (`days.points`, migration 0004) — no streak bonus.
+double dayPointsOf({required double dropM, required double skiDistanceM, required int runCount}) =>
+    (dropM / 10 + skiDistanceM / 100 + runCount * 5 + 50).roundToDouble();
+
 /// Key of `leaderboardProvider`; value equality so the family caches.
 @immutable
 class LeaderboardQuery {
@@ -64,6 +79,7 @@ class LeaderboardQuery {
     this.period = LeaderboardPeriod.season,
     this.periodKey,
     this.resortId,
+    this.countryCode,
     this.metric = SocialMetric.dropM,
     this.limit = 100,
   });
@@ -73,6 +89,7 @@ class LeaderboardQuery {
     DateTime at, {
     LeaderboardPeriod period = LeaderboardPeriod.season,
     String? resortId,
+    String? countryCode,
     SocialMetric metric = SocialMetric.dropM,
     int limit = 100,
   }) =>
@@ -81,12 +98,22 @@ class LeaderboardQuery {
         period: period,
         periodKey: period.keyFor(at),
         resortId: resortId,
+        countryCode: countryCode,
         metric: metric,
         limit: limit,
       );
 
   /// null = 'Alle Gebiete'.
   final String? resortId;
+
+  /// ISO alpha-2 filter (`p_country`); null = every country.
+  final String? countryCode;
+
+  LeaderboardScope get scope => switch ((countryCode, resortId)) {
+        (String(), _) => LeaderboardScope.country,
+        (null, String()) => LeaderboardScope.resort,
+        _ => LeaderboardScope.all,
+      };
 
   /// Always the season the query was built in — used for the caption.
   final String seasonKey;
@@ -103,6 +130,8 @@ class LeaderboardQuery {
   LeaderboardQuery copyWith({
     String? resortId,
     bool clearResort = false,
+    String? countryCode,
+    bool clearCountry = false,
     String? seasonKey,
     LeaderboardPeriod? period,
     String? periodKey,
@@ -110,6 +139,7 @@ class LeaderboardQuery {
   }) =>
       LeaderboardQuery(
         resortId: clearResort ? null : (resortId ?? this.resortId),
+        countryCode: clearCountry ? null : (countryCode ?? this.countryCode),
         seasonKey: seasonKey ?? this.seasonKey,
         period: period ?? this.period,
         periodKey: periodKey ?? this.periodKey,
@@ -121,6 +151,7 @@ class LeaderboardQuery {
   bool operator ==(Object other) =>
       other is LeaderboardQuery &&
       other.resortId == resortId &&
+      other.countryCode == countryCode &&
       other.seasonKey == seasonKey &&
       other.period == period &&
       other.periodKey == periodKey &&
@@ -128,10 +159,57 @@ class LeaderboardQuery {
       other.limit == limit;
 
   @override
-  int get hashCode => Object.hash(resortId, seasonKey, period, periodKey, metric, limit);
+  int get hashCode => Object.hash(resortId, countryCode, seasonKey, period, periodKey, metric, limit);
 
   @override
-  String toString() => 'LeaderboardQuery($resortId, $wireKey, ${metric.wire}, $limit)';
+  String toString() => 'LeaderboardQuery($resortId, $countryCode, $wireKey, ${metric.wire}, $limit)';
+}
+
+/// One row of the `country_board` RPC — a team in the Länder-Wertung.
+@immutable
+class CountryEntry {
+  const CountryEntry({required this.countryCode, required this.riders, required this.points, this.dropM = 0});
+
+  /// ISO-3166 alpha-2, upper case.
+  final String countryCode;
+
+  /// Distinct opted-in riders with at least one plausible day in the window.
+  final int riders;
+
+  /// Sum of `days.points`.
+  final double points;
+  final double dropM;
+
+  factory CountryEntry.fromJson(Map<String, Object?> j) => CountryEntry(
+        countryCode: ((j['country_code'] as String?) ?? '').toUpperCase(),
+        riders: _int(j['riders']),
+        points: _double(j['points']),
+        dropM: _double(j['drop_m']),
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is CountryEntry &&
+      other.countryCode == countryCode &&
+      other.riders == riders &&
+      other.points == points &&
+      other.dropM == dropM;
+
+  @override
+  int get hashCode => Object.hash(countryCode, riders, points, dropM);
+}
+
+/// Points lead the country board — the same order the RPC returns.
+int compareCountries(CountryEntry a, CountryEntry b) => b.points.compareTo(a.points);
+
+/// 'AT' → 🇦🇹 (two regional-indicator symbols); '' for anything that is not
+/// two ASCII letters.
+String flagEmoji(String? countryCode) {
+  final c = countryCode?.trim().toUpperCase();
+  if (c == null || c.length != 2) return '';
+  final a = c.codeUnitAt(0), b = c.codeUnitAt(1);
+  if (a < 0x41 || a > 0x5A || b < 0x41 || b > 0x5A) return '';
+  return String.fromCharCodes([0x1F1E6 + a - 0x41, 0x1F1E6 + b - 0x41]);
 }
 
 /// One row of the `leaderboard` RPC.

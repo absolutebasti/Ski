@@ -14,13 +14,14 @@ void main() {
   late MemorySyncStore store;
   late List<Duration> slept;
 
-  SyncService service({int? lastSyncAt}) {
+  SyncService service({int? lastSyncAt, CountryResolver? countryFor}) {
     store = MemorySyncStore(lastSyncAt);
     return SyncService(
       repo: repo,
       api: api,
       store: store,
       sleep: (d) async => slept.add(d),
+      countryFor: countryFor,
     );
   }
 
@@ -69,6 +70,25 @@ void main() {
     // pushed day is marked and leaves the outbox
     expect(await repo.outbox(), isEmpty);
     expect((await (db.select(db.days)..where((d) => d.id.equals('d1'))).getSingle()).syncedAt, isNotNull);
+  });
+
+  test('push fills country_code from the resolver, null without one', () async {
+    await seedFinishedDay(repo);
+    final asked = <String?>[];
+    await service(countryFor: (resortId) {
+      asked.add(resortId);
+      return resortId == 'kitzbuehel' ? 'AT' : 'DE';
+    }).pushDay('d1');
+    expect(asked, ['kitzbuehel']);
+    expect(api.upserts.single['country_code'], 'AT');
+
+    await seedFinishedDay(repo, id: 'd2', resortId: null, resortName: null);
+    await service(countryFor: (resortId) => resortId == null ? 'de' : 'AT').pushDay('d2');
+    expect(api.upserts.last['country_code'], 'DE', reason: 'unknown resort → the rider\'s own country, upper-cased');
+
+    await seedFinishedDay(repo, id: 'd3');
+    await service().pushDay('d3');
+    expect(api.upserts.last['country_code'], isNull);
   });
 
   test('push backs up the raw track and stores the path', () async {

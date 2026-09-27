@@ -1,4 +1,4 @@
-export 'mascot_hero.dart';
+export 'onboarding_countries.dart';
 export 'onboarding_flow.dart';
 export 'onboarding_pages.dart';
 export 'onboarding_strings.dart';

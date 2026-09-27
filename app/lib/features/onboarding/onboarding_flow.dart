@@ -9,15 +9,21 @@ import '../../core/settings.dart';
 import '../../data/sync/auth_service.dart';
 import '../../platform/permission_service.dart';
 import '../../platform/providers.dart';
+import 'onboarding_countries.dart';
 import 'onboarding_pages.dart';
 import 'onboarding_strings.dart';
 
-/// Four interactive pages, < 60 s (docs/ONBOARDING-SOCIAL.md): hook → home
-/// resort + season goal → Sign in with Apple (optional) → permissions.
+/// Onboarding v3: three pages, one decision each.
+/// P1 hook → P2 team (country, optional home resort) → P3 ready (Sign in with
+/// Apple or 'Später', then the iOS permission flow, then RootShell).
 class OnboardingFlow extends ConsumerStatefulWidget {
-  const OnboardingFlow({super.key});
+  const OnboardingFlow({super.key, this.deviceCountry});
 
-  static const int pageCount = 4;
+  static const int pageCount = 3;
+
+  /// ISO-3166 alpha-2 used to preselect the team tile; null = read the device
+  /// locale (`WidgetsBinding.instance.platformDispatcher.locale.countryCode`).
+  final String? deviceCountry;
 
   @override
   ConsumerState<OnboardingFlow> createState() => _OnboardingFlowState();
@@ -28,26 +34,28 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   int _index = 0;
 
   // page 2
+  String? _country;
   Resort? _resort;
-  int _goalHm = 20000;
 
   // page 3
   AuthUser? _user;
+  bool _skipped = false;
   bool _signingIn = false;
   bool _signInFailed = false;
-
-  // page 4
   bool _asking = false;
   bool _asked = false;
   LocationPermissionState _location = LocationPermissionState.unknown;
 
   bool get _denied => _location == LocationPermissionState.denied || _location == LocationPermissionState.deniedForever;
   bool get _granted => _location == LocationPermissionState.whileInUse || _location == LocationPermissionState.always;
+  bool get _accountDecided => _user != null || _skipped;
 
   @override
   void initState() {
     super.initState();
-    _goalHm = ref.read(settingsProvider).seasonGoalHm;
+    final settings = ref.read(settingsProvider);
+    final device = (widget.deviceCountry ?? WidgetsBinding.instance.platformDispatcher.locale.countryCode)?.toUpperCase();
+    _country = settings.countryCode ?? (isGridCountry(device) ? device : null);
   }
 
   @override
@@ -62,9 +70,19 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     _pages.animateToPage(index, duration: Tokens.sheetUp, curve: Curves.easeOutCubic);
   }
 
-  Future<void> _leavePage2() async {
+  Future<void> _setCountry(String code) async {
+    setState(() => _country = code);
+    await ref.read(settingsProvider.notifier).setCountry(code);
+  }
+
+  Future<void> _setResort(Resort r) async {
+    setState(() => _resort = r);
+    await ref.read(settingsProvider.notifier).setLastResort(r.id);
+  }
+
+  Future<void> _leaveTeamPage() async {
     final settings = ref.read(settingsProvider.notifier);
-    await settings.setSeasonGoal(_goalHm);
+    if (_country != null) await settings.setCountry(_country);
     if (_resort != null) await settings.setLastResort(_resort!.id);
   }
 
@@ -126,40 +144,41 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   @override
   Widget build(BuildContext context) {
     final s = OnboardingStrings.of(context);
-    final last = _index == OnboardingFlow.pageCount - 1;
-    final canGoBack = _index > 0 && !_asking && !_signingIn;
+    final busy = _asking || _signingIn;
+    final canGoBack = _index > 0 && !busy;
 
-    final String label;
-    final VoidCallback? onPressed;
-    String? skipLabel;
-    VoidCallback? onSkip;
+    // Dock: one primary action per page; P3 shows the Apple capsule until the
+    // account decision is made, then the champagne 'Los geht's'.
+    final Widget primary;
+    Widget? skip;
     switch (_index) {
       case 0:
-        label = s.next;
-        onPressed = () => _goTo(1);
+        primary = PrimaryButton(key: const ValueKey('onboarding-primary'), label: s.next, height: 60, glyph: Glyph.chevronRight, onPressed: () => _goTo(1));
       case 1:
-        label = s.next;
-        onPressed = () async {
-          await _leavePage2();
-          if (mounted) _goTo(2);
-        };
-      case 2:
-        if (_user != null) {
-          label = s.next;
-          onPressed = () => _goTo(3);
-        } else {
-          label = s.p3SignIn;
-          onPressed = _signingIn ? null : _signIn;
-          skipLabel = s.skip;
-          onSkip = _signingIn ? null : () => _goTo(3);
-        }
+        primary = PrimaryButton(
+          key: const ValueKey('onboarding-primary'),
+          label: s.next,
+          height: 60,
+          glyph: Glyph.chevronRight,
+          onPressed: () async {
+            await _leaveTeamPage();
+            if (mounted) _goTo(2);
+          },
+        );
       default:
-        if (_asked && !_granted) {
-          label = s.finish;
-          onPressed = _finish;
+        if (!_accountDecided) {
+          primary = KeyedSubtree(
+            key: const ValueKey('onboarding-primary'),
+            child: AppleSignInButton(label: s.p3SignIn, onPressed: busy ? null : _signIn),
+          );
+          skip = TextButton(key: const ValueKey('onboarding-skip'), onPressed: busy ? null : () => setState(() => _skipped = true), child: Text(s.skip));
         } else {
-          label = s.allow;
-          onPressed = _asking ? null : _ask;
+          primary = PrimaryButton(
+            key: const ValueKey('onboarding-primary'),
+            label: s.finish,
+            height: 60,
+            onPressed: busy ? null : (_asked && !_granted ? _finish : _ask),
+          );
         }
     }
 
@@ -209,14 +228,11 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
                       const HookPage(),
-                      RevierPage(
-                        selectedId: _resort?.id,
-                        goalHm: _goalHm,
-                        onResort: (r) => setState(() => _resort = r),
-                        onGoal: (g) => setState(() => _goalHm = g),
-                      ),
-                      FriendsPage(user: _user, busy: _signingIn, failed: _signInFailed, onSignIn: _signIn),
-                      PermissionsPage(
+                      TeamPage(countryCode: _country, onCountry: _setCountry, resortId: _resort?.id, onResort: _setResort),
+                      ReadyPage(
+                        user: _user,
+                        skipped: _skipped,
+                        failed: _signInFailed,
                         denied: _denied,
                         granted: _granted,
                         grantedAlways: _location == LocationPermissionState.always,
@@ -229,21 +245,8 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Semantics(
-                        label: s.stepOf(_index + 1, OnboardingFlow.pageCount),
-                        child: PrimaryButton(
-                          key: const ValueKey('onboarding-primary'),
-                          label: label,
-                          height: 60,
-                          glyph: last && !_asked ? null : (_index == 2 && _user == null ? null : Glyph.chevronRight),
-                          icon: _index == 2 && _user == null ? Icons.apple : null,
-                          onPressed: onPressed,
-                        ),
-                      ),
-                      if (skipLabel != null) ...[
-                        const SizedBox(height: 6),
-                        TextButton(key: const ValueKey('onboarding-skip'), onPressed: onSkip, child: Text(skipLabel)),
-                      ],
+                      Semantics(label: s.stepOf(_index + 1, OnboardingFlow.pageCount), child: primary),
+                      if (skip != null) ...[const SizedBox(height: 6), skip],
                     ],
                   ),
                 ),

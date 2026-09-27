@@ -16,6 +16,15 @@ final leaderboardProvider = FutureProvider.family<List<LeaderboardEntry>, Leader
   return api.leaderboard(query);
 }, retry: noRetry);
 
+/// Länder-Wertung for one season/month/week key (RPC `country_board`).
+/// Same failure contract as [leaderboardProvider].
+final countryBoardProvider = FutureProvider.family<List<CountryEntry>, String>((ref, seasonKey) async {
+  final api = ref.watch(socialApiProvider);
+  if (api == null) throw const SocialError(SocialErrorKind.offline);
+  ref.watch(authStateProvider);
+  return api.countryBoard(seasonKey);
+}, retry: noRetry);
+
 /// `profiles.share_leaderboards`.
 ///
 /// `null` means "not known" (no backend, signed out, or the call failed) —

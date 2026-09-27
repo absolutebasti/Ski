@@ -9,7 +9,7 @@ import '../../support/pump.dart';
 import '../../support/screen_overrides.dart';
 import 'social_fixtures.dart';
 
-const _settings = Settings(onboardingDone: true, lastResortId: 'kitzbuehel');
+const _settings = Settings(onboardingDone: true, lastResortId: 'kitzbuehel', countryCode: 'AT');
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -17,12 +17,13 @@ Future<void> _pump(
   bool signedIn = true,
   VoidCallback? onOpenAccount,
   List<DaySummary> days = const [],
+  Settings settings = _settings,
 }) async {
   await pumpApp(
     tester,
     SocialScreen(now: kNow, onOpenAccount: onOpenAccount),
     overrides: [
-      ...screenOverrides(settings: _settings, resorts: kResorts, days: days),
+      ...screenOverrides(settings: settings, resorts: kResorts, days: days),
       ...socialOverrides(api: api, user: signedIn ? kUser : null),
     ],
   );
@@ -30,7 +31,7 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('signed out: Leo, one line, sign in with Apple', (tester) async {
+  testWidgets('signed out: the Rider, one line, sign in with Apple', (tester) async {
     var opened = 0;
     await _pump(tester, api: FakeSocialApi(), signedIn: false, onOpenAccount: () => opened++);
 
@@ -84,8 +85,14 @@ void main() {
     expect(find.text('Tom Huber'), findsOneWidget);
     // 12.480 shows in the own row and once more in the pinned strip.
     expect(find.byType(OwnRankStrip), findsOneWidget);
-    expect(find.text('Du · Platz 4'), findsOneWidget);
+    expect(find.text('Du · Platz 4 von 5'), findsOneWidget, reason: 'no server total → the slice size');
     expect(find.text('12.480'), findsNWidgets(2));
+  });
+
+  testWidgets('the own row strip shows the server participant count', (tester) async {
+    final entries = [for (final e in kEntries) LeaderboardEntry(rank: e.rank, userId: e.userId, displayName: e.displayName, value: e.value, total: 250)];
+    await _pump(tester, api: FakeSocialApi(userId: 'u1', entries: entries));
+    expect(find.text('Du · Platz 4 von 250'), findsOneWidget);
   });
 
   testWidgets('no own row when the user is not in the slice', (tester) async {
@@ -139,16 +146,82 @@ void main() {
     expect(api.queries.last.wireKey, '2026-01');
   });
 
-  testWidgets('the resort row defaults to the home resort and can drop it', (tester) async {
+  testWidgets('the scope row defaults to the home resort and switches the query', (tester) async {
     final api = FakeSocialApi(userId: 'u1', entries: kEntries);
     await _pump(tester, api: api);
     expect(api.queries.last.resortId, 'kitzbuehel');
+    expect(api.queries.last.countryCode, isNull);
     expect(find.text('Saison 2025/26 · Kitzbühel'), findsOneWidget);
+    expect(find.text('Gebiet'), findsOneWidget);
+    expect(find.text('Ischgl'), findsOneWidget, reason: 'the resort selector is visible under Gebiet');
 
-    await tester.tap(find.text('Alle Gebiete'));
+    await tester.tap(find.text('Alle'));
     await tester.pumpAndSettle();
     expect(api.queries.last.resortId, isNull);
+    expect(api.queries.last.countryCode, isNull);
     expect(find.text('Saison 2025/26 · Alle Gebiete'), findsOneWidget);
+    expect(find.text('Ischgl'), findsNothing, reason: 'the resort selector hides outside Gebiet');
+
+    await tester.tap(find.text('Mein Land 🇦🇹'));
+    await tester.pumpAndSettle();
+    expect(api.queries.last.countryCode, 'AT');
+    expect(api.queries.last.resortId, isNull);
+    expect(api.queries.last.scope, LeaderboardScope.country);
+    expect(find.text('Saison 2025/26 · Österreich'), findsOneWidget);
+
+    await tester.tap(find.text('Gebiet'));
+    await tester.pumpAndSettle();
+    // The Kitzbühel query is cached by the family — no second fetch, but the
+    // caption and the resort selector are back.
+    expect(find.text('Saison 2025/26 · Kitzbühel'), findsOneWidget);
+    await tester.tap(find.text('Ischgl'));
+    await tester.pumpAndSettle();
+    expect(api.queries.last.resortId, 'ischgl');
+  });
+
+  testWidgets('without a team country the Mein Land chip is hidden', (tester) async {
+    final api = FakeSocialApi(userId: 'u1', entries: kEntries);
+    await _pump(tester, api: api, settings: const Settings(onboardingDone: true, lastResortId: 'kitzbuehel'));
+    expect(find.textContaining('Mein Land'), findsNothing);
+    expect(find.text('Gebiet'), findsOneWidget);
+    expect(find.text('Alle'), findsOneWidget);
+  });
+
+  testWidgets('the Punkte chip wires the points metric', (tester) async {
+    final api = FakeSocialApi(userId: 'u1', entries: kEntries);
+    await _pump(tester, api: api);
+
+    await tester.ensureVisible(find.text('Punkte'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Punkte'));
+    await tester.pumpAndSettle();
+
+    expect(api.queries.last.metric, SocialMetric.points);
+    expect(api.queries.last.metric.wire, 'points');
+    expect(find.text('Pkt.'), findsWidgets);
+  });
+
+  testWidgets('the Länder card asks country_board for the period key and rings the own team', (tester) async {
+    final api = FakeSocialApi(userId: 'u1', entries: kEntries, countries: kCountries);
+    await _pump(tester, api: api);
+    expect(api.countryBoardCalls.last, '2025/26');
+
+    await tester.ensureVisible(find.byType(CountryBoardCard));
+    await tester.pumpAndSettle();
+    expect(find.text('LÄNDER'), findsOneWidget);
+    expect(find.text('Team-Wertung · Saison'), findsOneWidget);
+    expect(find.text('Schweiz'), findsOneWidget);
+    expect(find.text('Österreich'), findsOneWidget);
+    expect(find.text('250 Fahrer'), findsOneWidget);
+    expect(find.text('91.234'), findsOneWidget);
+    final flags = tester.widgetList<CountryFlag>(find.byType(CountryFlag)).toList();
+    expect(flags.where((f) => f.ring).map((f) => f.countryCode), ['AT']);
+
+    await tester.ensureVisible(find.text('Woche'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Woche'));
+    await tester.pumpAndSettle();
+    expect(api.countryBoardCalls.last, '2026-W03');
   });
 
   testWidgets('duel and challenge sit above the board', (tester) async {

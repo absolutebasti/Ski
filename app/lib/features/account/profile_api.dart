@@ -28,7 +28,7 @@ class SupabaseProfileApi implements ProfileApi {
   final SupabaseClient _client;
   final Duration timeout;
 
-  static const String columns = 'id, display_name, avatar_url, home_resort_id, share_leaderboards';
+  static const String columns = 'id, display_name, avatar_url, home_resort_id, share_leaderboards, country_code';
 
   @override
   String? get userId => _client.auth.currentUser?.id;

@@ -10,6 +10,7 @@ import '../../data/resorts/resort_repository.dart';
 import '../../data/sync/auth_service.dart';
 import 'challenge_card.dart';
 import 'challenge_providers.dart';
+import 'country_card.dart';
 import 'duel_card.dart';
 import 'group_providers.dart';
 import 'leaderboard_providers.dart';
@@ -24,7 +25,11 @@ import 'social_strings.dart';
 /// Gebiets-Rangliste with podium, rows and the own row pinned at the bottom.
 ///
 /// Works signed out, opted out and without a backend: every one of those
-/// states is a Leo card with one line and one action.
+/// states is a Rider card with one line and one action.
+///
+/// Scope row (migration 0004): 'Mein Land' ranks the own team country,
+/// 'Gebiet' one resort, 'Alle' everyone; the Länder card below the board sums
+/// points per country.
 class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key, this.onOpenAccount, this.now});
 
@@ -45,6 +50,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   String? _resortId;
   bool _resortTouched = false;
 
+  /// null until the user taps a scope chip — then the default below applies.
+  LeaderboardScope? _scope;
+
   DateTime get _now => widget.now ?? DateTime.now();
 
   void _openAccount() {
@@ -58,6 +66,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
 
   void _retry(LeaderboardQuery query) {
     ref.invalidate(leaderboardProvider(query));
+    ref.invalidate(countryBoardProvider(query.wireKey));
     ref.invalidate(shareLeaderboardsProvider);
     ref.invalidate(myDuelProvider);
     ref.invalidate(openChallengesProvider);
@@ -76,10 +85,31 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     final user = auth.asData?.value;
     final userId = user?.id ?? api?.userId;
     final resorts = ref.watch(resortRepositoryProvider).asData?.value;
-    final homeResortId = ref.watch(settingsProvider).lastResortId;
-    final resortId = _resortTouched ? _resortId : homeResortId;
+    final settings = ref.watch(settingsProvider);
+    final homeResortId = settings.lastResortId;
+    final countryCode = settings.countryCode;
+    // Default scope: the home resort when known, else the own team, else all.
+    final scope = _scope ??
+        (homeResortId != null
+            ? LeaderboardScope.resort
+            : countryCode != null
+                ? LeaderboardScope.country
+                : LeaderboardScope.all);
+    final chosenResort = _resortTouched ? _resortId : homeResortId;
+    final resortId = scope == LeaderboardScope.resort ? (chosenResort ?? resorts?.all.firstOrNull?.id) : null;
     final resortName = resortId == null ? null : resorts?.byId(resortId)?.name;
-    final query = LeaderboardQuery.at(_now, period: _period, resortId: resortId, metric: _metric);
+    final query = LeaderboardQuery.at(
+      _now,
+      period: _period,
+      resortId: resortId,
+      countryCode: scope == LeaderboardScope.country ? countryCode : null,
+      metric: _metric,
+    );
+    final where = switch (scope) {
+      LeaderboardScope.country => s.countryName(countryCode),
+      LeaderboardScope.resort => resortName,
+      LeaderboardScope.all => null,
+    };
 
     final Widget body;
     if (api == null) {
@@ -88,7 +118,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
       body = auth.isLoading
           ? const SizedBox.shrink()
           : SocialStateBlock(
-              pose: 'wave',
+              pose: 'point',
               headline: s.signedOutHeadline,
               line: s.signedOutLine(resortName),
               actionLabel: s.signIn,
@@ -105,8 +135,11 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         resorts: resorts,
         period: _period,
         metric: _metric,
+        scope: scope,
+        countryCode: countryCode,
         onPeriod: (p) => setState(() => _period = p),
         onMetric: (m) => setState(() => _metric = m),
+        onScope: (sc) => setState(() => _scope = sc),
         onResort: (id) => setState(() {
           _resortTouched = true;
           _resortId = id;
@@ -128,7 +161,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
               children: [
                 ScreenHeader(
                   title: s.title,
-                  caption: s.caption(_period, query.seasonKey, resortName),
+                  caption: s.caption(_period, query.seasonKey, where),
                   padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
                 ),
                 body,
@@ -154,8 +187,11 @@ class _SignedIn extends ConsumerWidget {
     required this.resorts,
     required this.period,
     required this.metric,
+    required this.scope,
+    required this.countryCode,
     required this.onPeriod,
     required this.onMetric,
+    required this.onScope,
     required this.onResort,
     required this.onOpenAccount,
     required this.onRetry,
@@ -171,8 +207,13 @@ class _SignedIn extends ConsumerWidget {
   final ResortRepository? resorts;
   final LeaderboardPeriod period;
   final SocialMetric metric;
+  final LeaderboardScope scope;
+
+  /// `Settings.countryCode`; null hides the 'Mein Land' chip.
+  final String? countryCode;
   final ValueChanged<LeaderboardPeriod> onPeriod;
   final ValueChanged<SocialMetric> onMetric;
+  final ValueChanged<LeaderboardScope> onScope;
   final ValueChanged<String?> onResort;
   final VoidCallback onOpenAccount;
   final VoidCallback onRetry;
@@ -184,8 +225,13 @@ class _SignedIn extends ConsumerWidget {
     final optedIn = ref.watch(shareLeaderboardsProvider).asData?.value;
     final challenges = ref.watch(openChallengesProvider).asData?.value ?? const <Challenge>[];
     final challenge = currentChallenge(challenges, now);
-    final options = _resortOptions(s.allResorts);
+    final options = _resortOptions();
     final selectedResort = options.indexWhere((o) => o.$1 == resortId);
+    final scopes = [
+      if (countryCode != null) LeaderboardScope.country,
+      LeaderboardScope.resort,
+      LeaderboardScope.all,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -201,10 +247,18 @@ class _SignedIn extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         SocialChipRow(
-          labels: [for (final o in options) o.$2],
-          selected: selectedResort < 0 ? 0 : selectedResort,
-          onSelect: (i) => onResort(options[i].$1),
+          labels: [for (final sc in scopes) s.scope(sc, countryCode: countryCode)],
+          selected: scopes.indexOf(scope),
+          onSelect: (i) => onScope(scopes[i]),
         ),
+        if (scope == LeaderboardScope.resort && options.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          SocialChipRow(
+            labels: [for (final o in options) o.$2],
+            selected: selectedResort < 0 ? 0 : selectedResort,
+            onSelect: (i) => onResort(options[i].$1),
+          ),
+        ],
         const SizedBox(height: 10),
         SocialChipRow(
           labels: [for (final m in SocialMetric.leaderboard) s.metric(m)],
@@ -214,7 +268,7 @@ class _SignedIn extends ConsumerWidget {
         const SizedBox(height: 16),
         if (optedIn == false)
           SocialStateBlock(
-            pose: 'goggles-down',
+            pose: 'look',
             headline: s.optInHeadline,
             line: s.optInLine,
             actionLabel: s.optInAction,
@@ -222,16 +276,17 @@ class _SignedIn extends ConsumerWidget {
           )
         else
           _Board(query: query, userId: userId, resortName: resortName, onRetry: onRetry, onInvite: onInvite),
+        const SizedBox(height: Tokens.sectionGap),
+        CountryBoardCard(seasonKey: query.wireKey, period: period, ownCountryCode: countryCode),
       ],
     );
   }
 
-  /// 'Alle Gebiete', the home resort, then the rest of the bundled list.
-  List<(String?, String)> _resortOptions(String allLabel) {
+  /// The home resort first, then the rest of the bundled list.
+  List<(String?, String)> _resortOptions() {
     final all = resorts?.all ?? const <Resort>[];
     final home = resortId == null ? null : all.where((r) => r.id == resortId).firstOrNull;
     return <(String?, String)>[
-      (null, allLabel),
       if (home != null) (home.id, home.name),
       for (final r in all)
         if (r.id != home?.id) (r.id, r.name),
@@ -256,12 +311,12 @@ class _Board extends ConsumerWidget {
     return board.when(
       loading: () => const _BoardSkeleton(),
       error: (e, _) => e is SocialError && e.kind != SocialErrorKind.offline
-          ? SocialStateBlock(pose: 'think', headline: s.error(e.kind), line: s.offlineLine, actionLabel: s.retry, onAction: onRetry)
+          ? SocialStateBlock(pose: 'lean', headline: s.error(e.kind), line: s.offlineLine, actionLabel: s.retry, onAction: onRetry)
           : _Offline(onRetry: onRetry),
       data: (entries) {
         if (entries.isEmpty) {
           return SocialStateBlock(
-            pose: 'point',
+            pose: 'carve',
             headline: s.emptyHeadline(resortName),
             line: s.emptyLine,
             actionLabel: s.invite,
@@ -317,7 +372,7 @@ class _Offline extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = SocialStrings.of(context);
     return SocialStateBlock(
-      pose: 'think',
+      pose: 'lean',
       headline: s.offlineHeadline,
       line: s.offlineLine,
       actionLabel: s.retry,
@@ -326,8 +381,8 @@ class _Offline extends StatelessWidget {
   }
 }
 
-/// 'Du · Platz 14 · 12.480 hm' above the tab bar — only when the user is in
-/// the fetched slice.
+/// 'Du · Platz 14 von 250 · 12.480 hm' above the tab bar — only when the user
+/// is in the fetched slice.
 class _PinnedOwnRow extends ConsumerWidget {
   const _PinnedOwnRow({required this.query, required this.userId, required this.userName});
 

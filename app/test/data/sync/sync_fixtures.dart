@@ -75,6 +75,7 @@ Map<String, Object?> remoteRow({
   double maxSpeedMs = 20,
   int runCount = 10,
   String? resortName = 'Remote-Gebiet',
+  String? countryCode,
 }) =>
     {
       'id': id,
@@ -83,6 +84,8 @@ Map<String, Object?> remoteRow({
       'ended_at': _iso(startedAt + 3600000),
       'resort_id': 'kitzbuehel',
       'resort_name': resortName,
+      'country_code': countryCode,
+      'points': (dropM / 10 + 30000.0 / 100 + runCount * 5 + 50).round(),
       'season_key': seasonKeyFromMs(startedAt),
       'run_count': runCount,
       'lift_count': 9,

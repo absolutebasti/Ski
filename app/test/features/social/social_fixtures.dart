@@ -25,6 +25,13 @@ const kEntries = [
   LeaderboardEntry(rank: 5, userId: 'u6', displayName: 'Tom Huber', value: 9100),
 ];
 
+/// Three teams; Austria second so the ring is not simply on rank 1.
+const kCountries = [
+  CountryEntry(countryCode: 'CH', riders: 90, points: 120000, dropM: 500000),
+  CountryEntry(countryCode: 'AT', riders: 250, points: 91234, dropM: 812000),
+  CountryEntry(countryCode: 'DE', riders: 40, points: 30500, dropM: 200000),
+];
+
 DuelGroup duelGroup({String id = 'g1', String code = 'KMJ4F2'}) =>
     DuelGroup(id: id, code: code, name: 'Tagesduell', day: DateTime(2026, 1, 15), createdBy: 'u1');
 
