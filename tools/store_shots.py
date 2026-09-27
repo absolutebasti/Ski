@@ -84,8 +84,9 @@ def wrap(d, text, f, max_w):
 if __name__ == "__main__":
     n = 0
     for i, (name, caps) in enumerate(ORDER, 1):
-        src = os.path.join(SRC, f"{name}.png")
-        if not os.path.exists(src): print("missing", name); continue
         for lang, (h, s) in caps.items():
+            src = os.path.join(SRC, lang, f"{name}.png")           # UI captured in that language
+            if not os.path.exists(src): src = os.path.join(SRC, f"{name}.png")
+            if not os.path.exists(src): print("missing", name, lang); continue
             out = os.path.join(DST, f"{i}-{name}-{lang}.png"); compose(src, h, s, out); n += 1
     print("framed", n, "→", DST)

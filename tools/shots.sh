@@ -27,7 +27,7 @@ shot() { # name json wait
   echo "$name"
 }
 
-D='"SLOPETRACK_SKIP_ONBOARDING":"1","SLOPETRACK_DEMO":"1"'
+D='"SLOPETRACK_SKIP_ONBOARDING":"1","SLOPETRACK_DEMO":"1","SLOPETRACK_LOCALE":"'"${LOCALE:-system}"'"'
 shot heute      "{$D}" 6
 shot tage       "{$D,\"SLOPETRACK_TAB\":\"tage\"}"
 shot rangliste  "{$D,\"SLOPETRACK_TAB\":\"social\"}"
