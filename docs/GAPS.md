@@ -38,7 +38,7 @@ Evidence-based audit of the merged state (main = PR #4, 258 tests green). Owner:
 | # | Gap | Owner | Effort |
 |---|---|---|---|
 | 22 | Apple Watch: SwiftUI sources exist but the target is not in the Xcode project (watchOS SDK missing on this Mac), no complications, no standalone recording, untested | founder (SDK) + code | L |
-| 23 | Invite code in onboarding (concept page 3) — joining works only in the Rangliste tab | code | S |
+| 23 | ~~Invite code in onboarding~~ dropped with onboarding v3 (Team = country); joining a duel lives in the Rangliste tab | — | — |
 | 24 | Abuse: any signed-in user can insert fake days; only the `suspicious` thresholds (45 m/s, 15.000 hm, 80 runs) filter leaderboards; no rate limit | backend | M |
 | 25 | Live Activity / lock-screen widget, HealthKit workout on the phone, Siri/Shortcuts | code | L |
 | 26 | Lift/resort info one-liner (open lifts, snow depth) — no data source wired | code | M |
