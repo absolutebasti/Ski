@@ -26,13 +26,14 @@ CANDIDATES = {
     "render": "Stylised 3D render, matte black materials, physically based lighting, one rim light, gold visor reflection, cinematic.",
     "line":   "Minimal line art with solid black fills and a single gold accent, poster style, very few details.",
 }
+STRENGTH = float(os.environ.get("RIDER_REF_STRENGTH", "0.35"))
 POSES = {
     "hero": "Full body, standing on skis facing the viewer, both poles planted, weight relaxed.",
     "lean": "Full body, leaning on crossed ski poles, one leg crossed over the other, relaxed and cool.",
-    "carve": "Full body, mid carve turn from the side, angulated, snow spray minimal, dynamic.",
-    "celebrate": "Full body, both poles raised above the head, chest out, victory.",
-    "point": "Half body, pointing forward toward the viewer with one gloved hand, inviting.",
-    "look": "Head and shoulders, helmet and mirrored gold visor filling the frame, slight turn.",
+    "carve": "Full body seen from the side, skier in a deep carving turn, body strongly angulated toward the slope, inside hand almost touching the snow, skis on edge, dynamic motion.",
+    "celebrate": "Full body, both arms and both ski poles raised straight above the head in a V, chest out, victory pose after a race.",
+    "point": "Upper body only, the skier points a gloved index finger directly at the viewer, arm fully extended toward the camera.",
+    "look": "Extreme close-up portrait: only the black helmet and the mirrored gold goggles fill the frame, the mountain reflected in the lens, no body visible.",
 }
 
 def data_url(path):
@@ -56,7 +57,7 @@ def poses(cand):
     for key, pose in POSES.items():
         if key == "hero":
             import shutil; shutil.copy(ref, os.path.join(OUT, "hero.png")); continue
-        try: gen(f"{pose} Same character, same outfit and same style as the reference image. {BASE} {style}", os.path.join(OUT, f"{key}.png"), ref=ref)
+        try: gen(f"{pose} Same character, same outfit and same style as the reference image, but the POSE must be exactly as described, not standing straight. {BASE} {style}", os.path.join(OUT, f"{key}.png"), ref=ref, strength=STRENGTH)
         except Exception as e: print("FAIL", key, e, flush=True)
 
 def cut():
