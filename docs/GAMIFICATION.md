@@ -8,8 +8,7 @@ Per finished, non-suspicious day:
 - distance: `ski_distance_m / 100` (14,1 km → 141)
 - runs: `run_count × 5`
 - day bonus: `+50`
-- streak bonus: `+25` for every day that extends a streak ≥ 3
-Rounded per day, summed. Transparent enough to print under the level ring: "Punkte = hm ÷ 10 + km × 10 + Abfahrten × 5 + 50 pro Tag".
+Rounded per day, summed. No streak bonus (dropped 2026-09-27): the device formula is identical to the server's generated column `days.points` (migration 0004), so the points shown on the device equal the leaderboard points. Streaks are rewarded through the streak medals (§4) only. Transparent enough to print in the Medaillen sheet header: "Punkte = hm ÷ 10 + km × 10 + Abfahrten × 5 + 50 pro Tag".
 
 ## 2. Level (by lifetime ski distance)
 | Level | km | Title DE / EN |

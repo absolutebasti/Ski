@@ -15,18 +15,56 @@ class AchievementsStrings {
   // --- header ---------------------------------------------------------------
   String get level => l.pick(de: 'Level', en: 'Level');
   String get points => l.pick(de: 'Punkte', en: 'Points');
+  /// Shown in the Medaillen sheet header. Same formula as the server
+  /// (`days.points`), no streak bonus.
   String get formula => l.pick(
         de: 'Punkte = hm ÷ 10 + km × 10 + Abfahrten × 5 + 50 pro Tag',
         en: 'Points = m ÷ 10 + km × 10 + runs × 5 + 50 per day',
       );
+  /// One line under the ring: what the level is and what the points are for.
+  String get levelCaption => l.pick(de: 'Level nach km · Punkte für die Rangliste', en: 'Level by km · points for the leaderboard');
   String get openMedals => l.pick(de: 'Medaillen öffnen', en: 'Open medals');
   String levelTitle(LevelState level) => l.pick(de: level.titleDe, en: level.titleEn);
   /// 'LEVEL 4 · CARVER' (caller applies `.overline`).
   String levelLine(LevelState level) => '${this.level} ${level.index} · ${levelTitle(level)}';
   String medalCount(int earned, int total) => '$earned / $total ${l.pick(de: 'Medaillen', en: 'medals')}';
+  /// '7 / 48' for the header column.
+  String medalRatio(int earned, int total) => '$earned / $total';
+  String get serie => l.pick(de: 'Serie', en: 'Streak');
+  String get medals => l.pick(de: 'Medaillen', en: 'Medals');
   String get unitKm => 'km';
   String get unitKmh => 'km/h';
   String get unitHm => l.pick(de: 'hm', en: 'm');
+  String unitDays(int n) => n == 1 ? l.pick(de: 'Tag', en: 'day') : l.pick(de: 'Tage', en: 'days');
+  /// Undefined value in a numeral slot (docs/DESIGN.md: '–', never 0).
+  String get dash => '–';
+
+  /// 'noch 38 km bis Level 5' — caption beside the ring in the header.
+  String nextLevelShort(double remainingM, int nextIndex) => l.pick(
+        de: 'noch ${Fmt.km(remainingM, decimals: 0, locale: l.code)} km bis Level $nextIndex',
+        en: '${Fmt.km(remainingM, decimals: 0, locale: l.code)} km to level $nextIndex',
+      );
+
+  /// Screen-reader label of the ring: 'Level 2 Einsteiger, 38 % bis Level 3'.
+  String levelSemantics(LevelState level) {
+    final head = '${this.level} ${level.index} ${levelTitle(level)}';
+    final next = level.nextAtM;
+    if (next == null) return '$head, ${topLevel.toLowerCase()}';
+    final pct = (level.progress.clamp(0.0, 1.0) * 100).round();
+    return l.pick(de: '$head, $pct % bis Level ${level.index + 1}', en: '$head, $pct % to level ${level.index + 1}');
+  }
+
+  /// Screen-reader label of a tile: title, threshold, then the earned date or
+  /// 'offen, 40 %'.
+  String medalSemantics(MedalState state) {
+    final (value, unit) = threshold(state.def);
+    final thr = unit == null ? value : '$value $unit';
+    final earnedAt = state.earnedAt;
+    final tail = earnedAt != null
+        ? Fmt.dateShort(earnedAt, locale: l.code)
+        : l.pick(de: 'offen, ${(state.progress.clamp(0.0, 1.0) * 100).round()} %', en: 'open, ${(state.progress.clamp(0.0, 1.0) * 100).round()} %');
+    return '${medalTitle(state.def)}, $thr, $tail';
+  }
 
   // --- streak ---------------------------------------------------------------
   String streak(int days) => l.pick(de: '$days Tage am Stück', en: '$days days in a row');

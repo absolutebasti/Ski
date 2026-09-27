@@ -26,14 +26,12 @@ int localDayOrdinal(int ms) {
   return DateTime.utc(t.year, t.month, t.day).millisecondsSinceEpoch ~/ _msPerDay;
 }
 
-/// Points of one finished day (§1). [streakLength] is the streak as of that
-/// day; [extendsStreak] is false for a second recording on the same date.
-/// Suspicious days score 0.
-int dayPoints(DayStats s, {int streakLength = 1, bool extendsStreak = true}) {
+/// Points of one finished day (§1) — the same formula the server stores in
+/// `days.points` (migration 0004), so device and leaderboard agree. No streak
+/// bonus. Suspicious days score 0.
+int dayPoints(DayStats s) {
   if (isSuspiciousDay(s)) return 0;
-  final base = (s.dropM / 10 + s.skiDistanceM / 100).round() + s.runCount * 5 + 50;
-  final bonus = extendsStreak && streakLength >= 3 ? 25 : 0;
-  return base + bonus;
+  return (s.dropM / 10 + s.skiDistanceM / 100 + s.runCount * 5 + 50).round();
 }
 
 /// Level band for a lifetime ski distance (§2).
@@ -101,7 +99,7 @@ Achievements computeAchievements(List<DaySummary> days, {String? Function(String
       topSpeedMs = math.max(topSpeedMs, s.maxSpeedMs);
       bestDayDropM = math.max(bestDayDropM, s.dropM);
       bestDayRuns = math.max(bestDayRuns, s.runCount);
-      points += dayPoints(s, streakLength: streak, extendsStreak: extendsStreak);
+      points += dayPoints(s);
     }
     final resortId = day.resortId;
     if (resortId != null) resorts.add(resortId);

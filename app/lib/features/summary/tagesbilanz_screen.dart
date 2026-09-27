@@ -19,6 +19,7 @@ import 'count_up.dart';
 import 'mascot_line.dart';
 import 'notifications_sheet.dart';
 import 'route_block.dart';
+import 'summary_skeleton.dart';
 import 'summary_strings.dart';
 
 /// Full-screen route right after "Tag beenden" (docs/DESIGN.md §5
@@ -35,10 +36,20 @@ class TagesbilanzScreen extends ConsumerStatefulWidget {
 class _TagesbilanzScreenState extends ConsumerState<TagesbilanzScreen> with SingleTickerProviderStateMixin {
   static const int _steps = 4;
 
-  late final AnimationController _ctrl = AnimationController(vsync: this, duration: countUpTotal(_steps));
+  // Created eagerly: a lazy `late` would first run in dispose() when the day
+  // never resolved (skeleton shown, screen left) and look up TickerMode on a
+  // deactivated element.
+  late final AnimationController _ctrl;
   bool _started = false;
   bool _hapticDone = false;
   bool _askedNotifications = false;
+  bool _leaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: countUpTotal(_steps));
+  }
 
   @override
   void dispose() {
@@ -61,10 +72,11 @@ class _TagesbilanzScreenState extends ConsumerState<TagesbilanzScreen> with Sing
         _hapticDone = true;
         unawaited(HapticFeedback.heavyImpact());
       }
-      unawaited(_maybeAskNotifications());
     });
   }
 
+  /// Asked once, on 'Fertig' — never while the numbers are still counting.
+  /// Dismissing the sheet counts as 'Nicht jetzt' so it does not return daily.
   Future<void> _maybeAskNotifications() async {
     if (_askedNotifications) return;
     _askedNotifications = true;
@@ -80,7 +92,17 @@ class _TagesbilanzScreenState extends ConsumerState<TagesbilanzScreen> with Sing
     await ref.read(shareServiceProvider).shareDayCard(context, detail);
   }
 
-  void _done() => Navigator.of(context).popUntil((r) => r.isFirst);
+  Future<void> _done() async {
+    if (_leaving) return;
+    _leaving = true;
+    try {
+      await _maybeAskNotifications();
+    } finally {
+      _leaving = false;
+    }
+    if (!mounted) return;
+    Navigator.of(context).popUntil((r) => r.isFirst);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +115,7 @@ class _TagesbilanzScreenState extends ConsumerState<TagesbilanzScreen> with Sing
     return Scaffold(
       backgroundColor: c.bg,
       body: detail.when(
-        loading: () => Center(child: CircularProgressIndicator(color: c.accent)),
+        loading: () => const SummarySkeleton(),
         error: (e, _) => Column(
           children: [
             Expanded(
@@ -104,7 +126,9 @@ class _TagesbilanzScreenState extends ConsumerState<TagesbilanzScreen> with Sing
                 ),
               ),
             ),
-            BottomDock(child: PrimaryButton(label: s.done, onPressed: _done)),
+            BottomDock(
+              child: PrimaryButton(label: s.done, onPressed: _done),
+            ),
           ],
         ),
         data: (d) {
@@ -155,6 +179,7 @@ class _Body extends StatelessWidget {
   final AnimationController controller;
   final int steps;
   final List<Pb> pbs;
+
   /// Medal ids earned by this (most recent) day — docs/GAMIFICATION.md §5.
   final List<String> newMedals;
   final bool isFirstDay;
@@ -230,13 +255,14 @@ class _Body extends StatelessWidget {
                   ],
                 ),
               ),
-              if (pbs.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                _Gutter(child: RecordCard(pbs: pbs)),
-              ],
+              if (pbs.isNotEmpty) ...[const SizedBox(height: 24), _Gutter(child: RecordCard(pbs: pbs))],
               if (newMedals.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                _Gutter(child: NewMedalsBanner(ids: newMedals)),
+                // With a record on screen the medals step back to wash cards:
+                // exactly one solid champagne moment per Tagesbilanz.
+                _Gutter(
+                  child: NewMedalsBanner(ids: newMedals, solid: pbs.isEmpty),
+                ),
               ],
               const SizedBox(height: 24),
               _Gutter(child: _BestRunCard(detail: detail)),
@@ -262,9 +288,13 @@ class _Body extends StatelessWidget {
         BottomDock(
           child: Row(
             children: [
-              Expanded(child: SecondaryButton(label: s.share, glyph: Glyph.share, onPressed: onShare)),
+              Expanded(
+                child: SecondaryButton(label: s.share, glyph: Glyph.share, onPressed: onShare),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: PrimaryButton(label: s.done, onPressed: onDone)),
+              Expanded(
+                child: PrimaryButton(label: s.done, onPressed: onDone),
+              ),
             ],
           ),
         ),
@@ -277,8 +307,10 @@ class _Gutter extends StatelessWidget {
   const _Gutter({required this.child});
   final Widget child;
   @override
-  Widget build(BuildContext context) =>
-      Padding(padding: const EdgeInsets.symmetric(horizontal: Tokens.pad), child: child);
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: Tokens.pad),
+    child: child,
+  );
 }
 
 /// The one real moment: a solid champagne card with ink text (docs/DESIGN.md §5).
@@ -296,7 +328,11 @@ class RecordCard extends StatelessWidget {
     }
     return [
       for (final p in pbs)
-        switch (p) { Pb.topSpeed => s.topSpeed, Pb.biggestDay => s.biggestDay, Pb.longestRun => s.longestRun },
+        switch (p) {
+          Pb.topSpeed => s.topSpeed,
+          Pb.biggestDay => s.biggestDay,
+          Pb.longestRun => s.longestRun,
+        },
     ].join(' · ');
   }
 
@@ -304,26 +340,31 @@ class RecordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final s = SummaryStrings.of(context);
-    return Container(
+    return SizedBox(
       height: 76,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      decoration: ShapeDecoration(color: c.accent, shape: Squircle.plain(Tokens.r20)),
-      child: Row(
-        children: [
-          GlyphIcon(Glyph.crest, size: 22, color: c.onAccent),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(s.record.overline, style: AppText.label(c.onAccent.withValues(alpha: 0.72))),
-                const SizedBox(height: 5),
-                Text(lineFor(s, pbs), style: AppText.title(c.onAccent), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ],
+      width: double.infinity,
+      child: SurfaceCard(
+        fill: c.accent,
+        border: c.accent,
+        radius: Tokens.r20,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        child: Row(
+          children: [
+            GlyphIcon(Glyph.crest, size: 22, color: c.onAccent),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(s.record.overline, style: AppText.label(c.onAccent.withValues(alpha: 0.72))),
+                  const SizedBox(height: 5),
+                  Text(lineFor(s, pbs), style: AppText.title(c.onAccent), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -360,7 +401,10 @@ class _BestRunCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  s.bestRunTitle(number: run.runNumber ?? 1, clock: Fmt.timeOfDay(run.startTs, locale: l.code)),
+                  s.bestRunTitle(
+                    number: run.runNumber ?? 1,
+                    clock: Fmt.timeOfDay(run.startTs, locale: l.code),
+                  ),
                   style: AppText.title(c.textPrimary),
                 ),
                 const SizedBox(height: 14),
@@ -378,7 +422,20 @@ class _BestRunCard extends StatelessWidget {
   }
 }
 
-/// Ski · Lift · Pause with the day's total on the header line.
+/// Legend segments of the time card in whole minutes. The pause segment is
+/// the remainder (total − ski − lift − signal loss), so the legend minutes
+/// always add up to the header value.
+({int skiMs, int liftMs, int pauseMs, int signalLossMs}) timeLegendSegments(DayStats stats) {
+  int minutes(int ms) => ms ~/ 60000 * 60000;
+  final ski = minutes(stats.skiMs);
+  final lift = minutes(stats.liftMs);
+  final signal = minutes(stats.signalLossMs);
+  final rest = minutes(stats.elapsedMs) - ski - lift - signal;
+  return (skiMs: ski, liftMs: lift, pauseMs: rest < 0 ? 0 : rest, signalLossMs: signal);
+}
+
+/// Ski · Lift · Pause with the day's total on the header line ('38 min',
+/// '5h 12' — never a running clock).
 class _TimeCard extends StatelessWidget {
   const _TimeCard({required this.stats});
   final DayStats stats;
@@ -386,16 +443,17 @@ class _TimeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final l = AppLocale.of(context);
     final s = SummaryStrings.of(context);
+    final seg = timeLegendSegments(stats);
     return AppCard(
       header: s.timeOnSnow,
-      trailing: Text(Fmt.clock(stats.elapsedMs), style: AppText.numXs(c.textPrimary)),
+      trailing: Text(Fmt.durationCompact(stats.elapsedMs, locale: l.code), style: AppText.numXs(c.textPrimary)),
       child: StackedTimeBar(
-        skiMs: stats.skiMs,
-        liftMs: stats.liftMs,
-        pauseMs: stats.pauseMs,
-        signalLossMs: stats.signalLossMs,
-        otherMs: stats.otherMs,
+        skiMs: seg.skiMs,
+        liftMs: seg.liftMs,
+        pauseMs: seg.pauseMs,
+        signalLossMs: seg.signalLossMs,
         labels: s.timeBarLabels,
       ),
     );
@@ -410,14 +468,14 @@ class _MascotBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SurfaceCard(
-        padding: const EdgeInsets.fromLTRB(12, 14, 18, 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Rider(pose: celebrate ? 'celebrate' : 'lean', size: 84),
-            const SizedBox(width: 6),
-            Expanded(child: RiderLine(line)),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(12, 14, 18, 14),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Rider(pose: celebrate ? 'celebrate' : 'lean', size: 84),
+        const SizedBox(width: 6),
+        Expanded(child: RiderLine(line)),
+      ],
+    ),
+  );
 }
