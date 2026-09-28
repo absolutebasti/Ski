@@ -24,7 +24,8 @@ Applied via the Management API (`POST /v1/projects/<ref>/database/query`), so `s
 | `0008_rider_profile.sql` | applied | `rider_profile(p_user_id)` (visibility: opted-in, friends, duel partners, self) |
 | `0010_challenges.sql` | applied | `challenge_participants`, `challenge_board`, `my_challenge_history`, `private.challenge_title`, cron creates bilingual weekly challenges |
 | `0013_rangliste.sql` | applied | `add_friend_by_id`, `friends_board`/`friends_list` honour `blocks` + team country, `leaderboard` recreated, `new_friend_code` grants revoked |
-| free numbers | — | 0009 (SOC-LIVE-DUEL), 0011 (SOC-SEASONS), 0012 (BE-TZ) |
+| `0009_live_duel.sql` | applied 2026-09-28 | `live_days` (own rows + duel partners), `groups.tz`, `group_board` redefined with live rows, `my_duels`; test in `supabase/tests/0009_live_duel.sql` |
+| free numbers | — | 0011 (SOC-SEASONS), 0012 (BE-TZ) |
 
 Founder's dashboard check (SQL editor, read-only) — expected: every board RPC `definer = true`, `authenticated = true` only for the client RPCs, `anon = false` everywhere:
 ```sql
