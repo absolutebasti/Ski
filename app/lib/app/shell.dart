@@ -5,6 +5,7 @@ import '../core/settings.dart';
 import '../features/account/account.dart';
 import '../features/achievements/ui/ui.dart';
 import '../features/settings/settings.dart';
+import '../features/social/invite/invite_link_handler.dart';
 import 'demo.dart';
 import 'l10n/app_locale.dart';
 import 'router.dart';
@@ -49,6 +50,8 @@ class _RootShellState extends ConsumerState<RootShell> {
   Widget build(BuildContext context) {
     final l = AppLocale.of(context);
     final recording = ref.watch(isRecordingProvider);
+    // A joined duel or friend request wants the Rangliste tab.
+    ref.listen(ranglisteRequestProvider, (_, _) => setState(() => _index = 2));
     return Scaffold(
       extendBody: true,
       body: PageBackground(
