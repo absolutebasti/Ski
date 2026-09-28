@@ -64,8 +64,9 @@ class DayCard extends StatelessWidget {
                     size: 15,
                     items: [
                       ('${st.runCount}', s.runs),
-                      (Fmt.metres(st.dropM, locale: l.code), s.vertical),
-                      (Fmt.kmh(st.maxSpeedMs, locale: l.code), s.topSpeed),
+                      // Units as overlines: the list row's 65 pt columns cannot hold 'HÖHENMETER'.
+                      (Fmt.metres(st.dropM, locale: l.code), s.unitHm),
+                      (Fmt.kmh(st.maxSpeedMs, locale: l.code), s.unitKmh),
                     ],
                   ),
                 ],

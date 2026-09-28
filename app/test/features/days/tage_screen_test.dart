@@ -61,7 +61,7 @@ void main() {
 
     expect(find.text('SAISON 2025/26'), findsOneWidget);
     expect(find.text('18.240'), findsOneWidget); // season vertical in the hero card
-    expect(find.text('TOP-SPEED'), findsNWidgets(3)); // season footer, PB tile, day row
+    expect(find.text('TOP-SPEED'), findsNWidgets(2)); // season footer, PB tile (day rows show KM/H)
     // Short PB overlines keep the three tiles on one baseline.
     expect(find.text('BESTER TAG'), findsOneWidget);
     expect(find.text('LÄNGSTE'), findsOneWidget);
