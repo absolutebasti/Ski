@@ -19,7 +19,7 @@ void main() {
       expect(FriendCode.isValid('KMJ4F'), isFalse);
       expect(FriendCode.isValid('KMJ4F0'), isFalse, reason: '0 is not in the alphabet');
       expect(FriendCode.isValid('KMJ4FI'), isFalse, reason: 'I is not in the alphabet');
-      expect(FriendCode.link('kmj4f2'), '${InviteLinks.share(InviteKind.friend, 'KMJ4F2')}');
+      expect(FriendCode.link('kmj4f2'), 'https://slopetrack.app/f/KMJ4F2');
     });
 
     test('share text carries the code and the link in both languages', () {
