@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 
+import '../../app/brand.dart';
 import '../../app/l10n/app_locale.dart';
 import '../../core/core.dart';
 import 'social_api.dart';
@@ -17,12 +19,14 @@ class SocialStrings {
   String get title => l.pick(de: 'Rangliste', en: 'Leaderboard');
   String get allResorts => l.pick(de: 'Alle Gebiete', en: 'All resorts');
 
-  /// Scope row above the metric chips: 'Mein Land 🇦🇹' · 'Gebiet' · 'Alle'.
+  /// Scope row above the metric chips: 'Freunde' · 'Mein Land 🇦🇹' · 'Gebiet' · 'Alle'.
   String scope(LeaderboardScope sc, {String? countryCode}) => switch (sc) {
+        LeaderboardScope.friends => friends,
         LeaderboardScope.country => '${l.pick(de: 'Mein Land', en: 'My country')} ${flagEmoji(countryCode)}'.trimRight(),
         LeaderboardScope.resort => l.pick(de: 'Gebiet', en: 'Resort'),
         LeaderboardScope.all => l.pick(de: 'Alle', en: 'All'),
       };
+  String get friends => l.pick(de: 'Freunde', en: 'Friends');
   String get you => l.pick(de: 'Du', en: 'You');
   String get rank => l.pick(de: 'Platz', en: 'Rank');
   String get retry => l.pick(de: 'Erneut versuchen', en: 'Try again');
@@ -80,6 +84,33 @@ class SocialStrings {
   /// 'Du · Platz 14 von 250 · 12.480 hm'
   String ownRow(int place, SocialMetric m, double v, {int total = 0}) => '$you · ${rankOf(place, total)} · ${valueLine(m, v)}';
 
+  /// Combined accessibility label of a row: '4. Sebastian Fackelmann, 12.480 hm'.
+  String rowLabel(int place, String name, SocialMetric m, double v) => '$place. $name, ${valueLine(m, v)}';
+
+  /// 'zuletzt Sa. · 7 Tage' — the row caption under the name. Either part
+  /// may be missing; '' when both are.
+  String rowCaption(int? lastDayMs, int dayCount) {
+    final parts = <String>[
+      if (lastDayMs != null) lastSeen(lastDayMs),
+      if (dayCount > 0) days(dayCount),
+    ];
+    return parts.join(' · ');
+  }
+
+  /// 'zuletzt Sa.' / 'last Sat'.
+  String lastSeen(int ms) {
+    final day = DateFormat.E(l.code).format(DateTime.fromMillisecondsSinceEpoch(ms));
+    return l.pick(de: 'zuletzt $day', en: 'last $day');
+  }
+
+  String days(int n) => l.pick(de: n == 1 ? '1 Tag' : '$n Tage', en: n == 1 ? '1 day' : '$n days');
+
+  /// '−11.620 hm' — how far a row trails the leader; '' for the leader.
+  String delta(SocialMetric m, double d) => d <= 0 ? '' : '\u2212${valueLine(m, d)}';
+
+  String get jumpToMe => l.pick(de: 'Zu mir springen', en: 'Jump to me');
+  String get backToTop => l.pick(de: 'Nach oben', en: 'Back to top');
+
   // --- Länder-Wertung ------------------------------------------------------
   String get countries => l.pick(de: 'Länder', en: 'Countries');
   String countriesCaption(LeaderboardPeriod p) => '${l.pick(de: 'Team-Wertung', en: 'Team ranking')} · ${period(p)}';
@@ -135,7 +166,8 @@ class SocialStrings {
   String signedOutLine(String? resortName) => resortName == null
       ? l.pick(de: 'Melde dich an und fahr gegen alle anderen.', en: 'Sign in and race everyone else.')
       : l.pick(de: 'Melde dich an und hol dir Platz 1 in $resortName.', en: 'Sign in and take first place in $resortName.');
-  String get signIn => l.pick(de: 'Mit Apple anmelden', en: 'Sign in with Apple');
+  /// Opens the Konto sheet, which holds the actual Sign in with Apple button.
+  String get signIn => l.pick(de: 'Anmelden', en: 'Sign in');
 
   String get optInHeadline => l.pick(de: 'Deine Zahlen sind noch privat.', en: 'Your numbers are still private.');
   String get optInLine => l.pick(
@@ -143,6 +175,7 @@ class SocialStrings {
         en: 'Turn the leaderboard on and you show up with your name.',
       );
   String get optInAction => l.pick(de: 'Rangliste freischalten', en: 'Turn leaderboard on');
+  String get optedIn => l.pick(de: 'Rangliste ist an. Ausschalten kannst du sie im Konto.', en: 'Leaderboard is on. Switch it off under Account.');
 
   String get offlineHeadline => l.pick(de: 'Keine Verbindung.', en: 'No connection.');
   String get offlineLine => l.pick(
@@ -158,9 +191,24 @@ class SocialStrings {
       );
   String get invite => l.pick(de: 'Freunde einladen', en: 'Invite friends');
   String get inviteText => l.pick(
-        de: 'Fahr gegen mich in SlopeTrack – Abfahrten, Höhenmeter, Top-Speed.',
-        en: 'Race me in SlopeTrack – runs, vertical, top speed.',
+        de: 'Fahr gegen mich in $kAppName – Abfahrten, Höhenmeter, Top-Speed.',
+        en: 'Race me in $kAppName – runs, vertical, top speed.',
       );
+
+  /// Non-offline failure: headline + the line per kind.
+  String get errorHeadline => l.pick(de: 'Hat nicht geklappt.', en: 'That did not work.');
+  String errorLine(SocialErrorKind kind) => switch (kind) {
+        SocialErrorKind.badMetric => l.pick(de: 'Diese Wertung kennt der Server nicht. Wähl eine andere.', en: 'The server does not know this metric. Pick another one.'),
+        SocialErrorKind.notAMember => l.pick(de: 'Du bist in diesem Duell nicht mehr dabei.', en: 'You are no longer part of this duel.'),
+        SocialErrorKind.duelExpired => l.pick(de: 'Dieses Duell ist vorbei.', en: 'This duel is over.'),
+        SocialErrorKind.notSignedIn => signInFirst,
+        SocialErrorKind.rateLimited => l.pick(de: 'Zu viele Anfragen. Versuch es in ein paar Minuten noch einmal.', en: 'Too many requests. Try again in a few minutes.'),
+        _ => l.pick(de: 'Versuch es gleich noch einmal.', en: 'Try again in a moment.'),
+      };
+
+  // --- friends via rider profile ------------------------------------------
+  String get friendRequestSent => l.pick(de: 'Anfrage gesendet', en: 'Request sent');
+  String get nowFriends => l.pick(de: 'Ihr seid jetzt Freunde', en: 'You are friends now');
 
   // --- Tagesduell ----------------------------------------------------------
   String get duel => l.pick(de: 'Tagesduell', en: 'Day duel');
@@ -177,8 +225,8 @@ class SocialStrings {
   String get duelDefaultName => l.pick(de: 'Tagesduell', en: 'Day duel');
   String get duelCodeHint => l.pick(de: 'Sechs Zeichen, z. B. KMJ4F2', en: 'Six characters, e.g. KMJ4F2');
   String duelShareText(String code) => l.pick(
-        de: 'Duell in SlopeTrack: Code $code. Wer holt heute die meisten Höhenmeter?',
-        en: 'Duel in SlopeTrack: code $code. Who grabs the most vertical today?',
+        de: 'Duell in $kAppName: Code $code. Wer holt heute die meisten Höhenmeter?',
+        en: 'Duel in $kAppName: code $code. Who grabs the most vertical today?',
       );
   String get duelWaiting => l.pick(de: 'Wartet auf Mitfahrer', en: 'Waiting for riders');
   String get duelLeader => l.pick(de: 'Führt', en: 'Leading');
@@ -203,12 +251,19 @@ class SocialStrings {
   String get duelLeft => l.pick(de: 'Duell verlassen', en: 'Left the duel');
   String get challengeJoined => l.pick(de: 'Du machst mit', en: 'You joined in');
 
+  /// One-line copy per failure kind (toasts, the Länder card).
   String error(SocialErrorKind kind) => switch (kind) {
         SocialErrorKind.offline => l.pick(de: 'Keine Verbindung', en: 'No connection'),
         SocialErrorKind.notSignedIn => signInFirst,
         SocialErrorKind.codeNotFound => l.pick(de: 'Diesen Code gibt es nicht', en: 'No duel with that code'),
         SocialErrorKind.duelFull => l.pick(de: 'Das Duell ist voll', en: 'The duel is full'),
+        SocialErrorKind.duelExpired => l.pick(de: 'Dieses Duell ist vorbei.', en: 'This duel is over.'),
         SocialErrorKind.alreadyMember => duelJoined,
-        SocialErrorKind.failed => l.pick(de: 'Hat nicht geklappt', en: 'That did not work'),
+        SocialErrorKind.badMetric => l.pick(de: 'Diese Wertung kennt der Server nicht', en: 'The server does not know this metric'),
+        SocialErrorKind.notAMember => l.pick(de: 'Du bist in diesem Duell nicht dabei', en: 'You are not part of this duel'),
+        SocialErrorKind.riderNotFound => l.pick(de: 'Diesen Fahrer gibt es nicht mehr', en: 'That rider is gone'),
+        SocialErrorKind.alreadyFriends => l.pick(de: 'Ihr seid schon verbunden', en: 'You are already connected'),
+        SocialErrorKind.rateLimited => l.pick(de: 'Zu viele Anfragen. Versuch es gleich noch einmal.', en: 'Too many requests. Try again in a moment.'),
+        SocialErrorKind.failed => l.pick(de: 'Hat nicht geklappt. Versuch es gleich noch einmal.', en: 'That did not work. Try again in a moment.'),
       };
 }

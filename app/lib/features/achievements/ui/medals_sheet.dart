@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/l10n/app_locale.dart';
@@ -6,25 +9,32 @@ import '../../../app/theme/tokens.dart';
 import '../../../app/theme/typography.dart';
 import '../../../app/widgets/widgets.dart';
 import '../../../core/core.dart';
+import '../../share/share_card_data.dart';
+import '../../share/share_service.dart';
+import '../../share/share_strings.dart';
 import '../achievement_models.dart';
 import '../achievements_providers.dart';
 import '../achievements_strings.dart';
 import 'level_ring.dart';
 
-/// Medaillen sheet: 96 pt level ring + next-level line, then one section per
-/// metric with four tier tiles. Locked tiles sit at 45 % with a progress rule.
+/// Medaillen sheet: 96 pt level ring + next-level line + points formula, then
+/// one section per metric with four tier tiles. Locked tiles sit at 45 % with
+/// a progress rule.
 class MedalsSheet {
   const MedalsSheet._();
 
   /// Opacity of a locked tile (tests look for it).
   static const double lockedOpacity = 0.45;
 
-  static Future<void> show(BuildContext context) => AppSheet.show<void>(
-        context,
-        expand: true,
-        title: AchievementsStrings.of(context).medalsTitle,
-        builder: (_) => const MedalsSheetBody(),
-      );
+  static Future<void> show(BuildContext context) {
+    // Guarded: no platform channel in tests, no crash if the device refuses.
+    try {
+      unawaited(HapticFeedback.selectionClick().catchError((_) {}));
+    } catch (_) {
+      // No haptics available (tests, simulator): ignore.
+    }
+    return AppSheet.show<void>(context, expand: true, title: AchievementsStrings.of(context).medalsTitle, builder: (_) => const MedalsSheetBody());
+  }
 }
 
 /// Body of the sheet; exposed so the lead can embed it in a page if needed.
@@ -69,6 +79,11 @@ class MedalsSheetBody extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Tokens.pad),
+            child: Text(s.formula, style: AppText.caption(c.textTertiary, size: 12)),
           ),
           for (final metric in AchievementMetric.values)
             if (byMetric[metric] case final medals?) ...[
@@ -119,71 +134,121 @@ class _TileRow extends StatelessWidget {
   }
 }
 
-/// One medal: tier ring, title, threshold + unit, earned date or progress rule.
-class MedalTile extends StatelessWidget {
+/// One medal: tier ring, one-line title, threshold + unit and a 14 pt footer
+/// slot holding either the earned date or the progress rule. Fixed height so
+/// every tile in a row lines up. Long-pressing an earned tile shares the
+/// medal card (`ShareService.shareCard(ShareCardKind.medal)`).
+class MedalTile extends ConsumerWidget {
   const MedalTile({super.key, required this.state});
   final MedalState state;
 
+  /// Outer height of every tile.
+  static const double height = 132;
+
+  /// Height of the footer slot (date or progress rule).
+  static const double footerHeight = 14;
+
+  Future<void> _share(BuildContext context, WidgetRef ref) async {
+    final earnedAt = state.earnedAt;
+    if (earnedAt == null) return;
+    try {
+      unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
+    } catch (_) {
+      // No haptics available (tests, simulator): ignore.
+    }
+    try {
+      await ref.read(shareServiceProvider).shareCard(context, ShareCardKind.medal, MedalCardData(def: state.def, earnedAt: earnedAt));
+    } catch (_) {
+      // Share sheet dismissed or render failed: nothing to recover.
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = AppColors.of(context);
     final l = AppLocale.of(context);
     final s = AchievementsStrings.of(context);
     final def = state.def;
     final (value, unit) = s.threshold(def);
     final earnedAt = state.earnedAt;
-    return Opacity(
+    return Semantics(
       key: ValueKey('medal-${def.id}'),
-      opacity: state.earned ? 1 : MedalsSheet.lockedOpacity,
-      child: SurfaceCard(
-        radius: Tokens.r14,
-        padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TierRing(tier: def.tier, earned: state.earned, size: 34),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 32,
-              child: Text(
-                s.medalTitle(def),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppText.caption(c.textPrimary, size: 12),
-              ),
-            ),
-            const SizedBox(height: 6),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                mainAxisSize: MainAxisSize.min,
+      label: s.medalSemantics(state),
+      hint: state.earned ? ShareStrings.of(context).shareMedalHint : null,
+      excludeSemantics: true,
+      child: Pressable(
+        onLongPress: state.earned ? () => _share(context, ref) : null,
+        child: SizedBox(
+          height: height,
+          child: Opacity(
+            opacity: state.earned ? 1 : MedalsSheet.lockedOpacity,
+            child: SurfaceCard(
+              radius: Tokens.r14,
+              padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
+              child: Column(
                 children: [
-                  Text(value, style: AppText.numXs(c.textPrimary)),
-                  if (unit != null) ...[const SizedBox(width: 3), Text(unit, style: AppText.unit(c.textTertiary, size: 11))],
+                  TierRing(tier: def.tier, earned: state.earned, size: 34),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 16,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(s.medalTitle(def), maxLines: 1, softWrap: false, style: AppText.caption(c.textPrimary, size: 12)),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    height: 16,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(value, style: AppText.numXs(c.textPrimary)),
+                          if (unit != null) ...[const SizedBox(width: 3), Text(unit, style: AppText.unit(c.textTertiary, size: 11))],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    height: footerHeight,
+                    width: double.infinity,
+                    child: earnedAt != null
+                        ? FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              Fmt.dateShort(earnedAt, locale: l.code),
+                              maxLines: 1,
+                              softWrap: false,
+                              style: AppText.caption(c.textSecondary, size: 11),
+                            ),
+                          )
+                        : Center(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(1.5),
+                              child: SizedBox(
+                                height: 3,
+                                width: double.infinity,
+                                child: Stack(
+                                  children: [
+                                    Container(color: c.hairlineStrong),
+                                    FractionallySizedBox(
+                                      widthFactor: state.progress.clamp(0.0, 1.0),
+                                      child: Container(color: c.accent),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-            if (earnedAt != null)
-              Text(Fmt.dateShort(earnedAt, locale: l.code), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.caption(c.textSecondary, size: 11))
-            else
-              ClipRRect(
-                borderRadius: BorderRadius.circular(1.5),
-                child: SizedBox(
-                  height: 3,
-                  width: double.infinity,
-                  child: Stack(
-                    children: [
-                      Container(color: c.hairlineStrong),
-                      FractionallySizedBox(widthFactor: state.progress.clamp(0.0, 1.0), child: Container(color: c.accent)),
-                    ],
-                  ),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );

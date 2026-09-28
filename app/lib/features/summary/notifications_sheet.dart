@@ -5,7 +5,8 @@ import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import 'summary_strings.dart';
 
-/// Asked exactly once, right after the first day was saved (docs/PLAN.md §3).
+/// Asked exactly once, when the user taps 'Fertig' on the first saved day
+/// (docs/PLAN.md §3). Dismissible: swiping it away counts as 'Nicht jetzt'.
 /// Returns true when the user wants reminders; the caller does the iOS request.
 class NotificationsOptInSheet {
   const NotificationsOptInSheet._();
@@ -13,7 +14,6 @@ class NotificationsOptInSheet {
   static Future<bool> show(BuildContext context) async {
     final ok = await AppSheet.show<bool>(
       context,
-      dismissible: false,
       builder: (ctx) {
         final c = AppColors.of(ctx);
         final s = SummaryStrings.of(ctx);

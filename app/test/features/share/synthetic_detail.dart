@@ -45,7 +45,20 @@ List<TrackPoint> syntheticRawPoints({String id = 'raw', int seed = 7}) {
       pi++;
     }
     final p = pi < day.pressures.length && day.pressures[pi].ts == f.ts ? day.pressures[pi].hPa : null;
-    stored.add(TrackPoint(ts: f.ts, lat: f.lat, lon: f.lon, hAccM: f.hAccM, gpsAltM: f.gpsAltM, vAccM: f.vAccM, speedMs: f.speedMs, speedAccMs: f.speedAccMs, courseDeg: f.courseDeg, pressureHpa: p));
+    stored.add(
+      TrackPoint(
+        ts: f.ts,
+        lat: f.lat,
+        lon: f.lon,
+        hAccM: f.hAccM,
+        gpsAltM: f.gpsAltM,
+        vAccM: f.vAccM,
+        speedMs: f.speedMs,
+        speedAccMs: f.speedAccMs,
+        courseDeg: f.courseDeg,
+        pressureHpa: p,
+      ),
+    );
   }
   // three unusable fixes (accuracy far beyond the gate) so the bundle really
   // carries rejected points — that is what makes it worth a diagnosis

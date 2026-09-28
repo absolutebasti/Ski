@@ -6,10 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'app/demo.dart';
+import 'app/invite_links_source.dart';
 import 'core/settings.dart';
 import 'data/supabase/supabase_client.dart';
 import 'data/sync/sync_service.dart';
 import 'features/recording/recording_controller.dart';
+import 'features/social/invite/invite_link_handler.dart';
 import 'platform/providers.dart';
 import 'platform/watch/watch.dart';
 
@@ -24,6 +26,7 @@ Future<void> main() async {
       settingsProvider.overrideWith(() => SettingsNotifier(prefs)),
       heartRateSourceProvider.overrideWith((ref) => WatchHeartRateSource(ref.watch(watchTransportProvider))),
       if (kDebugMode && Demo.seedDays) permissionServiceProvider.overrideWithValue(DemoPermissionService()),
+      inviteLinkSourceProvider.overrideWithValue(AppLinksInviteLinkSource()),
     ],
   );
   // Apple Watch bridge follows the recording state; attach before resume so a

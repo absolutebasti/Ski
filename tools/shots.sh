@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/app"
 UDID="${UDID:-$(cat /tmp/schwung_sim_udid)}"
 BUNDLE=de.torchtechnology.slopetrack
-OUT="$ROOT/.context/shots"
+OUT="${OUT:-$ROOT/.context/shots}"
 mkdir -p "$OUT"
 
 if [[ "${1:-}" == "build" ]]; then
@@ -27,7 +27,7 @@ shot() { # name json wait
   echo "$name"
 }
 
-D='"SLOPETRACK_SKIP_ONBOARDING":"1","SLOPETRACK_DEMO":"1"'
+D='"SLOPETRACK_SKIP_ONBOARDING":"1","SLOPETRACK_DEMO":"1","SLOPETRACK_LOCALE":"'"${LOCALE:-system}"'"'
 shot heute      "{$D}" 6
 shot tage       "{$D,\"SLOPETRACK_TAB\":\"tage\"}"
 shot rangliste  "{$D,\"SLOPETRACK_TAB\":\"social\"}"

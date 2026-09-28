@@ -65,16 +65,16 @@
 		<string>en</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>SlopeTrack braucht deinen Standort, um Geschwindigkeit, Abfahrten und Höhenmeter aufzuzeichnen.</string>
+	<string>SlopeTrack zeichnet mit deinem Standort Abfahrten, Höhenmeter und Tempo auf. / SlopeTrack uses your location to record runs, vertical and speed.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Nur so läuft die Aufnahme weiter, wenn dein iPhone gesperrt in der Jacke steckt, und kann nach einem Neustart fortgesetzt werden.</string>
+	<string>Nur so läuft die Aufnahme weiter, wenn das iPhone gesperrt in der Jacke steckt. / Only this keeps recording while the iPhone is locked in your jacket.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>Tracking</key>
-		<string>Ohne genaue Position können Abfahrten nicht erkannt werden.</string>
+		<string>Ohne genaue Position werden Abfahrten nicht erkannt. / Without precise location, runs cannot be detected.</string>
 	</dict>
 	<key>NSMotionUsageDescription</key>
-	<string>Der Luftdrucksensor macht Höhenmeter auf den Meter genau.</string>
+	<string>Der Luftdrucksensor macht Höhenmeter auf den Meter genau. / The barometer makes vertical metres accurate.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
@@ -83,5 +83,20 @@
 	<false/>
 	<key>UIRequiresFullScreen</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>de.torchtechnology.slopetrack</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>slopetrack</string>
+			</array>
+		</dict>
+	</array>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 </dict>
 </plist>

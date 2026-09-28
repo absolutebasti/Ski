@@ -18,9 +18,9 @@ Evidence-based audit of the merged state (main = PR #4, 258 tests green). Owner:
 
 | # | Gap | Why | Owner | Effort | Ref |
 |---|---|---|---|---|---|
-| 8 | ~~Account deletion only deletes rows~~ **Closed 2026-09-24:** Edge Function `delete-account` (deployed) removes the auth user and track backups; client falls back to row deletion offline; the `auth.users` entry stays (`auth_service.dart` TODO). Apple 5.1.1(v) requires full deletion for apps with sign-in | Review rejection risk | backend | M | Edge Function with service role |
+| 8 | ~~Account deletion~~ **Closed 2026-09-27 (v2 deployed):** Edge Function drains tracks/<uid> and avatars/<uid> page by page, returns 500 and keeps the user on any storage error, then deletes the auth user; client falls back to row deletion offline; the `auth.users` entry stays (`auth_service.dart` TODO). Apple 5.1.1(v) requires full deletion for apps with sign-in | Review rejection risk | backend | M | Edge Function with service role |
 | 9 | Privacy policy is not hosted (URL `dropline.torchtechnology.de/privacy` planned), no support URL/email, no Impressum (mandatory in DE for an app with a provider) | App Store Connect requires privacy URL + support URL; DE law requires Impressum | founder + legal | S | docs/PRIVACY.md, docs/APP-STORE.md |
-| 10 | ~~profiles readable by everyone~~ **Closed 2026-09-24:** policy `profiles limited read` (own, opted-in, or shared duel group) display name and home resort of every user, including users who did not opt in to leaderboards | Privacy leak; GDPR minimisation | backend | S | supabase/migrations/0001 line 101 |
+| 10 | ~~profiles readable by everyone~~ **Closed 2026-09-27:** policy `profiles read own`; other riders only via security-definer RPCs (leaderboard, rider_profile, friends_*) display name and home resort of every user, including users who did not opt in to leaderboards | Privacy leak; GDPR minimisation | backend | S | supabase/migrations/0001 line 101 |
 | 11 | ~~No licences screen~~ **Closed 2026-09-24:** Einstellungen › Quellen & Lizenzen (+ package licences); map keeps its attribution overlay: OpenTopoMap + OpenSnowMap (OSM, ODbL/CC-BY-SA), Open-Meteo (CC-BY), Inter font (OFL) require visible credit; `showLicensePage` is not used | Licence breach; map providers may block tiles | code | S | features/settings |
 | 12 | VoiceOver: custom glyph buttons have almost no `Semantics` labels (2 in the whole widget library) | Accessibility rejection risk, unusable with VoiceOver | code | M | app/widgets/* |
 | 13 | ~~Text scaling unclamped~~ **Mitigated 2026-09-24:** app-wide clamp at 1.3×; per-screen checks at 1.3× still open; other screens are unverified at 1.3× Dynamic Type | Overflows for users with larger text | code + design | M | features/** |
@@ -39,7 +39,7 @@ Evidence-based audit of the merged state (main = PR #4, 258 tests green). Owner:
 |---|---|---|---|
 | 22 | Apple Watch: SwiftUI sources exist but the target is not in the Xcode project (watchOS SDK missing on this Mac), no complications, no standalone recording, untested | founder (SDK) + code | L |
 | 23 | ~~Invite code in onboarding~~ dropped with onboarding v3 (Team = country); joining a duel lives in the Rangliste tab | — | — |
-| 24 | Abuse: any signed-in user can insert fake days; only the `suspicious` thresholds (45 m/s, 15.000 hm, 80 runs) filter leaderboards; no rate limit | backend | M |
+| 24 | ~~Abuse~~ **Closed 2026-09-27:** migration 0006 check constraints, cross-field `suspicious` rules, max 3 days per local date, 200 upserts/hour (0006b); RPCs security definer with grants allow-list (0005) | — | — |
 | 25 | Live Activity / lock-screen widget, HealthKit workout on the phone, Siri/Shortcuts | code | L |
 | 26 | Lift/resort info one-liner (open lifts, snow depth) — no data source wired | code | M |
 | 27 | Imperial units, English-first copy for non-DACH markets, more languages | code | M |

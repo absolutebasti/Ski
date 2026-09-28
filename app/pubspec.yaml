@@ -1,7 +1,7 @@
 name: slopetrack
 description: "SlopeTrack — one-tap ski day tracker."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.12.2
@@ -43,6 +43,7 @@ dependencies:
   supabase_flutter: ^2.17.2
   sign_in_with_apple: ^8.2.0
   crypto: ^3.0.7
+  app_links: ^7.2.1
 
 dev_dependencies:
   flutter_test:

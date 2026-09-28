@@ -83,9 +83,7 @@ void main() {
       ];
       final d = DayDetail(
         day: const DayRecord(id: 'abc', startedAt: t0, status: DayStatus.finished, stats: DayStats.empty),
-        segments: const [
-          Segment(id: 's1', dayId: 'abc', kind: SegmentKind.run, idx: 0, runNumber: 1, startTs: t0, endTs: t0 + 3000),
-        ],
+        segments: const [Segment(id: 's1', dayId: 'abc', kind: SegmentKind.run, idx: 0, runNumber: 1, startTs: t0, endTs: t0 + 3000)],
         points: pts,
       );
       final x = XmlDocument.parse(GpxExporter.build(d));
@@ -93,7 +91,10 @@ void main() {
       expect(trkpts, hasLength(2));
       expect(trkpts.first.findAllElements('speed', namespaceUri: GpxExporter.nsGpxtpx), isEmpty);
       expect(trkpts.last.findAllElements('speed', namespaceUri: GpxExporter.nsGpxtpx).single.innerText, '12.50');
-      expect(x.rootElement.getElement('trk', namespaceUri: GpxExporter.nsGpx)!.getElement('name', namespaceUri: GpxExporter.nsGpx)!.innerText, endsWith('· Freies Gelände'));
+      expect(
+        x.rootElement.getElement('trk', namespaceUri: GpxExporter.nsGpx)!.getElement('name', namespaceUri: GpxExporter.nsGpx)!.innerText,
+        endsWith('· Freies Gelände'),
+      );
     });
 
     test('file name is slopetrack-YYYY-MM-DD-<id6>.gpx', () {

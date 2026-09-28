@@ -5,7 +5,7 @@ import 'package:slopetrack/features/settings/licences_page.dart';
 import '../../support/pump.dart';
 
 void tall(WidgetTester tester) {
-  tester.view.physicalSize = const Size(800, 2400);
+  tester.view.physicalSize = const Size(800, 3200);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 }
@@ -18,7 +18,7 @@ void main() {
     for (final src in LicencesPage.sources) {
       expect(find.text(src.$1), findsOneWidget);
     }
-    expect(find.textContaining('ODbL'), findsOneWidget);
+    expect(find.textContaining('ODbL'), findsNWidgets(2)); // OpenStreetMap + OpenSkiMap
     expect(find.textContaining('CC BY 4.0'), findsOneWidget);
     expect(find.textContaining('Open Font License'), findsOneWidget);
     expect(find.text('Alle Paket-Lizenzen'), findsOneWidget);

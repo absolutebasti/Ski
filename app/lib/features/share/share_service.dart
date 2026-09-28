@@ -12,7 +12,9 @@ import '../../data/db/providers.dart';
 import 'diagnostics_bundle.dart';
 import 'gpx_exporter.dart';
 import 'share_card.dart';
+import 'share_card_data.dart';
 import 'share_card_renderer.dart';
+import 'share_cards.dart';
 import 'share_strings.dart';
 
 /// Hands files to the platform share sheet. Injectable for tests.
@@ -22,26 +24,86 @@ Future<void> _systemShare(List<XFile> files, {String? subject, String? text}) as
   await SharePlus.instance.share(ShareParams(files: files, subject: subject, text: text));
 }
 
-/// PNG share card, GPX export and diagnostics bundle (docs/PLAN.md §9, §11).
-/// Files go to the temp directory; the share sheet copies them on.
+/// PNG share cards (day, medal, level, season, rank, duel), GPX export and
+/// diagnostics bundle (docs/PLAN.md §9, §11). Files go to the temp directory;
+/// the share sheet copies them on.
 class ShareService {
-  ShareService({required this.repo, ShareSink? sink, Future<Directory> Function()? tempDir})
-      : _sink = sink ?? _systemShare,
-        _tempDir = tempDir ?? getTemporaryDirectory;
+  ShareService({this.repo, ShareSink? sink, Future<Directory> Function()? tempDir}) : _sink = sink ?? _systemShare, _tempDir = tempDir ?? getTemporaryDirectory;
 
-  final DaysRepository repo;
+  /// Needed for [buildDiagnostics] only; the cards work without a database.
+  final DaysRepository? repo;
   final ShareSink _sink;
   final Future<Directory> Function() _tempDir;
+
+  /// Default output size of the Show-Säule cards (medal, level, season, rank,
+  /// duel): the 9:16 story. The day card keeps 4:5 for compatibility.
+  static const ShareFormat defaultCardFormat = ShareFormat.story;
+
+  /// Renders the card for [data] off-screen and shares it as PNG with a
+  /// localised one-liner. [kind] must match `data.kind`; the pair exists so
+  /// call sites read `shareCard(context, ShareCardKind.medal, data)`.
+  /// [awaitFrame] is injectable for widget tests, which pump frames by hand.
+  Future<void> shareCard(
+    BuildContext context,
+    ShareCardKind kind,
+    ShareCardData data, {
+    ShareFormat format = defaultCardFormat,
+    Future<void> Function()? awaitFrame,
+  }) async {
+    if (kind != data.kind) throw ArgumentError.value(kind, 'kind', 'does not match data.kind (${data.kind})');
+    if (kind == ShareCardKind.day) {
+      return shareDayCard(context, (data as DayCardData).detail, awaitFrame: awaitFrame, format: format);
+    }
+    final s = ShareStrings.of(context);
+    final l = AppLocale.of(context);
+    if (kind == ShareCardKind.medal || kind == ShareCardKind.level) await _precacheRider(context);
+    if (!context.mounted) return;
+    final png = await ShareCardRenderer.renderCard(context, data, awaitFrame: awaitFrame, format: format);
+    final file = await writeTemp('slopetrack-${kind.name}-${data.slug}-${format.slug}.png', png);
+    final (subject, text) = _cardText(s, l, data);
+    await _sink(
+      [XFile(file.path, mimeType: 'image/png')],
+      subject: subject,
+      text: text,
+    );
+  }
+
+  /// The mascot is an asset image; decode it before the one-frame render so
+  /// it is painted into the PNG. Failures (missing asset) are ignored.
+  Future<void> _precacheRider(BuildContext context) async {
+    try {
+      await precacheImage(const AssetImage('assets/mascot/rider-${ShareCardView.riderPose}.png'), context, onError: (_, _) {});
+    } catch (_) {
+      // No asset bundle (tests) or decode failure: the card renders without the rider.
+    }
+  }
+
+  (String, String) _cardText(ShareStrings s, AppLocale l, ShareCardData data) => switch (data) {
+    DayCardData(:final detail) => (
+      s.shareCardSubject,
+      s.summaryLine(
+        resort: detail.day.resortName ?? s.freeTerrain,
+        runCount: '${detail.day.stats.runCount}',
+        dropM: Fmt.metres(detail.day.stats.dropM, locale: l.code),
+      ),
+    ),
+    MedalCardData(:final def) => (s.medalSubject, s.medalText(l.pick(de: def.titleDe, en: def.titleEn))),
+    LevelCardData(:final level) => (
+      s.levelSubject,
+      s.levelText(level.index, l.pick(de: level.titleDe, en: level.titleEn), Fmt.km(level.distanceM, decimals: 0, locale: l.code)),
+    ),
+    SeasonCardData(:final seasonKey, :final dayCount, :final dropM) => (s.seasonSubject, s.seasonText(seasonKey, dayCount, Fmt.metres(dropM, locale: l.code))),
+    RankCardData(:final rank, :final scopeName, :final seasonKey, :final periodLabel) => (
+      s.rankSubject,
+      s.rankText(rank, scopeName, periodLabel ?? s.seasonShort(seasonKey)),
+    ),
+    final DuelCardData d => (s.duelSubject, s.duelText(d.myPlace, d.board.length)),
+  };
 
   /// Renders the card off-screen and shares it as PNG. [format] defaults to the
   /// 1080×1350 portrait variant; square and story write their own file name.
   /// [awaitFrame] is injectable for widget tests, which pump frames by hand.
-  Future<void> shareDayCard(
-    BuildContext context,
-    DayDetail detail, {
-    Future<void> Function()? awaitFrame,
-    ShareFormat format = ShareFormat.portrait,
-  }) async {
+  Future<void> shareDayCard(BuildContext context, DayDetail detail, {Future<void> Function()? awaitFrame, ShareFormat format = ShareFormat.portrait}) async {
     final s = ShareStrings.of(context);
     final l = AppLocale.of(context);
     final png = await ShareCardRenderer.render(context, detail, awaitFrame: awaitFrame, format: format);
@@ -51,7 +113,11 @@ class ShareService {
     await _sink(
       [XFile(file.path, mimeType: 'image/png')],
       subject: s.shareCardSubject,
-      text: s.summaryLine(resort: detail.day.resortName ?? s.freeTerrain, runCount: '${st.runCount}', dropM: Fmt.metres(st.dropM, locale: l.code)),
+      text: s.summaryLine(
+        resort: detail.day.resortName ?? s.freeTerrain,
+        runCount: '${st.runCount}',
+        dropM: Fmt.metres(st.dropM, locale: l.code),
+      ),
     );
   }
 
@@ -71,6 +137,8 @@ class ShareService {
 
   /// Loads day + segments + raw points and gzips them. Throws [StateError] when the day is unknown.
   Future<List<int>> buildDiagnostics(String dayId) async {
+    final repo = this.repo;
+    if (repo == null) throw StateError('ShareService has no repository');
     final day = await repo.day(dayId);
     if (day == null) throw StateError('day $dayId not found');
     final segments = await repo.segmentsOf(dayId);

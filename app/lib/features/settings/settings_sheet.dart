@@ -79,6 +79,14 @@ class _SettingsSheetBodyState extends ConsumerState<SettingsSheetBody> {
     await launchUrl(Uri.parse(kPrivacyUrl), mode: LaunchMode.externalApplication);
   }
 
+  Future<void> _openSupport() async {
+    await launchUrl(Uri.parse(kSupportUrl), mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _openImprint() async {
+    await launchUrl(Uri.parse(kImprintUrl), mode: LaunchMode.externalApplication);
+  }
+
   void _tapVersion() {
     if (ref.read(settingsProvider).diagnosticsUnlocked) return;
     _versionTaps++;
@@ -216,6 +224,19 @@ class _SettingsSheetBodyState extends ConsumerState<SettingsSheetBody> {
                 caption: s.privacyHint,
                 chevron: true,
                 onTap: _openPrivacy,
+              ),
+              SettingsRow(
+                glyph: Glyph.share,
+                label: s.support,
+                caption: s.supportHint,
+                chevron: true,
+                onTap: _openSupport,
+              ),
+              SettingsRow(
+                icon: Icons.article_outlined,
+                label: s.imprint,
+                chevron: true,
+                onTap: _openImprint,
               ),
               SettingsRow(
                 glyph: Glyph.trash,

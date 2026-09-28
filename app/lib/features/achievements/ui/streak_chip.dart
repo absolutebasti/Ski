@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/tokens.dart';
 import '../../../app/theme/typography.dart';
+import '../../../app/widgets/widgets.dart';
 import '../achievement_models.dart';
 import '../achievements_strings.dart';
 
-/// Streak chip without a flame: a small champagne tick + '3 Tage am Stück'.
+/// Streak chip without a flame: the small chevron mark + '3 Tage am Stück'.
 /// Renders nothing below 2 days. `compact` = 26 pt version for the season card.
 class StreakChip extends StatelessWidget {
   const StreakChip({super.key, required this.streak, this.compact = false});
@@ -24,7 +25,7 @@ class StreakChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: compact ? 8 : 10, height: 2, color: c.accent),
+          GlyphIcon(Glyph.chevron, size: compact ? 10 : 12, color: c.accent),
           SizedBox(width: compact ? 6 : 8),
           Text(s.streak(streak.current), style: AppText.label(c.accent, size: compact ? 11 : 12)),
         ],

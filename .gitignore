@@ -28,3 +28,4 @@ build/
 # per-environment dart-defines (keep example.json)
 env/*
 !env/example.json
+tools/data/cache/

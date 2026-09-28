@@ -12,7 +12,8 @@ class GpxExporter {
   static const String nsGpx = 'http://www.topografix.com/GPX/1/1';
   static const String nsXsi = 'http://www.w3.org/2001/XMLSchema-instance';
   static const String nsGpxtpx = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v2';
-  static const String schemaLocation = '$nsGpx http://www.topografix.com/GPX/1/1/gpx.xsd '
+  static const String schemaLocation =
+      '$nsGpx http://www.topografix.com/GPX/1/1/gpx.xsd '
       '$nsGpxtpx http://www.garmin.com/xmlschemas/TrackPointExtensionv2.xsd';
 
   /// 'slopetrack-2024-12-27-0192ab.gpx' (local date of the start, first 6 id chars).
@@ -26,55 +27,77 @@ class GpxExporter {
 
     final b = XmlBuilder();
     b.declaration(encoding: 'UTF-8');
-    b.element('gpx', nest: () {
-      b.namespaceUri(null, nsGpx);
-      b.namespaceUri('xsi', nsXsi);
-      b.namespaceUri('gpxtpx', nsGpxtpx);
-      b.attribute('version', '1.1');
-      b.attribute('creator', creator);
-      b.attribute('schemaLocation', schemaLocation, namespaceUri: nsXsi);
-      b.element('metadata', nest: () {
-        b.element('name', nest: '${isoDate(day.startedAt)} · ${day.resortName ?? resortFallback}');
-        b.element('time', nest: isoUtc(day.startedAt));
-      });
-      b.element('trk', nest: () {
-        b.element('name', nest: '${isoDate(day.startedAt)} · ${day.resortName ?? resortFallback}');
-        b.element('type', nest: 'ski');
-        var cursor = 0;
-        for (final s in tracked) {
-          // points are sorted, segments are in time order → single forward pass
-          while (cursor < pts.length && pts[cursor].ts < s.startTs) {
-            cursor++;
-          }
-          var i = cursor;
-          b.element('trkseg', nest: () {
-            for (; i < pts.length && pts[i].ts <= s.endTs; i++) {
-              _trkpt(b, pts[i]);
+    b.element(
+      'gpx',
+      nest: () {
+        b.namespaceUri(null, nsGpx);
+        b.namespaceUri('xsi', nsXsi);
+        b.namespaceUri('gpxtpx', nsGpxtpx);
+        b.attribute('version', '1.1');
+        b.attribute('creator', creator);
+        b.attribute('schemaLocation', schemaLocation, namespaceUri: nsXsi);
+        b.element(
+          'metadata',
+          nest: () {
+            b.element('name', nest: '${isoDate(day.startedAt)} · ${day.resortName ?? resortFallback}');
+            b.element('time', nest: isoUtc(day.startedAt));
+          },
+        );
+        b.element(
+          'trk',
+          nest: () {
+            b.element('name', nest: '${isoDate(day.startedAt)} · ${day.resortName ?? resortFallback}');
+            b.element('type', nest: 'ski');
+            var cursor = 0;
+            for (final s in tracked) {
+              // points are sorted, segments are in time order → single forward pass
+              while (cursor < pts.length && pts[cursor].ts < s.startTs) {
+                cursor++;
+              }
+              var i = cursor;
+              b.element(
+                'trkseg',
+                nest: () {
+                  for (; i < pts.length && pts[i].ts <= s.endTs; i++) {
+                    _trkpt(b, pts[i]);
+                  }
+                },
+              );
+              cursor = i;
             }
-          });
-          cursor = i;
-        }
-      });
-    });
+          },
+        );
+      },
+    );
     return b.buildDocument().toXmlString(pretty: true, indent: '  ');
   }
 
   static void _trkpt(XmlBuilder b, TrackPoint p) {
-    b.element('trkpt', nest: () {
-      b.attribute('lat', p.lat!.toStringAsFixed(7));
-      b.attribute('lon', p.lon!.toStringAsFixed(7));
-      final ele = p.fusedAltM ?? p.gpsAltM;
-      if (ele != null) b.element('ele', nest: ele.toStringAsFixed(1));
-      b.element('time', nest: isoUtc(p.ts));
-      final v = p.speedMs;
-      if (v != null) {
-        b.element('extensions', nest: () {
-          b.element('TrackPointExtension', namespaceUri: nsGpxtpx, nest: () {
-            b.element('speed', namespaceUri: nsGpxtpx, nest: v.toStringAsFixed(2));
-          });
-        });
-      }
-    });
+    b.element(
+      'trkpt',
+      nest: () {
+        b.attribute('lat', p.lat!.toStringAsFixed(7));
+        b.attribute('lon', p.lon!.toStringAsFixed(7));
+        final ele = p.fusedAltM ?? p.gpsAltM;
+        if (ele != null) b.element('ele', nest: ele.toStringAsFixed(1));
+        b.element('time', nest: isoUtc(p.ts));
+        final v = p.speedMs;
+        if (v != null) {
+          b.element(
+            'extensions',
+            nest: () {
+              b.element(
+                'TrackPointExtension',
+                namespaceUri: nsGpxtpx,
+                nest: () {
+                  b.element('speed', namespaceUri: nsGpxtpx, nest: v.toStringAsFixed(2));
+                },
+              );
+            },
+          );
+        }
+      },
+    );
   }
 
   /// '2024-12-27' in local time.

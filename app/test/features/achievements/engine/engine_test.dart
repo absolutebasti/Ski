@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/features/achievements/achievement_models.dart';
 import 'package:slopetrack/features/achievements/achievements_engine.dart';
 import 'package:slopetrack/features/achievements/medal_catalog.dart';
+import 'package:slopetrack/features/social/social_models.dart' show dayPointsOf;
 
 import 'fixtures.dart';
 
@@ -47,22 +48,31 @@ void main() {
       expect(a.points, 185 + 141 + 60 + 50);
     });
 
-    test('streak bonus from the third consecutive day', () {
+    test('no streak bonus: a streak day scores exactly the server formula', () {
       final days = [for (var d = 1; d <= 4; d++) day(startedAt: at(d), dropM: 1849, skiKm: 14.1, runs: 12)];
       expect(computeAchievements(days.sublist(0, 2)).points, 2 * 436);
-      expect(computeAchievements(days.sublist(0, 3)).points, 3 * 436 + 25);
-      expect(computeAchievements(days).points, 4 * 436 + 50);
+      expect(computeAchievements(days.sublist(0, 3)).points, 3 * 436);
+      expect(computeAchievements(days).points, 4 * 436);
+      final third = days[2].stats;
+      expect(dayPoints(third), dayPointsOf(dropM: third.dropM, skiDistanceM: third.skiDistanceM, runCount: third.runCount).toInt());
+      expect(dayPoints(third), 436);
     });
 
-    test('a second recording on the same date gets no streak bonus', () {
+    test('device points equal the sum of server day points over a streak', () {
+      final days = streakDays(5);
+      final server = days.fold<double>(0, (sum, d) => sum + dayPointsOf(dropM: d.stats.dropM, skiDistanceM: d.stats.skiDistanceM, runCount: d.stats.runCount));
+      expect(computeAchievements(days).points, server.toInt());
+    });
+
+    test('a second recording on the same date scores like any other day', () {
       final days = [...streakDays(3), day(startedAt: at(3, hour: 15))];
-      expect(computeAchievements(days).points, 4 * 290 + 25);
+      expect(computeAchievements(days).points, 4 * 290);
     });
 
     test('points medal earnedAt is the day crossing 1.000', () {
       final days = [for (var d = 1; d <= 3; d++) day(startedAt: at(d), dropM: 1849, skiKm: 14.1, runs: 12)];
       final a = computeAchievements(days);
-      expect(a.points, 1333);
+      expect(a.points, 1308);
       expect(medal(a, 'points-bronze').earnedAt, at(3));
       expect(medal(a, 'points-silver').earned, isFalse);
     });
@@ -226,7 +236,7 @@ void main() {
       final a = computeAchievements(days);
       expect(a.streak.current, 3);
       expect(medal(a, 'streak-bronze').earnedAt, at(3));
-      expect(a.points, 290 + 0 + 290 + 25);
+      expect(a.points, 290 + 0 + 290);
     });
   });
 

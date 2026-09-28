@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:slopetrack/app/theme/tokens.dart';
+import 'package:slopetrack/app/widgets/widgets.dart';
 import 'package:slopetrack/features/achievements/ui/ui.dart';
 
 import '../../../support/pump.dart';
@@ -28,7 +30,7 @@ void main() {
     expect(find.text('+2'), findsOneWidget);
   });
 
-  testWidgets('a single medal renders one card without +n', (tester) async {
+  testWidgets('a single medal renders one solid card without +n', (tester) async {
     await pumpApp(
       tester,
       const Scaffold(body: NewMedalsBanner(ids: ['streak-gold'])),
@@ -37,6 +39,25 @@ void main() {
     await tester.pump();
     expect(find.text('NEUE MEDAILLE'), findsOneWidget);
     expect(find.textContaining('+'), findsNothing);
+    final accent = AppColors.of(tester.element(find.byType(NewMedalsBanner))).accent;
+    expect(tester.widgetList<SurfaceCard>(find.byType(SurfaceCard)).where((w) => w.fill == accent).length, 1);
+  });
+
+  testWidgets('solid: false renders accent-wash cards and no solid champagne', (tester) async {
+    await pumpApp(
+      tester,
+      const Scaffold(body: NewMedalsBanner(ids: ['streak-gold', 'days-bronze'], solid: false)),
+      overrides: achievementsOverrides(fixtureAchievements()),
+    );
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.text('NEUE MEDAILLE'), findsNWidgets(2));
+    final accent = AppColors.of(tester.element(find.byType(NewMedalsBanner))).accent;
+    expect(tester.widgetList<SurfaceCard>(find.byType(SurfaceCard)).where((w) => w.fill == accent), isEmpty);
+    expect(find.byWidgetPredicate((w) => w is AppCard && w.tone == CardTone.accent), findsNWidgets(2));
+    for (final e in find.byType(AppCard).evaluate()) {
+      expect(tester.getSize(find.byWidget(e.widget)).height, 76);
+    }
   });
 
   testWidgets('no ids renders nothing', (tester) async {

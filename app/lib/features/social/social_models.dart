@@ -62,9 +62,10 @@ String isoWeekKey(DateTime at) {
 
 /// Who the Rangliste is ranked against — the scope row above the metric chips.
 ///
+/// `friends` = accepted friends + self ('Freunde', RPC `friends_board`),
 /// `country` = riders of the own team country ('Mein Land'), `resort` = one
 /// ski resort ('Gebiet'), `all` = everyone ('Alle').
-enum LeaderboardScope { country, resort, all }
+enum LeaderboardScope { friends, country, resort, all }
 
 /// Points of one finished day as the server computes them
 /// (`days.points`, migration 0004) — no streak bonus.
@@ -82,6 +83,8 @@ class LeaderboardQuery {
     this.countryCode,
     this.metric = SocialMetric.dropM,
     this.limit = 100,
+    this.offset = 0,
+    this.friends = false,
   });
 
   /// Season/month/week key derived from [at] in one step.
@@ -92,6 +95,8 @@ class LeaderboardQuery {
     String? countryCode,
     SocialMetric metric = SocialMetric.dropM,
     int limit = 100,
+    int offset = 0,
+    bool friends = false,
   }) =>
       LeaderboardQuery(
         seasonKey: seasons.seasonKey(at),
@@ -101,6 +106,8 @@ class LeaderboardQuery {
         countryCode: countryCode,
         metric: metric,
         limit: limit,
+        offset: offset,
+        friends: friends,
       );
 
   /// null = 'Alle Gebiete'.
@@ -109,11 +116,29 @@ class LeaderboardQuery {
   /// ISO alpha-2 filter (`p_country`); null = every country.
   final String? countryCode;
 
-  LeaderboardScope get scope => switch ((countryCode, resortId)) {
-        (String(), _) => LeaderboardScope.country,
-        (null, String()) => LeaderboardScope.resort,
+  /// True = the Freunde-Rangliste (RPC `friends_board`, which only reads
+  /// [wireKey] and [metric]; resort, country and offset are ignored).
+  final bool friends;
+
+  /// Rows to skip (`p_offset`, migration 0013) — 'Zu mir springen' loads the
+  /// window around the own rank. 0 = the top of the board with the podium.
+  final int offset;
+
+  LeaderboardScope get scope => switch ((friends, countryCode, resortId)) {
+        (true, _, _) => LeaderboardScope.friends,
+        (_, String(), _) => LeaderboardScope.country,
+        (_, null, String()) => LeaderboardScope.resort,
         _ => LeaderboardScope.all,
       };
+
+  /// Offset that centres [rank] in a window of [limit] rows, clamped ≥ 0.
+  int offsetAround(int rank) {
+    final o = rank - 1 - limit ~/ 2;
+    return o < 0 ? 0 : o;
+  }
+
+  /// True when [rank] would be inside the fetched slice.
+  bool covers(int rank) => rank > offset && rank <= offset + limit;
 
   /// Always the season the query was built in — used for the caption.
   final String seasonKey;
@@ -136,6 +161,8 @@ class LeaderboardQuery {
     LeaderboardPeriod? period,
     String? periodKey,
     SocialMetric? metric,
+    int? offset,
+    bool? friends,
   }) =>
       LeaderboardQuery(
         resortId: clearResort ? null : (resortId ?? this.resortId),
@@ -145,6 +172,8 @@ class LeaderboardQuery {
         periodKey: periodKey ?? this.periodKey,
         metric: metric ?? this.metric,
         limit: limit,
+        offset: offset ?? this.offset,
+        friends: friends ?? this.friends,
       );
 
   @override
@@ -156,13 +185,16 @@ class LeaderboardQuery {
       other.period == period &&
       other.periodKey == periodKey &&
       other.metric == metric &&
-      other.limit == limit;
+      other.limit == limit &&
+      other.offset == offset &&
+      other.friends == friends;
 
   @override
-  int get hashCode => Object.hash(resortId, countryCode, seasonKey, period, periodKey, metric, limit);
+  int get hashCode => Object.hash(resortId, countryCode, seasonKey, period, periodKey, metric, limit, offset, friends);
 
   @override
-  String toString() => 'LeaderboardQuery($resortId, $countryCode, $wireKey, ${metric.wire}, $limit)';
+  String toString() =>
+      'LeaderboardQuery(${friends ? 'friends' : '$resortId, $countryCode'}, $wireKey, ${metric.wire}, $limit${offset > 0 ? ', +$offset' : ''})';
 }
 
 /// One row of the `country_board` RPC — a team in the Länder-Wertung.
@@ -212,7 +244,9 @@ String flagEmoji(String? countryCode) {
   return String.fromCharCodes([0x1F1E6 + a - 0x41, 0x1F1E6 + b - 0x41]);
 }
 
-/// One row of the `leaderboard` RPC.
+/// One row of the `leaderboard` / `friends_board` RPCs (migration 0005 shape:
+/// rank, user_id, display_name, avatar_url, country_code, value, total,
+/// last_day, day_count).
 @immutable
 class LeaderboardEntry {
   const LeaderboardEntry({
@@ -222,6 +256,9 @@ class LeaderboardEntry {
     required this.value,
     this.avatarUrl,
     this.total = 0,
+    this.countryCode,
+    this.lastDayMs,
+    this.dayCount = 0,
   });
 
   final int rank;
@@ -235,6 +272,16 @@ class LeaderboardEntry {
   /// SI — metres, m/s or a plain count, depending on the query metric.
   final double value;
 
+  /// Team country (ISO-3166 alpha-2, upper case) or null.
+  final String? countryCode;
+
+  /// Start of the rider's most recent day in the window, epoch ms; null when
+  /// the RPC did not say (or the rider has no day, friends board).
+  final int? lastDayMs;
+
+  /// Plausible days in the window; 0 = unknown or none.
+  final int dayCount;
+
   factory LeaderboardEntry.fromJson(Map<String, Object?> j) => LeaderboardEntry(
         rank: _int(j['rank']),
         userId: (j['user_id'] as String?) ?? '',
@@ -242,6 +289,9 @@ class LeaderboardEntry {
         avatarUrl: j['avatar_url'] as String?,
         value: _double(j['value']),
         total: _int(j['total']),
+        countryCode: _country(j['country_code']),
+        lastDayMs: _ms(j['last_day']),
+        dayCount: _int(j['day_count']),
       );
 
   @override
@@ -251,13 +301,26 @@ class LeaderboardEntry {
       other.userId == userId &&
       other.displayName == displayName &&
       other.avatarUrl == avatarUrl &&
-      other.value == value;
+      other.value == value &&
+      other.countryCode == countryCode &&
+      other.lastDayMs == lastDayMs &&
+      other.dayCount == dayCount;
 
   @override
-  int get hashCode => Object.hash(rank, userId, displayName, avatarUrl, value);
+  int get hashCode => Object.hash(rank, userId, displayName, avatarUrl, value, countryCode, lastDayMs, dayCount);
 }
 
-/// Where the signed-in user stands in the fetched slice of the Rangliste.
+/// How far [entry] trails the leader of its board; 0 for the leader itself
+/// and for an empty board. Same unit as the query metric.
+double deltaToLeader(LeaderboardEntry entry, List<LeaderboardEntry> entries) {
+  if (entries.isEmpty) return 0;
+  final lead = entries.first.value;
+  final d = lead - entry.value;
+  return d < 0 ? 0 : d;
+}
+
+/// Where the signed-in user stands on the Rangliste — from the RPC `my_rank`
+/// (the whole ranked set, migration 0005) or from the fetched slice.
 @immutable
 class MyRank {
   const MyRank({required this.rank, required this.total, required this.value});
@@ -269,6 +332,9 @@ class MyRank {
 
   /// The user's own value, same unit as the query metric.
   final double value;
+
+  /// One row of `my_rank(...)`.
+  factory MyRank.fromJson(Map<String, Object?> j) => MyRank(rank: _int(j['rank']), total: _int(j['total']), value: _double(j['value']));
 
   @override
   bool operator ==(Object other) => other is MyRank && other.rank == rank && other.total == total && other.value == value;
@@ -455,3 +521,17 @@ DateTime today() {
 int _int(Object? v) => v is int ? v : (v is num ? v.round() : int.tryParse('$v') ?? 0);
 
 double _double(Object? v) => v is double ? v : (v is num ? v.toDouble() : double.tryParse('$v') ?? 0);
+
+/// Upper-case alpha-2 or null.
+String? _country(Object? v) {
+  final c = (v as String?)?.trim().toUpperCase();
+  return c == null || c.length != 2 ? null : c;
+}
+
+/// ISO timestamp (or DateTime) → epoch ms; null when absent or unparsable.
+int? _ms(Object? v) {
+  if (v == null) return null;
+  if (v is DateTime) return v.millisecondsSinceEpoch;
+  if (v is num) return v.round();
+  return DateTime.tryParse('$v')?.millisecondsSinceEpoch;
+}

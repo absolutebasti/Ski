@@ -31,7 +31,11 @@ enum ShareFormat {
   Size get size => Size(width, height);
 
   /// File-name suffix so the three variants never overwrite each other.
-  String get slug => switch (this) { ShareFormat.portrait => '4x5', ShareFormat.square => '1x1', ShareFormat.story => '9x16' };
+  String get slug => switch (this) {
+    ShareFormat.portrait => '4x5',
+    ShareFormat.square => '1x1',
+    ShareFormat.story => '9x16',
+  };
 }
 
 /// The share card (docs/DESIGN.md §5): always dark, independent of the app
@@ -53,10 +57,10 @@ class ShareCard extends StatelessWidget {
   static const double routeStory = 900;
 
   static double routeHeight(ShareFormat f) => switch (f) {
-        ShareFormat.portrait => routePortrait,
-        ShareFormat.square => routeSquare,
-        ShareFormat.story => routeStory,
-      };
+    ShareFormat.portrait => routePortrait,
+    ShareFormat.square => routeSquare,
+    ShareFormat.story => routeStory,
+  };
 
   final DayDetail detail;
   final ShareFormat format;
@@ -73,7 +77,12 @@ class ShareCard extends StatelessWidget {
     final story = format == ShareFormat.story;
 
     final head = <Widget>[
-      Text(Fmt.dateLong(day.startedAt, locale: l.code), style: AppText.headline(c.textPrimary, size: 44), maxLines: 1, overflow: TextOverflow.ellipsis),
+      Text(
+        Fmt.dateLong(day.startedAt, locale: l.code),
+        style: AppText.headline(c.textPrimary, size: 44),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       const SizedBox(height: 8),
       Text(day.resortName ?? s.freeTerrain, style: AppText.bodyText(c.textSecondary, size: 30), maxLines: 1, overflow: TextOverflow.ellipsis),
     ];
@@ -81,14 +90,7 @@ class ShareCard extends StatelessWidget {
     final route = SizedBox(
       height: routeHeight(format),
       child: CustomPaint(
-        painter: RoutePainter(
-          points: detail.points,
-          segments: detail.segments,
-          run: c.run,
-          lift: c.liftGrey,
-          startDot: 14,
-          inset: 40,
-        ),
+        painter: RoutePainter(points: detail.points, segments: detail.segments, run: c.run, lift: c.liftGrey, startDot: 14, inset: 40),
         child: const SizedBox.expand(),
       ),
     );
@@ -96,16 +98,42 @@ class ShareCard extends StatelessWidget {
     final hero = Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Expanded(flex: 5, child: _Hero(value: Fmt.metres(st.dropM, locale: l.code), unit: s.unitM, label: s.vertical, size: 120)),
-        Expanded(flex: 2, child: _Hero(value: '${st.runCount}', label: s.runs, size: 104)),
-        Expanded(flex: 3, child: _Hero(value: Fmt.kmh(st.maxSpeedMs, locale: l.code), unit: s.unitKmh, label: s.topSpeed, size: 104)),
+        Expanded(
+          flex: 5,
+          child: _Hero(
+            value: Fmt.metres(st.dropM, locale: l.code),
+            unit: s.unitM,
+            label: s.vertical,
+            size: 120,
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: _Hero(value: '${st.runCount}', label: s.runs, size: 104),
+        ),
+        Expanded(
+          flex: 3,
+          child: _Hero(
+            value: Fmt.kmh(st.maxSpeedMs, locale: l.code),
+            unit: s.unitKmh,
+            label: s.topSpeed,
+            size: 104,
+          ),
+        ),
       ],
     );
 
     final stats = Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Expanded(flex: 3, child: _Stat(value: Fmt.km(st.skiDistanceM, locale: l.code), unit: s.unitKm, label: s.skiKm)),
+        Expanded(
+          flex: 3,
+          child: _Stat(
+            value: Fmt.km(st.skiDistanceM, locale: l.code),
+            unit: s.unitKm,
+            label: s.skiKm,
+          ),
+        ),
         Expanded(
           flex: 4,
           child: _Stat(
@@ -117,7 +145,10 @@ class ShareCard extends StatelessWidget {
         const Expanded(
           flex: 4,
           // scaleDown so a long wordmark never overflows the column
-          child: Align(alignment: Alignment.bottomRight, child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.bottomRight, child: Wordmark())),
+          child: Align(
+            alignment: Alignment.bottomRight,
+            child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.bottomRight, child: Wordmark()),
+          ),
         ),
       ],
     );
@@ -135,7 +166,10 @@ class ShareCard extends StatelessWidget {
         stats
       else ...[
         if (story) const Spacer(),
-        const Align(alignment: Alignment.bottomRight, child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.bottomRight, child: Wordmark())),
+        const Align(
+          alignment: Alignment.bottomRight,
+          child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.bottomRight, child: Wordmark()),
+        ),
       ],
     ];
 
@@ -204,7 +238,12 @@ class _Hero extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: AppText.numXxl(c.accent).copyWith(fontSize: size), maxLines: 1))),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(value, style: AppText.numXxl(c.accent).copyWith(fontSize: size), maxLines: 1),
+              ),
+            ),
             if (unit != null) ...[const SizedBox(width: 10), Text(unit!, style: AppText.unit(c.textSecondary, size: 34))],
           ],
         ),
@@ -234,7 +273,12 @@ class _Stat extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: AppText.numXxl(c.textPrimary).copyWith(fontSize: 56), maxLines: 1))),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(value, style: AppText.numXxl(c.textPrimary).copyWith(fontSize: 56), maxLines: 1),
+              ),
+            ),
             if (unit != null) ...[const SizedBox(width: 8), Text(unit!, style: AppText.unit(c.textSecondary, size: 22))],
           ],
         ),
@@ -247,8 +291,7 @@ class _Stat extends StatelessWidget {
 class _CardHairline extends StatelessWidget {
   const _CardHairline();
   @override
-  Widget build(BuildContext context) =>
-      SizedBox(height: 0.5, child: ColoredBox(color: Colors.white.withValues(alpha: 0.10)));
+  Widget build(BuildContext context) => SizedBox(height: 0.5, child: ColoredBox(color: Colors.white.withValues(alpha: 0.10)));
 }
 
 /// Glyph + `kAppName`, bottom-right of the card (chevron 56, wordmark 46).
@@ -263,7 +306,10 @@ class Wordmark extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        CustomPaint(size: Size.square(size), painter: const GlyphPainter(color: Tokens.textPrimary)),
+        CustomPaint(
+          size: Size.square(size),
+          painter: const GlyphPainter(color: Tokens.textPrimary),
+        ),
         SizedBox(width: size * 0.25),
         Text(kAppName, style: AppText.headline(c.textPrimary, size: size * 46 / 56)),
       ],

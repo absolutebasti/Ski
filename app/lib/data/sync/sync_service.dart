@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 import '../../core/settings.dart';
 import '../../features/account/profile_service.dart';
@@ -218,6 +219,15 @@ class SyncService {
       } on SyncOffline catch (e) {
         await _emit(SyncState.offline, message: e.message);
         return false;
+      } on PostgrestException catch (e) {
+        // Server throttles (migration 0006): rate_limited (P0005) and
+        // too_many_days (P0004) are 'try again later', never a failed attempt.
+        if (e.code == 'P0005' || e.code == 'P0004') {
+          await _emit(SyncState.offline, message: e.message);
+          return false;
+        }
+        await repo.bumpAttempt(entry.id, '$e');
+        await sleep(backoffFor(entry.attempts));
       } catch (e) {
         await repo.bumpAttempt(entry.id, '$e');
         await sleep(backoffFor(entry.attempts));

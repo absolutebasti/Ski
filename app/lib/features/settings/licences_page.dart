@@ -16,6 +16,7 @@ class LicencesPage extends StatelessWidget {
     ('OpenStreetMap', '© OpenStreetMap contributors · ODbL 1.0', 'openstreetmap.org/copyright'),
     ('OpenTopoMap', 'Kartendarstellung · CC BY-SA 3.0', 'opentopomap.org'),
     ('OpenSnowMap', 'Pisten und Lifte · CC BY-SA 2.0', 'opensnowmap.org'),
+    ('OpenSkiMap', 'Skigebiete (OpenStreetMap-Daten) · ODbL 1.0', 'openskimap.org'),
     ('Open-Meteo', 'Wetterdaten · CC BY 4.0', 'open-meteo.com'),
     ('Inter', 'Schrift von Rasmus Andersson · SIL Open Font License 1.1', 'rsms.me/inter'),
     ('Flutter', 'Google · BSD-3-Clause', 'flutter.dev'),

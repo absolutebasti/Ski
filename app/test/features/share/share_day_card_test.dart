@@ -33,10 +33,15 @@ void main() {
 
     final detail = syntheticDetail();
     late BuildContext ctx;
-    await pumpApp(tester, Builder(builder: (c) {
-      ctx = c;
-      return const SizedBox.shrink();
-    }));
+    await pumpApp(
+      tester,
+      Builder(
+        builder: (c) {
+          ctx = c;
+          return const SizedBox.shrink();
+        },
+      ),
+    );
 
     await tester.runAsync(() async {
       await service.shareDayCard(ctx, detail, awaitFrame: () => tester.pump());

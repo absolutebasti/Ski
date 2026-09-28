@@ -39,6 +39,35 @@ Segment _run({required String id, required int number, required double dropM, re
       avgGradientPct: 14,
     );
 
+/// The day's stats with a different time split (for the ZEIT card).
+/// Defaults: 38 min 12 s total — ski 20:30, lift 12:50, pause 4:52.
+DayStats timeStats({
+  int elapsedMs = 38 * 60000 + 12000,
+  int skiMs = 20 * 60000 + 30000,
+  int liftMs = 12 * 60000 + 50000,
+  int pauseMs = 4 * 60000 + 52000,
+  int signalLossMs = 0,
+}) =>
+    DayStats(
+      elapsedMs: elapsedMs,
+      skiMs: skiMs,
+      liftMs: liftMs,
+      pauseMs: pauseMs,
+      signalLossMs: signalLossMs,
+      runCount: 7,
+      liftCount: 7,
+      dropM: 1804,
+      ascentM: 1790,
+      skiDistanceM: 24500,
+      liftDistanceM: 21000,
+      totalDistanceM: 45500,
+      maxSpeedMs: 17,
+      avgSkiSpeedMs: 9,
+      maxAltM: 1950,
+      minAltM: 800,
+      longestRunSegmentId: 'seg-3',
+    );
+
 /// A one-hour synthetic track around Kitzbühel so the route block has
 /// something to draw. Points inside the run segments become champagne strokes,
 /// everything between them a dashed lift.

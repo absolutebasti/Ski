@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../core/settings.dart';
 import 'brand.dart';
 import 'l10n/app_locale.dart';
+import '../features/social/invite/invite_listener.dart';
 import 'router.dart';
 import 'shell.dart';
 import 'theme/theme.dart';
@@ -48,7 +49,9 @@ class _SlopeTrackAppState extends ConsumerState<SlopeTrackApp> {
       // Dynamic Type safety net: numerals and docks are laid out for ≤ 1.3×.
       builder: (context, child) => MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3, child: child ?? const SizedBox.shrink()),
       onGenerateRoute: AppRouter.onGenerateRoute,
-      home: _onboardingDone ? const RootShell() : AppRouter.onboarding(),
+      // Invite links (duel / friend codes) are handled inside the Navigator so
+      // the toast has an Overlay; the onboarding keeps a pending link for later.
+      home: InviteListener(child: _onboardingDone ? const RootShell() : AppRouter.onboarding()),
     );
   }
 }

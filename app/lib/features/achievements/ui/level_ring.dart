@@ -5,23 +5,32 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../app/theme/typography.dart';
 import '../achievement_models.dart';
+import '../achievements_strings.dart';
 
-/// Level ring: champagne arc = `level.progress` on a dim track, ink centre
-/// with the level index. 64 pt in the header, 96 pt in the medals sheet.
-/// The top level draws a full ring.
+/// Level ring: champagne arc = `level.progress` on a dim track, a disc in the
+/// centre with the level index. 64 pt in the header, 96 pt in the medals
+/// sheet. The top level draws a full ring.
+///
+/// The disc is ink in the dark theme and the raised surface in the light one,
+/// so the numeral (textPrimary) is always visible on it.
 class LevelRing extends StatelessWidget {
   const LevelRing({super.key, required this.level, this.size = 64});
   final LevelState level;
   final double size;
 
+  /// Disc colour behind the numeral (exposed for tests).
+  static Color discColor(AppColors c) => c.isDark ? c.ink : c.surfaceRaised;
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final s = AchievementsStrings.of(context);
     final stroke = size / 16;
     final progress = level.nextAtM == null ? 1.0 : level.progress.clamp(0.0, 1.0);
     final inner = size - stroke * 2 - 6;
     return Semantics(
-      label: '${level.index}',
+      label: s.levelSemantics(level),
+      excludeSemantics: true,
       child: SizedBox(
         width: size,
         height: size,
@@ -31,7 +40,7 @@ class LevelRing extends StatelessWidget {
             child: Container(
               width: inner,
               height: inner,
-              decoration: BoxDecoration(color: c.ink, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: discColor(c), shape: BoxShape.circle),
               alignment: Alignment.center,
               padding: EdgeInsets.all(inner * 0.16),
               child: FittedBox(

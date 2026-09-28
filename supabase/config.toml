@@ -1,0 +1,63 @@
+# Supabase CLI config for SlopeTrack (project ref svzmmpzevmpodcelzvit, EU).
+# Only settings that differ from the CLI defaults are listed; `supabase start`
+# fills in the rest. Local stack: tools/supabase-test.sh.
+project_id = "slopetrack"
+
+[api]
+enabled = true
+port = 54321
+# `private` is deliberately NOT exposed: policy helpers and the shared board
+# CTE live there and must never be reachable via /rpc (migration 0005).
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.migrations]
+enabled = true
+
+[db.seed]
+enabled = false
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = false
+
+[realtime]
+enabled = false
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.external.apple]
+enabled = false
+client_id = ""
+secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
+
+# Edge Functions: the caller's JWT is verified at the gateway before the
+# function runs (delete-account additionally resolves the user itself).
+[functions.delete-account]
+enabled = true
+verify_jwt = true
+import_map = ""
+entrypoint = "./functions/delete-account/index.ts"

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
@@ -29,7 +32,7 @@ class SocialSegmentTabs extends StatelessWidget {
                   selected: i == index,
                   button: true,
                   child: Pressable(
-                    onTap: () => onSelect(i),
+                    onTap: () => selectWithHaptic(() => onSelect(i)),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -109,37 +112,59 @@ class SocialChipRow extends StatelessWidget {
         padding: EdgeInsets.zero,
         itemCount: labels.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, i) => SocialFilterChip(label: labels[i], selected: i == selected, onTap: () => onSelect(i)),
+        itemBuilder: (context, i) => SocialFilterChip(label: labels[i], selected: i == selected, onTap: () => selectWithHaptic(() => onSelect(i))),
       ),
     );
   }
 }
 
-/// Avatar: initials in a circle, champagne ring for the leader.
+/// selectionClick before a segment / chip selection (docs/DESIGN.md motion).
+void selectWithHaptic(VoidCallback select) {
+  unawaited(HapticFeedback.selectionClick());
+  select();
+}
+
+/// Avatar: the rider's picture when [avatarUrl] loads, initials otherwise;
+/// champagne ring for the leader.
 class AvatarCircle extends StatelessWidget {
-  const AvatarCircle({super.key, required this.name, this.size = 36, this.ring = false, this.accent = false});
+  const AvatarCircle({super.key, required this.name, this.size = 36, this.ring = false, this.accent = false, this.avatarUrl});
 
   final String name;
   final double size;
   final bool ring;
   final bool accent;
 
+  /// https URL of the picture; null or a failed load → initials.
+  final String? avatarUrl;
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final initials = Text(
+      initialsOf(name),
+      style: AppText.label(accent ? c.accent : c.textSecondary, size: size * 0.34),
+    );
+    final url = avatarUrl;
     return Container(
       width: size,
       height: size,
       alignment: Alignment.center,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: accent ? Color.alphaBlend(c.accentWash, c.surfaceRaised) : c.surfaceRaised,
         shape: BoxShape.circle,
         border: Border.all(color: ring ? c.accent : c.hairline, width: ring ? 1.5 : c.hairlineWidth),
       ),
-      child: Text(
-        initialsOf(name),
-        style: AppText.label(accent ? c.accent : c.textSecondary, size: size * 0.34),
-      ),
+      child: url == null || url.isEmpty
+          ? initials
+          : Image.network(
+              url,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.medium,
+              errorBuilder: (_, _, _) => initials,
+            ),
     );
   }
 }

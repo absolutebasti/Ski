@@ -19,6 +19,7 @@ import '../tracking/tracking.dart';
 ///   2. `--dart-define=SLOPETRACK_SKIP_ONBOARDING=1` etc. at build time
 ///   SLOPETRACK_ROUTE: a named route pushed after the first frame, or `settings` / `account` / `medals` for the sheets.
 ///   SLOPETRACK_APPEARANCE: system | light | dark (screenshots of the light theme).
+///   SLOPETRACK_LOCALE: de | en | system (store screenshots per language).
 class Demo {
   const Demo._();
 
@@ -37,6 +38,7 @@ class Demo {
       'SLOPETRACK_TAB' => const String.fromEnvironment('SLOPETRACK_TAB'),
       'SLOPETRACK_ROUTE' => const String.fromEnvironment('SLOPETRACK_ROUTE'),
       'SLOPETRACK_APPEARANCE' => const String.fromEnvironment('SLOPETRACK_APPEARANCE'),
+      'SLOPETRACK_LOCALE' => const String.fromEnvironment('SLOPETRACK_LOCALE'),
       _ => '',
     };
     return defined.isEmpty ? null : defined;
@@ -71,6 +73,10 @@ class Demo {
     if (skipOnboarding) await container.read(settingsProvider.notifier).setOnboardingDone();
     final appearance = _env('SLOPETRACK_APPEARANCE');
     if (appearance != null) await container.read(settingsProvider.notifier).setAppearance(appearance);
+    final locale = _env('SLOPETRACK_LOCALE');
+    if (locale != null) await container.read(settingsProvider.notifier).setLocale(locale);
+    // Demo days are 'seen': no notification opt-in sheet over the Tagesbilanz screenshot.
+    if (seedDays) await container.read(settingsProvider.notifier).update((s) => s.copyWith(notificationsAsked: true));
     if (seedDays) await _seed(container);
   }
 

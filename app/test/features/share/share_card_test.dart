@@ -97,10 +97,15 @@ void main() {
 
   testWidgets('ShareCardRenderer produces a 1080×1350 PNG from an off-screen overlay entry', (tester) async {
     late BuildContext ctx;
-    await pumpApp(tester, Builder(builder: (c) {
-      ctx = c;
-      return const SizedBox.shrink();
-    }));
+    await pumpApp(
+      tester,
+      Builder(
+        builder: (c) {
+          ctx = c;
+          return const SizedBox.shrink();
+        },
+      ),
+    );
     final png = await tester.runAsync(() => ShareCardRenderer.render(ctx, detail, awaitFrame: () => tester.pump()));
     expect(png, isNotNull);
     // PNG signature
@@ -124,13 +129,16 @@ void main() {
 
   testWidgets('ShareCardRenderer honours the requested format', (tester) async {
     late BuildContext ctx;
-    await pumpApp(tester, Builder(builder: (c) {
-      ctx = c;
-      return const SizedBox.shrink();
-    }));
-    final png = await tester.runAsync(
-      () => ShareCardRenderer.render(ctx, detail, awaitFrame: () => tester.pump(), format: ShareFormat.story),
+    await pumpApp(
+      tester,
+      Builder(
+        builder: (c) {
+          ctx = c;
+          return const SizedBox.shrink();
+        },
+      ),
     );
+    final png = await tester.runAsync(() => ShareCardRenderer.render(ctx, detail, awaitFrame: () => tester.pump(), format: ShareFormat.story));
     int be(int o) => (png![o] << 24) | (png[o + 1] << 16) | (png[o + 2] << 8) | png[o + 3];
     expect(be(16), 1080);
     expect(be(20), 1920);

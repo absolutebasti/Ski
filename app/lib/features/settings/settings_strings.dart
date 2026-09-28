@@ -56,6 +56,9 @@ class SettingsStrings {
   String get privacy => l.pick(de: 'Datenschutz', en: 'Privacy');
   String get privacyHint => l.pick(de: 'Lokal zuerst. Backup und Ranglisten nur mit Konto.', en: 'Local first. Backup and leaderboards only with an account.');
   String get version => l.pick(de: 'Version', en: 'Version');
+  String get support => l.pick(de: 'Support', en: 'Support');
+  String get supportHint => l.pick(de: 'Hilfe, Fehler melden, Kontakt', en: 'Help, report a problem, contact');
+  String get imprint => l.pick(de: 'Impressum & Nutzungsbedingungen', en: 'Imprint & terms');
   String get licences => l.pick(de: 'Quellen & Lizenzen', en: 'Sources & licences');
   String get licencesHint => l.pick(de: 'Karten, Wetter, Schrift, Pakete', en: 'Maps, weather, font, packages');
   String get licencesIntro => l.pick(

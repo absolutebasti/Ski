@@ -1,6 +1,8 @@
+import 'dart:async';
+
+import 'package:flutter/cupertino.dart' show CupertinoSliverRefreshControl;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/tokens.dart';
 import '../../app/widgets/widgets.dart';
@@ -8,11 +10,15 @@ import '../../core/core.dart';
 import '../../core/settings.dart';
 import '../../data/resorts/resort_repository.dart';
 import '../../data/sync/auth_service.dart';
+import '../../data/sync/sync_service.dart';
+import '../account/account_providers.dart';
 import '../achievements/ui/ui.dart';
 import 'challenge_card.dart';
 import 'challenge_providers.dart';
 import 'country_card.dart';
 import 'duel_card.dart';
+import 'friends/friends_sheet.dart';
+import 'friends/friends_strings.dart';
 import 'group_providers.dart';
 import 'leaderboard_providers.dart';
 import 'leaderboard_view.dart';
@@ -23,14 +29,18 @@ import 'social_strings.dart';
 
 /// Tab 3 — the competition core (docs/DESIGN.md §5 "Rangliste",
 /// docs/ONBOARDING-SOCIAL.md): Tagesduell, Wochen-Challenge and the
-/// Gebiets-Rangliste with podium, rows and the own row pinned at the bottom.
+/// Rangliste with podium, rows and the own row pinned at the bottom.
 ///
 /// Works signed out, opted out and without a backend: every one of those
 /// states is a Rider card with one line and one action.
 ///
-/// Scope row (migration 0004): 'Mein Land' ranks the own team country,
-/// 'Gebiet' one resort, 'Alle' everyone; the Länder card below the board sums
-/// points per country.
+/// Scope row: 'Freunde' ranks accepted friends + self (RPC `friends_board`),
+/// 'Mein Land' the own team country, 'Gebiet' one resort, 'Alle' everyone;
+/// the Länder card below the board sums points per country.
+///
+/// Refresh: every board provider is dropped when a sync finished pushing
+/// days, when the tab is re-entered after [staleAfter], on pull-to-refresh
+/// and on 'Erneut versuchen'.
 class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key, this.onOpenAccount, this.now});
 
@@ -41,11 +51,14 @@ class SocialScreen extends ConsumerStatefulWidget {
   /// Injectable clock — the season/month/week key and 'Noch 3 Tage'.
   final DateTime? now;
 
+  /// Re-entering the tab after this long refetches the boards.
+  static const Duration staleAfter = Duration(minutes: 5);
+
   @override
   ConsumerState<SocialScreen> createState() => _SocialScreenState();
 }
 
-class _SocialScreenState extends ConsumerState<SocialScreen> {
+class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBindingObserver {
   LeaderboardPeriod _period = LeaderboardPeriod.season;
   SocialMetric _metric = SocialMetric.dropM;
   String? _resortId;
@@ -54,7 +67,73 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   /// null until the user taps a scope chip — then the default below applies.
   LeaderboardScope? _scope;
 
+  /// Rows skipped at the top of the board ('Zu mir springen'); 0 = podium view.
+  int _offset = 0;
+
+  /// Wall-clock ms of the last refresh, for the tab re-entry rule.
+  int? _lastRefreshMs;
+
   DateTime get _now => widget.now ?? DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _lastRefreshMs = DateTime.now().millisecondsSinceEpoch;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _refreshIfStale();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshIfStale();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Visible again (IndexedStack tab or foreground) after [SocialScreen.staleAfter].
+  void _refreshIfStale() {
+    if (!TickerMode.valuesOf(context).enabled) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final last = _lastRefreshMs;
+    if (last != null && now - last > SocialScreen.staleAfter.inMilliseconds) _refresh();
+  }
+
+  void _refresh() {
+    _lastRefreshMs = DateTime.now().millisecondsSinceEpoch;
+    refreshBoards(ref);
+    ref.invalidate(myDuelProvider);
+    ref.invalidate(openChallengesProvider);
+  }
+
+  /// Pull-to-refresh: drop the caches and wait for the board to come back.
+  Future<void> _pullRefresh(LeaderboardQuery query) async {
+    _refresh();
+    try {
+      await ref.read(boardProvider(query).future);
+    } catch (_) {
+      // The board renders the failure itself.
+    }
+  }
+
+  /// A push finished (outbox drained) or a sync run ended — the server has
+  /// new days, so the boards are stale.
+  void _onSync(AsyncValue<SyncStatus>? previous, AsyncValue<SyncStatus> next) {
+    final prev = previous?.asData?.value;
+    final cur = next.asData?.value;
+    if (prev == null || cur == null) return;
+    final drained = prev.pending > 0 && cur.pending == 0 && cur.state != SyncState.syncing;
+    final finished = prev.state == SyncState.syncing && cur.state == SyncState.idle;
+    if (drained || finished) _refresh();
+  }
 
   void _openAccount() {
     final open = widget.onOpenAccount;
@@ -65,18 +144,17 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     showToast(context, SocialStrings.of(context).signInFirst);
   }
 
-  void _retry(LeaderboardQuery query) {
-    ref.invalidate(leaderboardProvider(query));
-    ref.invalidate(countryBoardProvider(query.wireKey));
-    ref.invalidate(shareLeaderboardsProvider);
-    ref.invalidate(myDuelProvider);
-    ref.invalidate(openChallengesProvider);
+  Future<void> _optIn(String? userId) async {
+    await optIntoLeaderboards(ref, userId: userId);
+    if (mounted) showToast(context, SocialStrings.of(context).optedIn);
   }
 
-  Future<void> _invite() async {
-    final s = SocialStrings.of(context);
-    await SharePlus.instance.share(ShareParams(text: s.inviteText, subject: s.title));
-  }
+  void _invite() => unawaited(FriendsSheet.show(context));
+
+  void _select(VoidCallback change) => setState(() {
+        _offset = 0;
+        change();
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -105,19 +183,25 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
       resortId: resortId,
       countryCode: scope == LeaderboardScope.country ? countryCode : null,
       metric: _metric,
+      friends: scope == LeaderboardScope.friends,
+      offset: scope == LeaderboardScope.friends ? 0 : _offset,
     );
     final where = switch (scope) {
+      LeaderboardScope.friends => s.friends,
       LeaderboardScope.country => s.countryName(countryCode),
       LeaderboardScope.resort => resortName,
       LeaderboardScope.all => null,
     };
+    final signedIn = api != null && user != null;
+    // Only with a backend: the sync status provider builds the SyncService.
+    if (signedIn) ref.listen<AsyncValue<SyncStatus>>(accountSyncStatusProvider, _onSync);
 
     final Widget body;
     if (api == null) {
-      body = _Offline(onRetry: () => _retry(query));
+      body = _Offline(onRetry: _refresh);
     } else if (user == null) {
       body = auth.isLoading
-          ? const SizedBox.shrink()
+          ? const BoardSkeleton()
           : SocialStateBlock(
               pose: 'point',
               headline: s.signedOutHeadline,
@@ -131,23 +215,23 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         resortId: resortId,
         resortName: resortName,
         userId: userId,
-        userName: user.displayName,
         now: _now,
         resorts: resorts,
         period: _period,
         metric: _metric,
         scope: scope,
         countryCode: countryCode,
-        onPeriod: (p) => setState(() => _period = p),
-        onMetric: (m) => setState(() => _metric = m),
-        onScope: (sc) => setState(() => _scope = sc),
-        onResort: (id) => setState(() {
+        onPeriod: (p) => _select(() => _period = p),
+        onMetric: (m) => _select(() => _metric = m),
+        onScope: (sc) => _select(() => _scope = sc),
+        onResort: (id) => _select(() {
           _resortTouched = true;
           _resortId = id;
         }),
-        onOpenAccount: _openAccount,
-        onRetry: () => _retry(query),
+        onOptIn: () => _optIn(userId),
+        onRetry: _refresh,
         onInvite: _invite,
+        onTop: _offset == 0 ? null : () => setState(() => _offset = 0),
       );
     }
 
@@ -157,21 +241,36 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         bottom: false,
         child: Stack(
           children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, 140),
-              children: [
-                ScreenHeader(
-                  title: s.title,
-                  caption: s.caption(_period, query.seasonKey, where),
-                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+            CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              slivers: [
+                if (signedIn) CupertinoSliverRefreshControl(onRefresh: () => _pullRefresh(query)),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, 140),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      ScreenHeader(
+                        title: s.title,
+                        caption: s.caption(_period, query.seasonKey, where),
+                        padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+                      ),
+                      // Level · Punkte · Streak · Medaillen (docs/GAMIFICATION.md §5)
+                      const AchievementsHeader(padding: EdgeInsets.zero),
+                      const SizedBox(height: Tokens.cardGap),
+                      body,
+                    ]),
+                  ),
                 ),
-                // Level · Punkte · Streak · Medaillen (docs/GAMIFICATION.md §5)
-                const AchievementsHeader(padding: EdgeInsets.zero),
-                const SizedBox(height: Tokens.cardGap),
-                body,
               ],
             ),
-            if (api != null && user != null) _PinnedOwnRow(query: query, userId: userId, userName: user.displayName),
+            if (signedIn)
+              _PinnedOwnRow(
+                query: query,
+                userId: userId,
+                userName: user.displayName,
+                onJump: (rank) => setState(() => _offset = query.offsetAround(rank)),
+                onTop: _offset == 0 ? null : () => setState(() => _offset = 0),
+              ),
           ],
         ),
       ),
@@ -186,7 +285,6 @@ class _SignedIn extends ConsumerWidget {
     required this.resortId,
     required this.resortName,
     required this.userId,
-    required this.userName,
     required this.now,
     required this.resorts,
     required this.period,
@@ -197,16 +295,16 @@ class _SignedIn extends ConsumerWidget {
     required this.onMetric,
     required this.onScope,
     required this.onResort,
-    required this.onOpenAccount,
+    required this.onOptIn,
     required this.onRetry,
     required this.onInvite,
+    required this.onTop,
   });
 
   final LeaderboardQuery query;
   final String? resortId;
   final String? resortName;
   final String? userId;
-  final String userName;
   final DateTime now;
   final ResortRepository? resorts;
   final LeaderboardPeriod period;
@@ -219,9 +317,12 @@ class _SignedIn extends ConsumerWidget {
   final ValueChanged<SocialMetric> onMetric;
   final ValueChanged<LeaderboardScope> onScope;
   final ValueChanged<String?> onResort;
-  final VoidCallback onOpenAccount;
+  final VoidCallback onOptIn;
   final VoidCallback onRetry;
   final VoidCallback onInvite;
+
+  /// Non-null while the board shows a window below the top.
+  final VoidCallback? onTop;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -232,16 +333,21 @@ class _SignedIn extends ConsumerWidget {
     final options = _resortOptions();
     final selectedResort = options.indexWhere((o) => o.$1 == resortId);
     final scopes = [
+      LeaderboardScope.friends,
       if (countryCode != null) LeaderboardScope.country,
       LeaderboardScope.resort,
       LeaderboardScope.all,
     ];
+    // Friends see each other by consent — the opt-in gate is for the public boards.
+    final gated = optedIn == false && scope != LeaderboardScope.friends;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        DuelCard(resortId: resortId, ownUserId: userId),
+        // resortId null: a duel is not bound to a Gebiet, the filter above is
+        // informational only (docs/BACKLOG.md SOC-RANGLISTE 7).
+        DuelCard(resortId: null, ownUserId: userId),
         if (challenge != null) ...[const SizedBox(height: Tokens.cardGap), ChallengeCard(challenge: challenge, now: now)],
         const SizedBox(height: Tokens.sectionGap),
         SocialSegmentTabs(
@@ -270,16 +376,16 @@ class _SignedIn extends ConsumerWidget {
           onSelect: (i) => onMetric(SocialMetric.leaderboard[i]),
         ),
         const SizedBox(height: 16),
-        if (optedIn == false)
+        if (gated)
           SocialStateBlock(
             pose: 'look',
             headline: s.optInHeadline,
             line: s.optInLine,
             actionLabel: s.optInAction,
-            onAction: onOpenAccount,
+            onAction: onOptIn,
           )
         else
-          _Board(query: query, userId: userId, resortName: resortName, onRetry: onRetry, onInvite: onInvite),
+          _Board(query: query, userId: userId, resortName: resortName, onRetry: onRetry, onInvite: onInvite, onTop: onTop),
         const SizedBox(height: Tokens.sectionGap),
         CountryBoardCard(seasonKey: query.wireKey, period: period, ownCountryCode: countryCode),
       ],
@@ -298,44 +404,58 @@ class _SignedIn extends ConsumerWidget {
   }
 }
 
-/// Podium + rows, or the offline / empty state.
+/// Podium + rows, or the offline / error / empty state.
 class _Board extends ConsumerWidget {
-  const _Board({required this.query, required this.userId, required this.resortName, required this.onRetry, required this.onInvite});
+  const _Board({required this.query, required this.userId, required this.resortName, required this.onRetry, required this.onInvite, required this.onTop});
 
   final LeaderboardQuery query;
   final String? userId;
   final String? resortName;
   final VoidCallback onRetry;
   final VoidCallback onInvite;
+  final VoidCallback? onTop;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = SocialStrings.of(context);
-    final board = ref.watch(leaderboardProvider(query));
+    final board = ref.watch(boardProvider(query));
     return board.when(
-      loading: () => const _BoardSkeleton(),
-      error: (e, _) => e is SocialError && e.kind != SocialErrorKind.offline
-          ? SocialStateBlock(pose: 'lean', headline: s.error(e.kind), line: s.offlineLine, actionLabel: s.retry, onAction: onRetry)
-          : _Offline(onRetry: onRetry),
+      loading: () => const BoardSkeleton(),
+      error: (e, _) {
+        final kind = e is SocialError ? e.kind : SocialErrorKind.failed;
+        if (kind == SocialErrorKind.offline) return _Offline(onRetry: onRetry);
+        return SocialStateBlock(pose: 'lean', headline: s.errorHeadline, line: s.errorLine(kind), actionLabel: s.retry, onAction: onRetry);
+      },
       data: (entries) {
-        if (entries.isEmpty) {
+        // The friends board always contains the caller — alone means empty.
+        final friendsOnly = query.friends && entries.every((e) => e.userId == userId);
+        if (entries.isEmpty || friendsOnly) {
+          final f = FriendsStrings.of(context);
           return SocialStateBlock(
             pose: 'carve',
-            headline: s.emptyHeadline(resortName),
-            line: s.emptyLine,
+            headline: query.friends ? f.boardEmptyHeadline : s.emptyHeadline(resortName),
+            line: query.friends ? f.boardEmptyLine : s.emptyLine,
             actionLabel: s.invite,
             onAction: onInvite,
           );
         }
-        final rest = entries.length > 3 ? entries.sublist(3) : const <LeaderboardEntry>[];
+        final windowed = query.offset > 0;
+        final podium = windowed ? const <LeaderboardEntry>[] : entries.take(3).toList();
+        final rest = windowed ? entries : (entries.length > 3 ? entries.sublist(3) : const <LeaderboardEntry>[]);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            LeaderboardPodium(entries: entries.take(3).toList(), metric: query.metric, ownUserId: userId),
+            if (podium.isNotEmpty) LeaderboardPodium(entries: podium, metric: query.metric, ownUserId: userId),
+            if (windowed && onTop != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SocialFilterChip(label: s.backToTop, selected: false, onTap: onTop),
+              ),
             if (rest.isNotEmpty) ...[
               const SizedBox(height: Tokens.cardGap),
-              LeaderboardRows(entries: rest, metric: query.metric, ownUserId: userId),
+              // Below the top the leader's value is unknown — no delta caption.
+              LeaderboardRows(entries: rest, metric: query.metric, ownUserId: userId, leaderValue: windowed ? null : entries.first.value),
             ],
           ],
         );
@@ -344,14 +464,16 @@ class _Board extends ConsumerWidget {
   }
 }
 
-/// Three 64 pt placeholder rows at 6 % — never a Material spinner.
-class _BoardSkeleton extends StatelessWidget {
-  const _BoardSkeleton();
+/// Three 64 pt placeholder rows at 6 % — never a Material spinner. Shown while
+/// the board loads and while the auth state is still unknown.
+class BoardSkeleton extends StatelessWidget {
+  const BoardSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     return Column(
+      key: const ValueKey('board-skeleton'),
       children: [
         for (var i = 0; i < 3; i++) ...[
           if (i > 0) const SizedBox(height: Tokens.cardGap),
@@ -385,26 +507,51 @@ class _Offline extends StatelessWidget {
   }
 }
 
-/// 'Du · Platz 14 von 250 · 12.480 hm' above the tab bar — only when the user
-/// is in the fetched slice.
+/// 'Du · Platz 14 von 250 · 12.480 hm' above the tab bar — from the fetched
+/// slice when the user is in it, else from `my_rank`; 'Du bist noch nicht
+/// gewertet' when the server has no row. Hidden only while opted out, while
+/// the rank is still loading or when the board itself failed.
 class _PinnedOwnRow extends ConsumerWidget {
-  const _PinnedOwnRow({required this.query, required this.userId, required this.userName});
+  const _PinnedOwnRow({required this.query, required this.userId, required this.userName, required this.onJump, required this.onTop});
 
   final LeaderboardQuery query;
   final String? userId;
   final String userName;
+  final ValueChanged<int> onJump;
+  final VoidCallback? onTop;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final optedOut = ref.watch(shareLeaderboardsProvider).asData?.value == false;
-    final entries = ref.watch(leaderboardProvider(query)).asData?.value ?? const <LeaderboardEntry>[];
-    final rank = optedOut ? null : myRankOf(entries, userId);
-    if (rank == null) return const SizedBox.shrink();
+    if (optedOut && !query.friends) return const SizedBox.shrink();
+    final board = ref.watch(boardProvider(query));
+    if (board.hasError) return const SizedBox.shrink();
+    final entries = board.asData?.value ?? const <LeaderboardEntry>[];
+    final inSlice = myRankOf(entries, userId);
+    final MyRank? rank;
+    if (inSlice != null) {
+      rank = inSlice;
+    } else {
+      final remote = ref.watch(myRankProvider(query));
+      if (!remote.hasValue) return const SizedBox.shrink();
+      rank = remote.value;
+    }
+    final r = rank;
+    // Not in the slice and not ranked server-side: nothing to pin.
+    if (r == null) return const SizedBox.shrink();
+    final canJump = inSlice == null && !query.friends && !query.covers(r.rank);
     return Positioned(
       left: 0,
       right: 0,
       bottom: 0,
-      child: OwnRankStrip(rank: rank, metric: query.metric, name: userName, bottomPadding: 56 + MediaQuery.paddingOf(context).bottom),
+      child: OwnRankStrip(
+        rank: r,
+        metric: query.metric,
+        name: userName,
+        bottomPadding: 56 + MediaQuery.paddingOf(context).bottom,
+        onJump: canJump ? () => onJump(r.rank) : null,
+        onTop: onTop,
+      ),
     );
   }
 }

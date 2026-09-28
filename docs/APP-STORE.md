@@ -73,7 +73,7 @@ EN: First release – one-tap recording, leaderboards, duels, challenges, levels
 | Other: none. No advertising, no analytics SDKs, no ATT prompt. Third parties: Supabase (processor, EU), Open-Meteo/OpenTopoMap/OpenSnowMap (tile/weather servers see IP only). |
 
 ## Age rating questionnaire
-None of the mature categories. **Unrestricted web access: No. Gambling/contests: No (no prizes). User-generated content: display names in leaderboards → answer the "User Generated Content" questions truthfully:** users can report via support e-mail and the in-app "Melden" action (package `social-report` in docs/GAPS.md must be in the build before submission), names are filtered client-side. Expected rating 4+.
+None of the mature categories. **Unrestricted web access: No. Gambling/contests: No (no prizes). User-generated content: display names in leaderboards → answer the "User Generated Content" questions truthfully:** users can report via support e-mail and the in-app "Melden" action (in the build: SOC-MODERATION — Melden/Blockieren on every rider profile), names are filtered client-side. Expected rating 4+.
 
 ## Sign in with Apple / account checklist (Apple 5.1.1 v, 4.8)
 - Sign in with Apple is the only third-party login → compliant with 4.8.
@@ -88,6 +88,9 @@ SlopeTrack works fully without an account; Sign in with Apple is optional and on
 4. Rangliste tab: level, points and medals are computed on-device from recorded days; leaderboards need an account and the opt-in "In Ranglisten erscheinen".
 5. Settings → tap the version 7 times to open "Diagnose" (GPS points, sensor status).
 Background location is used only while a ski day is being recorded. ITSAppUsesNonExemptEncryption = false (HTTPS only). Account deletion: Settings › Account › Delete account.
+
+User-generated content: limited to display names (max. 24 characters, filtered on device against a DE/EN word list before they are saved) and avatars. Every rider profile reached from a leaderboard, duel or friends list offers "Melden" (Report) with a reason and "Blockieren" (Block). Reports are stored server-side with reporter, target and reason and are reviewed within 24 hours; the support address is in Settings › Support. Blocking hides the blocked rider from the user's leaderboards, duel boards and friends list immediately and ends an existing friendship; the user can undo it from the same profile. No messaging, comments or free-text posts exist in the app.
+
 
 ## Screenshots (6.9" 1320×2868 required; 6.5" 1284×2778 optional)
 Captured on the iPhone 17 Pro Max simulator with demo data via `OUT=.context/shots/store UDID=<pro-max> tools/shots.sh build`, captioned by `tools/store_shots.py` → `.context/shots/store/framed/*.png`. Order: 1 Heute (streak, goal), 2 Rangliste (level card), 3 Medaillen, 4 Tag-Detail (map), 5 Tagesbilanz, 6 Tage, 7 Onboarding (Team). Captions DE/EN in the script.
