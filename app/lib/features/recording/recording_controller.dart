@@ -48,6 +48,7 @@ class RecordingController extends Notifier<RecordingState> {
   int _lastBatterySampleMs = 0;
   final List<(int ts, int pct)> _battery = [];
   bool _resortResolved = false;
+  int _lastResortTryMs = 0;
   bool _ending = false;
   bool _watchHrSeen = false;
 
@@ -169,7 +170,12 @@ class RecordingController extends Notifier<RecordingState> {
       w.add(p, stats: tick.segmentsChanged ? e.stats : null, streamRestarts: _location.restartCount);
       if (p.accepted) {
         ref.read(liveTrackProvider.notifier).add(p);
-        if (!_resortResolved) unawaited(_resolveResort(p));
+        // Unresolved until a resort is found; retried once a minute (first fixes
+        // often sit in the valley car park, outside every radius).
+        if (!_resortResolved && now - _lastResortTryMs >= 60000) {
+          _lastResortTryMs = now;
+          unawaited(_resolveResort(p));
+        }
       }
     }
     ref.read(liveStateNotifierProvider.notifier).set(tick.live);
@@ -192,13 +198,13 @@ class RecordingController extends Notifier<RecordingState> {
   }
 
   Future<void> _resolveResort(TrackPoint p) async {
-    _resortResolved = true;
     final repo = await ref.read(resortRepositoryProvider.future);
     final r = repo.nearest(p.lat!, p.lon!);
     final dayId = state.dayId;
-    if (dayId == null) return;
-    await _repo.setResort(dayId, resortId: r?.id, resortName: r?.name);
-    if (r != null) await ref.read(settingsProvider.notifier).update((s) => s.copyWith(lastResortId: r.id));
+    if (dayId == null || r == null) return; // stay unresolved, retry later
+    _resortResolved = true;
+    await _repo.setResort(dayId, resortId: r.id, resortName: r.name);
+    await ref.read(settingsProvider.notifier).update((s) => s.copyWith(lastResortId: r.id));
   }
 
   Future<void> _sampleBattery(int now) async {
@@ -233,6 +239,11 @@ class RecordingController extends Notifier<RecordingState> {
       case GuardAction.autoEndVehicle:
         final id = await endDay();
         if (optIn && id != null) await _notif.showReminder(NotificationIds.vehicle, _s.autoEndTitle, _s.autoEndVehicleBody);
+      case GuardAction.autoEndMidnight:
+      case GuardAction.autoEndMaxDuration:
+        // Forgotten recording: close it, trimming the trailing idle time.
+        final id = await endDay(trimTrailingIdleFrom: _guards?.stopSince);
+        if (optIn && id != null) await _notif.showReminder(NotificationIds.summary, _s.autoEndTitle, _s.autoEndLongBody);
     }
   }
 

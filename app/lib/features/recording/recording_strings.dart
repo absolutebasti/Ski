@@ -10,6 +10,7 @@ class RecordingStrings {
   String get autoEndTitle => de ? 'Skitag beendet' : 'Ski day ended';
   String get autoEndIdleBody => de ? 'Nach 3 Stunden Pause haben wir den Tag für dich gespeichert.' : 'Saved after 3 hours of rest.';
   String get autoEndVehicleBody => de ? 'Sieht nach Autofahrt aus – der Tag wurde gespeichert.' : 'Looks like a car ride – your day was saved.';
+  String get autoEndLongBody => de ? 'Der Tag lief sehr lange und wurde gespeichert.' : 'The day ran very long and was saved.';
   String get fourHoursTitle => de ? 'Aufnahme läuft seit 4 Stunden' : 'Recording for 4 hours';
   String get fourHoursBody => de ? 'Alles gut? Beenden kannst du jederzeit in der App.' : 'All good? You can end the day in the app any time.';
   String get batteryTitle => de ? 'Akku bei 15 %' : 'Battery at 15 %';

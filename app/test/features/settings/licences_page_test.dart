@@ -5,7 +5,7 @@ import 'package:slopetrack/features/settings/licences_page.dart';
 import '../../support/pump.dart';
 
 void tall(WidgetTester tester) {
-  tester.view.physicalSize = const Size(800, 2400);
+  tester.view.physicalSize = const Size(800, 3200);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 }

@@ -152,7 +152,8 @@ class MetricStrip extends StatelessWidget {
     final c = AppColors.of(context);
     return Row(
       children: [
-        for (final (i, it) in items.indexed)
+        for (final (i, it) in items.indexed) ...[
+          if (i > 0) const SizedBox(width: 12), // gutter: 'ABFAHRTEN' must not run into 'HM'
           Expanded(
             child: Column(
               crossAxisAlignment: alignEnd && i == items.length - 1 ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -164,6 +165,7 @@ class MetricStrip extends StatelessWidget {
               ],
             ),
           ),
+        ],
       ],
     );
   }

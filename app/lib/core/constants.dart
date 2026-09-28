@@ -4,6 +4,12 @@ class TrackingConfig {
   const TrackingConfig();
 
   // ---- Gate (per raw fix) ----
+  // --- day guards (features/recording/guards.dart) ---------------------------
+  /// A recording longer than this is ended automatically (forgotten in the jacket).
+  static const int maxDayH = 16;
+  /// Local hour at which a day that crossed midnight is closed (03:00).
+  static const int dayRolloverHour = 3;
+
   static const double maxHorizontalAccuracyM = 30;
   static const double maxFixAgeS = 5;
   static const double minAltitudeM = 0;
