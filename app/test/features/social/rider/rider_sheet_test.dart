@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/features/social/fake_social_api.dart';
-import 'package:slopetrack/features/social/rider/rider.dart';
 import 'package:slopetrack/features/social/social.dart';
 
 import '../../../support/pump.dart';

@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/data/sync/auth_service.dart';
 import 'package:slopetrack/features/social/fake_social_api.dart';
-import 'package:slopetrack/features/social/friends/friends.dart';
-import 'package:slopetrack/features/social/moderation/moderation.dart';
 import 'package:slopetrack/features/social/social.dart';
 
 const _user = AuthUser(id: 'u1', displayName: 'Sebastian Fackelmann');

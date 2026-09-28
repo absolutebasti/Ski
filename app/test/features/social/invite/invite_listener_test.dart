@@ -9,8 +9,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slopetrack/data/sync/auth_service.dart';
-import 'package:slopetrack/features/social/friends/friends.dart';
-import 'package:slopetrack/features/social/invite/invite.dart';
 import 'package:slopetrack/features/social/fake_social_api.dart';
 import 'package:slopetrack/features/social/social.dart';
 

@@ -4,8 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/app/widgets/widgets.dart';
 import 'package:slopetrack/data/sync/auth_service.dart';
 import 'package:slopetrack/features/social/fake_social_api.dart';
-import 'package:slopetrack/features/social/friends/friends.dart';
-import 'package:slopetrack/features/social/moderation/moderation.dart';
 import 'package:slopetrack/features/social/social.dart';
 
 import '../../../support/pump.dart';

@@ -1,8 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../friends/friends_api.dart';
-import '../friends/friends_models.dart';
-import '../friends/friends_providers.dart';
 import '../social.dart';
 
 /// What the handler does with a parsed link once the user is signed in.
