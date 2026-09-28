@@ -18,6 +18,7 @@ import '../settings/settings_sheet.dart';
 import 'live_view.dart';
 import 'idle_view.dart';
 import 'recovery_card.dart';
+import 'today_providers.dart';
 import 'today_strings.dart';
 
 /// Tab 0 — one screen with two faces: idle (start a day) and live (the day is
@@ -82,7 +83,7 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
       final id = await ref.read(recordingControllerProvider.notifier).endDay();
       if (!mounted) return;
       if (id == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.tooShort)));
+        showToast(context, s.tooShort);
         return;
       }
       await AppNav.openSummary(context, id);
@@ -123,12 +124,20 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
     final recovery = recording.isRecording ? null : ref.watch(recoveryProvider).asData?.value;
 
     final l = AppLocale.of(context);
-    final resortName = ref.watch(settingsProvider).lastResortId;
-    final caption = [Fmt.dateShort(DateTime.now().millisecondsSinceEpoch, locale: l.code), if (resortName != null) ref.watch(resortRepositoryProvider).asData?.value.byId(resortName)?.name].whereType<String>().join(' · ');
+    // Recording: the active day's own resort (null until resolved — never the
+    // stale last one). Idle: the last resort from settings.
+    final String? resortName;
+    if (recording.isRecording) {
+      resortName = ref.watch(activeDayResortProvider).asData?.value;
+    } else {
+      final lastResortId = ref.watch(settingsProvider).lastResortId;
+      resortName = lastResortId == null ? null : ref.watch(resortRepositoryProvider).asData?.value.byId(lastResortId)?.name;
+    }
+    final caption = [Fmt.dateShort(DateTime.now().millisecondsSinceEpoch, locale: l.code), ?resortName].join(' · ');
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: recording.isRecording
-          ? LiveView(banner: _banner, bannerRun: _bannerRun, busy: _busy, onEnd: _end)
+          ? LiveView(banner: _banner, bannerRun: _bannerRun, busy: _busy, onEnd: _end, resortName: resortName)
           : SafeArea(
               bottom: false,
               child: Column(

@@ -23,12 +23,25 @@ class SeasonCard extends StatelessWidget {
   /// Consecutive ski days; the chip shows from 2 (features/achievements).
   final StreakState? streak;
 
+  /// The sparkline always gets at least this many slots, so a three-day season
+  /// draws three thin bars and eleven empty stubs instead of three fat blocks.
+  static const int minSlots = 14;
+
+  /// Per-day vertical in date order, right-padded with zeros to [minSlots].
+  static List<double> sparkValues(List<DaySummary> days) {
+    final sorted = [...days]..sort((a, b) => a.startedAt.compareTo(b.startedAt));
+    final bars = sorted.map((d) => d.stats.dropM).toList();
+    while (bars.length < minSlots) {
+      bars.add(0);
+    }
+    return bars;
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final l = AppLocale.of(context);
-    final sorted = [...days]..sort((a, b) => a.startedAt.compareTo(b.startedAt));
-    final bars = sorted.map((d) => d.stats.dropM).toList();
+    final bars = sparkValues(days);
     final delta = previous == null ? null : totals.dropM - previous!.dropM;
     return SurfaceCard(
       padding: EdgeInsets.zero,
@@ -80,8 +93,8 @@ class SeasonCard extends StatelessWidget {
                   size: 22,
                   items: [
                     ('${totals.dayCount}', l.pick(de: totals.dayCount == 1 ? 'Tag' : 'Tage', en: totals.dayCount == 1 ? 'day' : 'days')),
-                    ('${totals.runCount}', l.pick(de: 'Abfahrten', en: 'runs')),
-                    (Fmt.kmh(totals.maxSpeedMs, locale: l.code), 'km/h top'),
+                    ('${totals.runCount}', l.pick(de: 'Abfahrten', en: 'Runs')),
+                    (Fmt.kmh(totals.maxSpeedMs, locale: l.code), l.pick(de: 'Top-Speed', en: 'Top speed')),
                   ],
                 ),
               ],
@@ -93,7 +106,7 @@ class SeasonCard extends StatelessWidget {
             width: double.infinity,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: bars.length > 1 ? Sparkline(values: bars, color: c.accent, bars: true) : const SizedBox.shrink(),
+              child: days.isNotEmpty ? Sparkline(values: bars, color: c.accent, bars: true) : const SizedBox.shrink(),
             ),
           ),
           SizedBox(height: compact ? 12 : 16),

@@ -11,6 +11,7 @@ import '../../data/db/providers.dart';
 import 'day_actions.dart';
 import '../today/season_card.dart';
 import 'day_card.dart';
+import 'day_skeleton.dart';
 import 'days_strings.dart';
 import 'season_groups.dart';
 
@@ -51,7 +52,7 @@ class _TageScreenState extends ConsumerState<TageScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: days.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SafeArea(bottom: false, child: DayListSkeleton()),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(Tokens.pad),
@@ -132,8 +133,8 @@ class _PbStrip extends StatelessWidget {
     final s = DaysStrings.of(context);
     final tiles = <Widget>[
       if (bests.topSpeedMs != null) PbTile(label: s.topSpeed, value: Fmt.kmh(bests.topSpeedMs!, locale: l.code), unit: s.unitKmh),
-      if (bests.biggestDayDropM != null) PbTile(label: s.biggestDay, value: Fmt.metres(bests.biggestDayDropM!, locale: l.code), unit: s.unitHm),
-      if (bests.longestRunDropM != null) PbTile(label: s.longestRun, value: Fmt.metres(bests.longestRunDropM!, locale: l.code), unit: s.unitHm),
+      if (bests.biggestDayDropM != null) PbTile(label: s.pbBestDay, value: Fmt.metres(bests.biggestDayDropM!, locale: l.code), unit: s.unitHm),
+      if (bests.longestRunDropM != null) PbTile(label: s.pbLongest, value: Fmt.metres(bests.longestRunDropM!, locale: l.code), unit: s.unitHm),
     ];
     if (tiles.isEmpty) return const SizedBox.shrink();
     return Row(children: [for (final (i, w) in tiles.indexed) ...[if (i > 0) const SizedBox(width: 8), Expanded(child: w)]]);

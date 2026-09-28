@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/app/theme/tokens.dart';
+import 'package:slopetrack/features/map/route_colors.dart';
 import 'package:slopetrack/features/map/thumbnail_renderer.dart';
 
 import '../../support/pump.dart';
@@ -57,6 +60,23 @@ void main() {
     final frame = await codec.getNextFrame();
     expect(frame.image.width, ThumbnailRenderer.width);
     expect(frame.image.height, ThumbnailRenderer.height);
+  });
+
+  test('renderPng on the light ground: the corner pixel is paper, not graphite', () async {
+    Future<ui.Image> decode(Uint8List bytes) async => (await (await ui.instantiateImageCodec(bytes)).getNextFrame()).image;
+    Future<int> cornerArgb(ui.Image img) async {
+      final data = await img.toByteData();
+      final b = data!.buffer.asUint8List();
+      return (b[3] << 24) | (b[0] << 16) | (b[1] << 8) | b[2]; // RGBA → ARGB
+    }
+
+    final dark = await decode(await ThumbnailRenderer.renderPng(fixtureDetail(), width: 60, height: 40));
+    final light = await decode(await ThumbnailRenderer.renderPng(fixtureDetail(), width: 60, height: 40, ground: AppColors.light.routeGround, route: AppColors.light.run));
+    final darkPx = Color(await cornerArgb(dark));
+    final lightPx = Color(await cornerArgb(light));
+    expect(RouteColors.isNearBlack(darkPx), isTrue);
+    expect(RouteColors.isNearBlack(lightPx), isFalse);
+    expect(lightPx.computeLuminance(), greaterThan(0.6));
   });
 
   test('ThumbnailRenderer.render writes thumbs/<dayId>.png and returns the path', () async {

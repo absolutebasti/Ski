@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slopetrack/data/sync/auth_service.dart';
+import 'package:slopetrack/features/social/fake_social_api.dart';
 import 'package:slopetrack/features/social/invite/invite.dart';
 import 'package:slopetrack/features/social/social_api.dart';
 
@@ -185,6 +189,68 @@ void main() {
     test('garbage in prefs reads as no pending link', () async {
       SharedPreferences.setMockInitialValues({SharedPrefsPendingInviteStore.key: 'nonsense'});
       expect(await const SharedPrefsPendingInviteStore().load(), isNull);
+    });
+  });
+
+  group('inviteLinkHandlerProvider', () {
+    late FakeInviteLinkSource source;
+    late FakeSocialApi social;
+    late StreamController<AuthUser?> auth;
+    late ProviderContainer container;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      source = FakeInviteLinkSource();
+      social = FakeSocialApi(userId: 'u1');
+      auth = StreamController<AuthUser?>();
+      container = ProviderContainer(
+        overrides: [
+          inviteLinkSourceProvider.overrideWithValue(source),
+          socialApiProvider.overrideWithValue(social),
+          authStateProvider.overrideWith((ref) => auth.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+      addTearDown(auth.close);
+      addTearDown(source.close);
+    });
+
+    Future<void> tick() => Future<void>.delayed(Duration.zero);
+
+    test('follows authStateProvider while it has an active listener', () async {
+      final events = <InviteEvent?>[];
+      container.listen(inviteEventsProvider, (_, e) => events.add(e));
+      container.listen(inviteLinkHandlerProvider, (_, _) {});
+      await container.read(inviteLinkHandlerProvider).start();
+
+      auth.add(_user);
+      await tick();
+      source.emit(_duel);
+      await tick();
+
+      expect(social.joined, ['KMJ4F2']);
+      expect(events.map((e) => e?.kind), [InviteEventKind.duelJoined]);
+      expect(container.read(ranglisteRequestProvider), 0, reason: 'the tab switch is the listener widget\'s job');
+    });
+
+    test('regression: a handler that is only read is paused and never learns the auth state', () async {
+      // Riverpod 3 pauses providers without active listeners together with
+      // their ref.listen subscriptions. InviteListener therefore watches the
+      // provider; this documents what happens without that.
+      await container.read(inviteLinkHandlerProvider).start();
+      auth.add(_user);
+      await tick();
+      source.emit(_duel);
+      await tick();
+
+      expect(social.joined, isEmpty);
+      expect(container.read(authStateProvider), isA<AsyncLoading<AuthUser?>>());
+
+      // The moment a listener appears the paused subscriptions resume and the
+      // pending link is consumed.
+      container.listen(inviteLinkHandlerProvider, (_, _) {});
+      await tick();
+      expect(social.joined, ['KMJ4F2']);
     });
   });
 }

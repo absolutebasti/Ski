@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:slopetrack/core/core.dart';
 import 'package:slopetrack/core/settings.dart';
 import 'package:slopetrack/data/db/providers.dart';
+import 'package:slopetrack/data/resorts/resort_repository.dart';
 import 'package:slopetrack/features/recording/live_state_provider.dart';
 import 'package:slopetrack/features/recording/recording_controller.dart';
 import 'package:slopetrack/features/recording/recovery_service.dart';
 import 'package:slopetrack/features/settings/settings_providers.dart';
+import 'package:slopetrack/features/today/today_providers.dart';
 import 'package:slopetrack/platform/permission_service.dart';
 
 /// 2026-01-15 09:00 — inside season 2025/26.
@@ -109,6 +111,10 @@ List<Override> todayOverrides({
   RecoveryInfo? recovery,
   Settings settings = const Settings(),
   PersonalBests? bests,
+  /// Bundled resorts (`lastResortId` resolves against these).
+  List<Resort> resorts = const [],
+  /// Resort name of the day being recorded; null = unresolved.
+  String? activeResortName,
 }) =>
     [
       recordingControllerProvider.overrideWith(() => controller),
@@ -121,7 +127,14 @@ List<Override> todayOverrides({
       settingsProvider.overrideWith(() => TestSettings(settings)),
       locationStatusProvider.overrideWith((ref) async => LocationPermissionState.always),
       appVersionProvider.overrideWith((ref) async => '0.1.0 (1)'),
+      resortRepositoryProvider.overrideWith((ref) async => ResortRepository(resorts)),
+      activeDayResortProvider.overrideWith((ref) => Stream.value(activeResortName)),
     ];
+
+/// The resort `lastResortId: 'kitzbuehel'` resolves to.
+const List<Resort> fixtureResorts = [
+  Resort(id: 'kitzbuehel', name: 'Kitzbühel', country: 'AT', lat: 47.44, lon: 12.39, radiusKm: 12),
+];
 
 /// A local navigator so `AppNav.openSummary` has a route generator to talk to.
 Widget hostWithRoutes(Widget child, List<String> pushed) => Navigator(

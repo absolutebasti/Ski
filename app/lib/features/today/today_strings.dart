@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../app/brand.dart';
 import '../../app/l10n/app_locale.dart';
 import '../../core/core.dart';
 
@@ -24,6 +25,9 @@ class TodayStrings {
   String get records => l.pick(de: 'Rekorde', en: 'Records');
   String get biggestDay => l.pick(de: 'Größter Tag', en: 'Biggest day');
   String get longestRun => l.pick(de: 'Längste Abfahrt', en: 'Longest run');
+  /// Short PB-tile overlines: three tiles share one row, so one line each.
+  String get pbBestDay => l.pick(de: 'Bester Tag', en: 'Best day');
+  String get pbLongest => l.pick(de: 'Längste', en: 'Longest');
   String get startHint => l.pick(de: 'Läuft weiter, auch wenn das Display gesperrt ist.', en: 'Keeps running with the screen locked.');
   String get emptyLine => l.pick(
         de: 'Noch kein Skitag. Ein Tipp auf Tag starten, und ich zähl mit.',
@@ -97,8 +101,8 @@ class TodayStrings {
   // --- blocking states -----------------------------------------------------
   String get deniedTitle => l.pick(de: 'Standort ist aus', en: 'Location is off');
   String get deniedBody => l.pick(
-        de: 'Ohne Standort kann SlopeTrack keinen Skitag aufzeichnen.',
-        en: 'Without location SlopeTrack cannot record a ski day.',
+        de: 'Ohne Standort kann $kAppName keinen Skitag aufzeichnen.',
+        en: 'Without location $kAppName cannot record a ski day.',
       );
   String get serviceOffTitle => l.pick(de: 'Ortungsdienste sind aus', en: 'Location services are off');
   String get serviceOffBody => l.pick(

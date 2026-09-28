@@ -36,6 +36,13 @@ class DaysRepository {
         DaysCompanion(resortId: Value(resortId), resortName: Value(resortName), updatedAt: Value(_now())),
       );
 
+  /// 'Skigebiet ändern' on a finished day (UX-DAYS): rewrites the resort and
+  /// re-queues the day so the backend row follows. Null clears to free terrain.
+  Future<void> updateResort(String dayId, String? resortId, String? resortName) => db.transaction(() async {
+        await setResort(dayId, resortId: resortId, resortName: resortName);
+        await _enqueue(dayId, SyncOp.upsert);
+      });
+
   /// Batch insert + running aggregates in one transaction (crash safety, PLAN §6).
   Future<void> appendPoints(String dayId, List<TrackPoint> points, {DayStats? stats, int? streamRestarts}) async {
     if (points.isEmpty && stats == null) return;

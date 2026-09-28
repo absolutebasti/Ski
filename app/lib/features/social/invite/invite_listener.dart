@@ -43,6 +43,11 @@ class _InviteListenerState extends ConsumerState<InviteListener> {
 
   @override
   Widget build(BuildContext context) {
+    // Watched, not read: Riverpod 3 pauses a provider that has no active
+    // listener, and a paused provider's own ref.listen subscriptions (here:
+    // the auth state) are paused with it. A plain ref.read would leave the
+    // handler with auth 'unknown' forever.
+    ref.watch(inviteLinkHandlerProvider);
     ref.listen<InviteEvent?>(inviteEventsProvider, _onEvent);
     return widget.child;
   }

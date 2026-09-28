@@ -11,13 +11,17 @@ import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
 import '../../data/db/providers.dart';
+import '../../data/resorts/resort_repository.dart';
 import '../../data/weather/wmo.dart';
 import '../map/map.dart';
 import '../profile/profile.dart';
 import 'day_actions.dart';
+import 'day_skeleton.dart';
 import 'days_strings.dart';
+import 'resort_picker.dart';
 import 'run_list.dart';
 import 'stats_grid.dart';
+import 'track_restore.dart';
 
 /// Tag detail (docs/DESIGN.md §5 "Tag — Detail"). The map is the hero: full
 /// bleed from the very top edge, collapsing into a 52 pt bar on scroll. Then
@@ -41,8 +45,12 @@ class DayDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<DayDetailScreen> createState() => _DayDetailScreenState();
 }
 
+/// What the hero surface offers for a day without local points.
+enum TrackRestoreState { none, available, loading }
+
 class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
   int? _scrubTs;
+  bool _restoring = false;
 
   void _onScrub(int? ts) {
     if (ts == _scrubTs) return;
@@ -73,6 +81,40 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
     _back();
   }
 
+  /// 'Skigebiet ändern': picker nearest-first to the day's first point, then
+  /// DaysRepository.updateResort (re-queues the day for sync).
+  Future<void> _changeResort(DayDetail d) async {
+    List<Resort> resorts;
+    try {
+      resorts = (await ref.read(resortRepositoryProvider.future)).all;
+    } on Object {
+      resorts = const [];
+    }
+    if (!mounted) return;
+    final first = TrackGeometry.first(d.points);
+    final pick = await ResortPickerSheet.show(context, resorts: resorts, lat: first?.latitude, lon: first?.longitude, currentId: d.day.resortId);
+    if (pick == null || !mounted) return;
+    if (pick.resort?.id == d.day.resortId) return;
+    await ref.read(daysRepositoryProvider).updateResort(widget.dayId, pick.resort?.id, pick.resort?.name);
+    ref.invalidate(dayDetailProvider(widget.dayId));
+    if (mounted) showToast(context, DaysStrings.of(context).resortChanged);
+  }
+
+  /// 'Spur laden': the bridge downloads the bundle; the detail reloads after.
+  Future<void> _restoreTrack() async {
+    final bridge = ref.read(dayTrackRestoreProvider);
+    if (bridge == null || _restoring) return;
+    setState(() => _restoring = true);
+    try {
+      await bridge.restore(widget.dayId);
+      ref.invalidate(dayDetailProvider(widget.dayId));
+    } on Object {
+      if (mounted) showToast(context, DaysStrings.of(context).trackLoadFailed);
+    } finally {
+      if (mounted) setState(() => _restoring = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -83,7 +125,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
       backgroundColor: c.bg,
       body: PageBackground(
         child: detail.when(
-          loading: () => _fallback(const CircularProgressIndicator()),
+          loading: () => _loading(),
           error: (e, _) => _fallback(
             Text(s.loadFailed, style: AppText.bodyText(c.textSecondary), textAlign: TextAlign.center),
           ),
@@ -93,7 +135,18 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
     );
   }
 
-  /// Loading / error: no map, but the back circle still floats top-left.
+  /// Loading: the skeleton of the page, back circle floating top-left.
+  Widget _loading() {
+    final s = DaysStrings.of(context);
+    return Stack(
+      children: [
+        Positioned.fill(child: DayDetailSkeleton(mapHeight: widget.mapHeight)),
+        Positioned(left: Tokens.pad, top: MediaQuery.paddingOf(context).top + 6, child: HeaderButton(glyph: Glyph.back, tooltip: s.back, onTap: _back)),
+      ],
+    );
+  }
+
+  /// Error: no map, but the back circle still floats top-left.
   Widget _fallback(Widget child) {
     final s = DaysStrings.of(context);
     return SafeArea(
@@ -111,6 +164,12 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
     final l = AppLocale.of(context);
     final s = DaysStrings.of(context);
     final st = d.day.stats;
+    final hasRemote = d.points.isEmpty && (ref.watch(dayHasRemoteTrackProvider(widget.dayId)).asData?.value ?? false);
+    final restore = _restoring
+        ? TrackRestoreState.loading
+        : hasRemote
+            ? TrackRestoreState.available
+            : TrackRestoreState.none;
 
     return Column(
       children: [
@@ -127,6 +186,9 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                   topInset: MediaQuery.paddingOf(context).top,
                   onBack: _back,
                   onShare: _share,
+                  onChangeResort: () => _changeResort(d),
+                  restore: restore,
+                  onRestore: _restoreTrack,
                 ),
               ),
               SliverPadding(
@@ -218,6 +280,9 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
     required this.topInset,
     required this.onBack,
     required this.onShare,
+    this.onChangeResort,
+    this.restore = TrackRestoreState.none,
+    this.onRestore,
   });
 
   final DayDetail detail;
@@ -227,6 +292,11 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
   final double topInset;
   final VoidCallback onBack;
   final VoidCallback onShare;
+  /// Tapping the resort line in the plate opens the picker; null hides the affordance.
+  final VoidCallback? onChangeResort;
+  /// 'Spur laden' for a day whose points live only in the cloud.
+  final TrackRestoreState restore;
+  final VoidCallback? onRestore;
 
   /// The tag the Tage row's thumbnail flies from (see day_card.dart).
   String get heroTag => 'route-${detail.day.id}';
@@ -243,7 +313,9 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
       old.scrubTs != scrubTs ||
       old.tilesEnabled != tilesEnabled ||
       old.expandedHeight != expandedHeight ||
-      old.topInset != topInset;
+      old.topInset != topInset ||
+      old.restore != restore ||
+      old.onChangeResort != onChangeResort;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
@@ -271,7 +343,11 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
               fit: StackFit.expand,
               children: [
                 Positioned.fill(
-                  child: Hero(tag: heroTag, flightShuttleBuilder: _shuttle, child: _Route(detail: detail, tilesEnabled: tilesEnabled, scrubTs: scrubTs)),
+                  child: Hero(
+                    tag: heroTag,
+                    flightShuttleBuilder: _shuttle,
+                    child: _Route(detail: detail, tilesEnabled: tilesEnabled, scrubTs: scrubTs, restore: restore, onRestore: onRestore),
+                  ),
                 ),
                 Positioned.fill(
                   child: IgnorePointer(
@@ -292,7 +368,7 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
                     left: Tokens.pad,
                     right: Tokens.pad,
                     bottom: 18,
-                    child: Opacity(opacity: plate, child: _DatePlate(day: detail.day, date: date)),
+                    child: Opacity(opacity: plate, child: _DatePlate(day: detail.day, date: date, onChangeResort: onChangeResort)),
                   ),
               ],
             ),
@@ -341,6 +417,7 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
             painter: TrackThumbnailPainter(
               points: detail.points,
               segments: detail.segments,
+              background: c.routeGround,
               runColor: c.run,
               liftColor: c.liftGrey,
               padding: lerpDouble(10, 44, v)!,
@@ -356,10 +433,12 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
 /// The hero surface itself: the live map, or the contour fallback with a
 /// typeset line — never a pictogram.
 class _Route extends StatelessWidget {
-  const _Route({required this.detail, required this.tilesEnabled, required this.scrubTs});
+  const _Route({required this.detail, required this.tilesEnabled, required this.scrubTs, this.restore = TrackRestoreState.none, this.onRestore});
   final DayDetail detail;
   final bool tilesEnabled;
   final int? scrubTs;
+  final TrackRestoreState restore;
+  final VoidCallback? onRestore;
 
   @override
   Widget build(BuildContext context) {
@@ -369,8 +448,22 @@ class _Route extends StatelessWidget {
       return Stack(
         fit: StackFit.expand,
         children: [
-          CustomPaint(painter: TrackThumbnailPainter(points: const [], liftColor: c.liftGrey)),
-          Center(child: Text(s.withoutTrack.overline, style: AppText.label(c.textTertiary, size: 12))),
+          CustomPaint(painter: TrackThumbnailPainter(points: const [], background: c.routeGround, liftColor: c.liftGrey)),
+          Center(
+            child: switch (restore) {
+              TrackRestoreState.none => Text(s.withoutTrack.overline, style: AppText.label(c.textTertiary, size: 12)),
+              // Typeset only — nothing spins on a route surface.
+              TrackRestoreState.loading => Text(s.loadingTrack.overline, style: AppText.label(c.accent, size: 12)),
+              TrackRestoreState.available => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(s.withoutTrack.overline, style: AppText.label(c.textTertiary, size: 12)),
+                    const SizedBox(height: 12),
+                    SecondaryButton(label: s.loadTrack, icon: Icons.cloud_download_rounded, height: 44, onPressed: onRestore),
+                  ],
+                ),
+            },
+          ),
         ],
       );
     }
@@ -387,9 +480,10 @@ class _Route extends StatelessWidget {
 
 /// Bottom-left plate over the map: date 22 + resort / weather caption.
 class _DatePlate extends StatelessWidget {
-  const _DatePlate({required this.day, required this.date});
+  const _DatePlate({required this.day, required this.date, this.onChangeResort});
   final DayRecord day;
   final String date;
+  final VoidCallback? onChangeResort;
 
   /// The snapshot stored at End, or null when the day has none / is unreadable.
   static WeatherSnapshot? weatherOf(String? json) {
@@ -430,9 +524,7 @@ class _DatePlate extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Flexible(
-                  child: Text(day.resortName ?? s.freeTerrain, style: AppText.caption(c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ),
+                Flexible(child: _ResortLine(name: day.resortName ?? s.freeTerrain, onTap: onChangeResort)),
                 if (w != null) ...[
                   const SizedBox(width: 10),
                   Icon(wmoIcon(wmoBucket(w.wmoCode)), size: 14, color: c.textSecondary),
@@ -443,6 +535,37 @@ class _DatePlate extends StatelessWidget {
                 ],
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Resort caption in the plate; with [onTap] it is the 'Skigebiet ändern'
+/// affordance (caption + 14 pt chevron, 44 pt tall hit area).
+class _ResortLine extends StatelessWidget {
+  const _ResortLine({required this.name, this.onTap});
+  final String name;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final s = DaysStrings.of(context);
+    final text = Text(name, style: AppText.caption(c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis);
+    if (onTap == null) return text;
+    return Semantics(
+      button: true,
+      label: s.changeResort,
+      child: Pressable(
+        onTap: onTap,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: text),
+            const SizedBox(width: 4),
+            GlyphIcon(Glyph.chevronRight, size: 12, color: c.textTertiary),
           ],
         ),
       ),

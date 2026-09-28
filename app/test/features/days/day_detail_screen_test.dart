@@ -7,7 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/app/widgets/widgets.dart';
 import 'package:slopetrack/core/core.dart';
 import 'package:slopetrack/data/db/providers.dart';
+import 'package:slopetrack/data/resorts/resort_repository.dart';
 import 'package:slopetrack/features/days/day_detail_screen.dart';
+import 'package:slopetrack/features/days/day_skeleton.dart';
+import 'package:slopetrack/features/days/track_restore.dart';
 import 'package:slopetrack/features/days/run_list.dart';
 import 'package:slopetrack/features/days/stats_grid.dart';
 import 'package:slopetrack/features/map/thumbnail_renderer.dart';
@@ -258,6 +261,171 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Kitzbühel'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('while the day loads, the page skeleton stands in — never a spinner', (tester) async {
+    usePhoneSurface(tester);
+    final gate = Completer<DayDetail>();
+    await pumpApp(
+      tester,
+      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      overrides: [dayDetailProvider.overrideWith((ref, id) => gate.future)],
+    );
+    await tester.pump();
+    expect(find.byType(DayDetailSkeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byWidgetPredicate((w) => w is HeaderButton && w.glyph == Glyph.back), findsOneWidget);
+    gate.complete(syntheticDayDetail());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(DayDetailSkeleton), findsNothing);
+    expect(find.byType(FlutterMap), findsOneWidget);
+  });
+
+  testWidgets('Skigebiet ändern: the picker is nearest-first and updates the day via the repository', (tester) async {
+    useTallSurface(tester);
+    final repo = RecordingRepository();
+    addTearDown(() async => repo.db.close());
+    final detail = syntheticDayDetail();
+    await pumpApp(
+      tester,
+      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      overrides: [
+        ...overrides(detail, repo: repo),
+        resortRepositoryProvider.overrideWith((ref) async => ResortRepository(fixtureResorts)),
+      ],
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // The resort line in the plate is the affordance.
+    expect(find.bySemanticsLabel('Skigebiet ändern'), findsOneWidget);
+    await tester.tap(find.text('Kitzbühel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Skigebiet ändern'), findsOneWidget);
+    // The synthetic day starts near Kitzbühel: it ranks first, Zermatt last.
+    expect(tester.getTopLeft(find.text('Kitzbühel').last).dy, lessThan(tester.getTopLeft(find.text('Zermatt')).dy));
+
+    await tester.tap(find.text('Ischgl'));
+    await tester.pumpAndSettle();
+    expect(repo.resortUpdates, [(_dayId, 'ischgl', 'Ischgl')]);
+    expect(find.text('Skigebiet geändert'), findsOneWidget); // toast
+  });
+
+  testWidgets('picking the current resort again is a no-op', (tester) async {
+    useTallSurface(tester);
+    final repo = RecordingRepository();
+    addTearDown(() async => repo.db.close());
+    await pumpApp(
+      tester,
+      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      overrides: [
+        ...overrides(syntheticDayDetail(), repo: repo),
+        resortRepositoryProvider.overrideWith((ref) async => ResortRepository(fixtureResorts)),
+      ],
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Kitzbühel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kitzbühel').last);
+    await tester.pumpAndSettle();
+    expect(repo.resortUpdates, isEmpty);
+  });
+
+  testWidgets('Spur laden: shows for a cloud-only track, triggers the restore bridge, then the map appears', (tester) async {
+    useTallSurface(tester);
+    final full = syntheticDayDetail();
+    final empty = DayDetail(day: full.day, segments: full.segments, points: const []);
+    var restored = false;
+    final restoreCalls = <String>[];
+    final gate = Completer<void>();
+    await pumpApp(
+      tester,
+      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      overrides: [
+        dayDetailProvider.overrideWith((ref, id) => restored ? full : empty),
+        dayTrackRestoreProvider.overrideWithValue(DayTrackRestore(
+          hasRemoteTrack: (id) async => id == _dayId,
+          restore: (id) async {
+            restoreCalls.add(id);
+            await gate.future;
+            restored = true;
+          },
+        )),
+      ],
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(FlutterMap), findsNothing);
+    expect(find.text('OHNE TRACK'), findsOneWidget);
+    expect(find.text('Spur laden'), findsOneWidget);
+
+    await tester.tap(find.text('Spur laden'));
+    await tester.pump();
+    expect(restoreCalls, [_dayId]);
+    expect(find.text('SPUR WIRD GELADEN'), findsOneWidget);
+    expect(find.text('Spur laden'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    gate.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.text('SPUR WIRD GELADEN'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Spur laden is hidden without the bridge', (tester) async {
+    useTallSurface(tester);
+    final full = syntheticDayDetail();
+    final empty = DayDetail(day: full.day, segments: full.segments, points: const []);
+    await pumpApp(tester, const DayDetailScreen(dayId: _dayId, tilesEnabled: false), overrides: overrides(empty));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Spur laden'), findsNothing);
+    expect(find.text('OHNE TRACK'), findsOneWidget);
+  });
+
+  testWidgets('Spur laden is hidden when the day has no remote track', (tester) async {
+    useTallSurface(tester);
+    final full = syntheticDayDetail();
+    final empty = DayDetail(day: full.day, segments: full.segments, points: const []);
+    await pumpApp(
+      tester,
+      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      overrides: [
+        ...overrides(empty),
+        dayTrackRestoreProvider.overrideWithValue(DayTrackRestore(hasRemoteTrack: (_) async => false, restore: (_) async {})),
+      ],
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Spur laden'), findsNothing);
+    expect(find.text('OHNE TRACK'), findsOneWidget);
+  });
+
+  testWidgets('a failing restore keeps the page and shows the toast', (tester) async {
+    useTallSurface(tester);
+    final full = syntheticDayDetail();
+    final empty = DayDetail(day: full.day, segments: full.segments, points: const []);
+    await pumpApp(
+      tester,
+      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      overrides: [
+        ...overrides(empty),
+        dayTrackRestoreProvider.overrideWithValue(DayTrackRestore(hasRemoteTrack: (_) async => true, restore: (_) async => throw StateError('offline'))),
+      ],
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Spur laden'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Spur konnte nicht geladen werden.'), findsOneWidget);
+    expect(find.text('Spur laden'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

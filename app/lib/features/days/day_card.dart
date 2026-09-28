@@ -8,6 +8,7 @@ import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
+import '../map/route_colors.dart';
 import 'days_strings.dart';
 
 /// 112 pt list row: route thumbnail, date + resort, a 3-up metric strip,
@@ -58,12 +59,14 @@ class DayCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(day.resortName ?? s.freeTerrain, style: AppText.caption(c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 10),
+                  // Real labels (ABFAHRTEN / HÖHENMETER / TOP-SPEED); the unit
+                  // joins the numeral once MetricStrip takes an overline-first triple.
                   MetricStrip(
                     size: 15,
                     items: [
                       ('${st.runCount}', s.runs),
-                      (Fmt.metres(st.dropM, locale: l.code), s.unitHm),
-                      (Fmt.kmh(st.maxSpeedMs, locale: l.code), s.unitKmh),
+                      (Fmt.metres(st.dropM, locale: l.code), s.vertical),
+                      (Fmt.kmh(st.maxSpeedMs, locale: l.code), s.topSpeed),
                     ],
                   ),
                 ],
@@ -115,7 +118,7 @@ class _DayThumbState extends State<DayThumb> {
       width: widget.width,
       height: height,
       clipBehavior: Clip.antiAlias,
-      decoration: ShapeDecoration(color: const Color(0xFF101216), shape: Squircle.border(Tokens.r10, side: c.hairline, width: c.hairlineWidth)),
+      decoration: ShapeDecoration(color: c.routeGround, shape: Squircle.border(Tokens.r10, side: c.hairline, width: c.hairlineWidth)),
       child: _exists
           ? Image.file(File(widget.path!), fit: BoxFit.cover, errorBuilder: (context, error, stack) => const ContourPattern())
           : const ContourPattern(),

@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../app/theme/surfaces.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/core.dart';
+import 'route_colors.dart';
 import 'track_geometry.dart';
 
 /// Paints a day's track without tiles (docs/DESIGN.md §4 "MAP THUMBNAIL"):
@@ -31,8 +32,9 @@ class TrackThumbnailPainter extends CustomPainter {
     this.vignette = true,
   }) : lines = TrackGeometry.split(points, segments);
 
-  /// The thumbnail ground — darker than `surface` so the route dominates.
-  static const Color graphite = Color(0xFF101216);
+  /// The dark thumbnail ground — darker than `surface` so the route dominates.
+  /// Widgets pass `AppColors.of(context).routeGround` (light: warm paper).
+  static const Color graphite = RouteColors.darkGround;
   static const double hatchOpacity = 0.06;
   static const double vignetteOpacity = 0.12;
   static const double startDotRadius = 3;
@@ -197,12 +199,23 @@ class ThumbnailRenderer {
   static const int width = 600;
   static const int height = 400;
 
+  /// The dark ground the PNG is rendered on (same as [TrackThumbnailPainter.graphite]).
+  static const Color graphite = TrackThumbnailPainter.graphite;
+
   /// PNG bytes for [detail] (no I/O). Public so tests and the share card can reuse it.
-  static Future<Uint8List> renderPng(DayDetail detail, {int width = width, int height = height}) async {
+  /// [ground] / [route] default to the dark pair; pass `c.routeGround` / `c.run`
+  /// to render for the light theme.
+  static Future<Uint8List> renderPng(DayDetail detail, {int width = width, int height = height, Color? ground, Color? route, Color? lift}) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     final size = Size(width.toDouble(), height.toDouble());
-    TrackThumbnailPainter(points: detail.points, segments: detail.segments).paint(canvas, size);
+    TrackThumbnailPainter(
+      points: detail.points,
+      segments: detail.segments,
+      background: ground ?? graphite,
+      runColor: route ?? Tokens.champagne,
+      liftColor: lift ?? Tokens.liftGrey,
+    ).paint(canvas, size);
     final image = await recorder.endRecording().toImage(width, height);
     try {
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -215,12 +228,12 @@ class ThumbnailRenderer {
 
   /// Writes `thumbs/<dayId>.png` under the app documents dir (or [dir]) and
   /// returns the absolute path.
-  static Future<String> render(DayDetail detail, {Directory? dir}) async {
+  static Future<String> render(DayDetail detail, {Directory? dir, Color? ground, Color? route, Color? lift}) async {
     final root = dir ?? await getApplicationDocumentsDirectory();
     final thumbs = Directory('${root.path}/thumbs');
     if (!thumbs.existsSync()) thumbs.createSync(recursive: true);
     final file = File('${thumbs.path}/${detail.day.id}.png');
-    await file.writeAsBytes(await renderPng(detail), flush: true);
+    await file.writeAsBytes(await renderPng(detail, ground: ground, route: route, lift: lift), flush: true);
     return file.path;
   }
 }
@@ -245,7 +258,7 @@ class TrackThumbnail extends StatelessWidget {
           painter: TrackThumbnailPainter(
             points: points,
             segments: segments,
-            background: TrackThumbnailPainter.graphite,
+            background: c.routeGround,
             runColor: c.run,
             liftColor: c.liftGrey,
             padding: padding,
