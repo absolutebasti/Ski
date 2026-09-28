@@ -18,7 +18,7 @@ void main() {
     for (final src in LicencesPage.sources) {
       expect(find.text(src.$1), findsOneWidget);
     }
-    expect(find.textContaining('ODbL'), findsOneWidget);
+    expect(find.textContaining('ODbL'), findsNWidgets(2)); // OpenStreetMap + OpenSkiMap
     expect(find.textContaining('CC BY 4.0'), findsOneWidget);
     expect(find.textContaining('Open Font License'), findsOneWidget);
     expect(find.text('Alle Paket-Lizenzen'), findsOneWidget);
