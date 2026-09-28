@@ -4,7 +4,6 @@ enum GuardAction { none, remindIdle, autoEndIdle, autoEndVehicle, remindFourHour
 
 /// Minutes without location access (service off / permission revoked) after
 /// which the day is closed. Local until TrackingConfig.noAccessAutoEndMin exists.
-const int kNoAccessAutoEndMin = 30;
 
 /// Pure decision logic for the safety guards (docs/PLAN.md §5). Stateful so
 /// each reminder fires once per day.
@@ -23,7 +22,7 @@ class Guards {
     if (run != null) _lastRunEndMs = run.endTs;
 
     // no access: nothing is being recorded; close the day after 30 min.
-    if (accessLostSinceMs != null && nowMs - accessLostSinceMs >= kNoAccessAutoEndMin * 60000) {
+    if (accessLostSinceMs != null && nowMs - accessLostSinceMs >= TrackingConfig.noAccessAutoEndMin * 60000) {
       out.add(GuardAction.autoEndNoAccess);
     }
 

@@ -2,14 +2,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'app/demo.dart';
+import 'app/avatar_picker_impl.dart';
 import 'app/invite_links_source.dart';
 import 'core/settings.dart';
 import 'data/supabase/supabase_client.dart';
 import 'data/sync/sync_service.dart';
+import 'data/sync/track_restore.dart';
+import 'features/account/avatar_picker.dart';
+import 'features/days/track_restore.dart';
+import 'features/social/duel/duel_providers.dart';
 import 'features/recording/recording_controller.dart';
 import 'features/social/invite/invite_link_handler.dart';
 import 'platform/providers.dart';
@@ -21,12 +27,26 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   await SupabaseBoot.init(); // backend is optional; the app is local-first
   await Demo.load(); // debug-only launch switches (demo.json / dart-define)
+  // IANA zone for duel days (server default is Europe/Vienna); never blocks launch.
+  String? tz;
+  try {
+    tz = (await FlutterTimezone.getLocalTimezone()).identifier;
+  } catch (_) {}
   final container = ProviderContainer(
     overrides: [
       settingsProvider.overrideWith(() => SettingsNotifier(prefs)),
       heartRateSourceProvider.overrideWith((ref) => WatchHeartRateSource(ref.watch(watchTransportProvider))),
       if (kDebugMode && Demo.seedDays) permissionServiceProvider.overrideWithValue(DemoPermissionService()),
       inviteLinkSourceProvider.overrideWithValue(AppLinksInviteLinkSource()),
+      avatarPickerProvider.overrideWithValue(ImagePickerAvatarPicker()),
+      if (tz != null && tz.isNotEmpty) deviceTimeZoneProvider.overrideWithValue(tz),
+      // 'Spur laden' on Tag detail: download + decode the backed-up track.
+      dayTrackRestoreProvider.overrideWith((ref) {
+        final s = ref.watch(trackRestoreServiceProvider);
+        return DayTrackRestore(hasRemoteTrack: s.hasRemoteTrack, restore: (id) async {
+          await s.restore(id);
+        });
+      }),
     ],
   );
   // Apple Watch bridge follows the recording state; attach before resume so a

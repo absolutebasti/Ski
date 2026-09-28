@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../recording/recording_badges.dart';
 import '../../app/l10n/app_locale.dart';
 import '../../app/theme/theme.dart';
 import '../../app/theme/tokens.dart';
@@ -202,6 +203,10 @@ class _StatusRow extends StatelessWidget {
             RecordingPill(text: s.recordingPill(live.gps)),
             const SizedBox(width: 8),
             _StateChip(live: live),
+            const SizedBox(width: 8),
+            const TrackingAccessChip(),
+            const SizedBox(width: 8),
+            const GpsAltitudeBadge(),
           ],
         ),
       ),

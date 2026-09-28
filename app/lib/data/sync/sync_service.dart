@@ -302,7 +302,8 @@ class SyncService {
       }
     }
     await store.setLastUserId(uid);
-    _current = _current.copyWith(lastSyncAt: await store.lastSyncAt(uid));
+    // Explicit: a fresh Konto starts without the previous Konto's cursor.
+    _current = SyncStatus(state: _current.state, pending: _current.pending, lastSyncAt: await store.lastSyncAt(uid), message: _current.message, needsSignIn: _current.needsSignIn);
   }
 
   /// Returns false when we went offline (or lost the session) and the outbox

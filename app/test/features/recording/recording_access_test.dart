@@ -68,7 +68,7 @@ void main() {
       await h.settle();
       final lostAt = h.container.read(trackingAccessProvider).lostSinceMs!;
 
-      h.clock.advance(kNoAccessAutoEndMin * 60000 - 1000);
+      h.clock.advance(TrackingConfig.noAccessAutoEndMin * 60000 - 1000);
       expect(h.container.read(recordingControllerProvider).isRecording, isTrue);
       h.clock.advance(2000);
       await h.settle(80);

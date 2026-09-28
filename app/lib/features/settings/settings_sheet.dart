@@ -61,7 +61,7 @@ class _SettingsSheetBodyState extends ConsumerState<SettingsSheetBody> {
       onAccount();
       return;
     }
-    AccountSheet.show(context);
+    ProfilePage.open(context);
   }
 
   Future<void> _toggleNotifications(bool on) async {

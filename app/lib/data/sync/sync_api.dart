@@ -139,6 +139,8 @@ class SupabaseSyncApi implements SyncApi {
         try {
           final res = await _client.auth.refreshSession();
           return res.session != null;
+        } on AuthRetryableFetchException {
+          rethrow; // offline, not a dead session — _guard maps it to SyncOffline
         } on AuthException {
           return false;
         }

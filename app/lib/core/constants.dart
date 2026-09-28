@@ -9,6 +9,8 @@ class TrackingConfig {
   static const int maxDayH = 16;
   /// Local hour at which a day that crossed midnight is closed (03:00).
   static const int dayRolloverHour = 3;
+  /// Minutes without location access (permission revoked, service off) before the day is closed.
+  static const int noAccessAutoEndMin = 30;
 
   static const double maxHorizontalAccuracyM = 30;
   static const double maxFixAgeS = 5;

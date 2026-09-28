@@ -27,6 +27,8 @@ class ProviderInviteActions implements InviteActions {
     if (api == null) throw const SocialError(SocialErrorKind.offline);
     await api.joinDuel(code);
     _ref.invalidate(myDuelProvider);
+    _ref.invalidate(myDuelsProvider);
+    _ref.invalidate(groupBoardProvider);
   }
 
   @override

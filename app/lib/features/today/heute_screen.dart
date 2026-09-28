@@ -12,6 +12,7 @@ import '../../app/l10n/app_locale.dart';
 import '../../core/core.dart';
 import '../../platform/providers.dart';
 import '../recording/live_state_provider.dart';
+import '../recording/recording_badges.dart';
 import '../recording/recording_controller.dart';
 import '../recording/recovery_service.dart';
 import '../settings/settings_sheet.dart';
@@ -73,7 +74,11 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
     await _start();
   }
 
-  Future<void> _openSettingsApp() => ref.read(permissionServiceProvider).openSettings();
+  Future<void> _openSettingsApp() async {
+    await ref.read(permissionServiceProvider).openSettings();
+    // Coming back from iOS settings: re-check access right away (resume also does).
+    unawaited(ref.read(recordingControllerProvider.notifier).recheckAccess());
+  }
 
   Future<void> _end() async {
     if (_busy) return;
@@ -136,7 +141,8 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
     final caption = [Fmt.dateShort(DateTime.now().millisecondsSinceEpoch, locale: l.code), ?resortName].join(' · ');
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: recording.isRecording
+      body: RecordingHintToaster(
+        child: recording.isRecording
           ? LiveView(banner: _banner, bannerRun: _bannerRun, busy: _busy, onEnd: _end, resortName: resortName)
           : SafeArea(
               bottom: false,
@@ -155,6 +161,7 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
                   ),
                 ],
               ),
+        ),
       ),
     );
   }
