@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/app/widgets/widgets.dart';
 import 'package:slopetrack/app/theme/tokens.dart';
 import 'package:slopetrack/core/core.dart';
+import 'package:slopetrack/core/settings.dart';
 import 'package:slopetrack/features/recording/live_state_provider.dart';
 import 'package:slopetrack/features/recording/recording_controller.dart';
 import 'package:slopetrack/features/recording/recovery_service.dart';
@@ -69,6 +70,63 @@ void main() {
     expect(find.text('18.240'), findsOneWidget);
     expect(find.text('Tag starten'), findsOneWidget);
     expect(find.byType(EmptyState), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('idle caption shows the last resort from settings', (tester) async {
+    await pumpHeute(
+      tester,
+      overrides: todayOverrides(
+        controller: FakeRecordingController(),
+        settings: const Settings(lastResortId: 'kitzbuehel'),
+        resorts: fixtureResorts,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.textContaining('· Kitzbühel'), findsOneWidget); // header caption
+  });
+
+  testWidgets('recording an unresolved day shows no stale resort name', (tester) async {
+    final ctrl = FakeRecordingController(
+      initial: RecordingState(status: RecordingStatus.recording, dayId: 'day-live', startedAt: tsDay),
+    );
+    await pumpHeute(
+      tester,
+      overrides: todayOverrides(
+        controller: ctrl,
+        live: _liveRecording,
+        settings: const Settings(lastResortId: 'kitzbuehel'),
+        resorts: fixtureResorts,
+        activeResortName: null,
+      ),
+      phone: true,
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.textContaining('Kitzbühel'), findsNothing);
+    expect(find.text('Aufnahme läuft · GPS gut'), findsOneWidget);
+  });
+
+  testWidgets('recording a resolved day shows the active day\'s resort', (tester) async {
+    final ctrl = FakeRecordingController(
+      initial: RecordingState(status: RecordingStatus.recording, dayId: 'day-live', startedAt: tsDay),
+    );
+    await pumpHeute(
+      tester,
+      overrides: todayOverrides(
+        controller: ctrl,
+        live: _liveRecording,
+        settings: const Settings(lastResortId: 'kitzbuehel'),
+        resorts: fixtureResorts,
+        activeResortName: 'Ischgl',
+      ),
+      phone: true,
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Ischgl'), findsOneWidget);
+    expect(find.textContaining('Kitzbühel'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -250,7 +308,7 @@ void main() {
     expect(pushed, ['/summary/day-42']);
   });
 
-  testWidgets('a day that is too short shows the snackbar instead of a route', (tester) async {
+  testWidgets('a day that is too short shows the toast instead of a route', (tester) async {
     final ctrl = FakeRecordingController(
       initial: RecordingState(status: RecordingStatus.recording, dayId: 'day-live', startedAt: tsDay),
       endResult: null,
@@ -274,6 +332,10 @@ void main() {
     expect(ctrl.endCalls, 1);
     expect(pushed, isEmpty);
     expect(find.text('Zu kurz, nicht gespeichert'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Zu kurz, nicht gespeichert'), findsNothing);
   });
 
   testWidgets('a committed run overlays the banner for three seconds without shifting the layout', (tester) async {

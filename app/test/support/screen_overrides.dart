@@ -3,6 +3,7 @@ import 'package:slopetrack/core/core.dart';
 import 'package:slopetrack/core/settings.dart';
 import 'package:slopetrack/data/db/providers.dart';
 import 'package:slopetrack/data/resorts/resort_repository.dart';
+import 'package:slopetrack/features/today/today_providers.dart';
 import 'package:slopetrack/features/recording/recovery_service.dart';
 import 'package:slopetrack/features/settings/settings_providers.dart';
 import 'package:slopetrack/platform/permission_service.dart';
@@ -31,6 +32,8 @@ List<Override> screenOverrides({
       personalBestsProvider.overrideWith((ref) => Stream.value(bests)),
       recoveryProvider.overrideWith((ref) async => null),
       resortRepositoryProvider.overrideWith((ref) async => ResortRepository(resorts)),
+      // Heute while recording polls the active day's resort; never touch the DB in tests.
+      activeDayResortProvider.overrideWith((ref) => Stream.value(null)),
       permissionServiceProvider.overrideWithValue(permissions ?? FakePermissionService()),
       barometerSourceProvider.overrideWithValue(FakeBarometerSource(const [])),
       locationSourceProvider.overrideWithValue(ManualLocationSource()),

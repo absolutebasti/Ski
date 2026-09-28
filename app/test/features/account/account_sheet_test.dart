@@ -254,4 +254,39 @@ void main() {
     ]);
     expect(find.text('Kitzbühel'), findsOneWidget);
   });
+
+  testWidgets('name field is capped at 24 characters and a listed word is refused inline', (tester) async {
+    final api = FakeProfileApi(userId: 'u1', row: {'id': 'u1', 'display_name': 'Sebastian'});
+    await _pumpSheet(tester, _overrides(user: _user, api: api));
+
+    await tester.tap(find.byKey(const ValueKey('account-name-edit')));
+    await tester.pumpAndSettle();
+    final field = find.byKey(const ValueKey('account-name-field'));
+    expect(tester.widget<TextField>(field).maxLength, 24);
+
+    await tester.enterText(field, 'Sebastian Fackelmann der Dritte');
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(field).controller!.text.length, 24);
+
+    await tester.enterText(field, 'Moderator');
+    await tester.tap(find.byKey(const ValueKey('account-name-save')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('account-name-hint')), findsOneWidget);
+    expect(find.byKey(const ValueKey('account-name-field')), findsOneWidget, reason: 'stays in edit mode');
+    expect(api.patches, isEmpty);
+
+    await tester.enterText(field, '');
+    await tester.tap(find.byKey(const ValueKey('account-name-save')));
+    await tester.pumpAndSettle();
+    expect(find.text('Gib einen Namen ein.'), findsOneWidget);
+    expect(api.patches, isEmpty);
+  });
+
+  testWidgets('the Apple button uses the onboarding look: ink fill in dark, hairline border', (tester) async {
+    await _pumpSheet(tester, _overrides());
+    final box = tester.widget<Container>(find.byKey(const ValueKey('account-apple')));
+    final deco = box.decoration! as BoxDecoration;
+    expect(deco.border, isNotNull);
+    expect(deco.color, const Color(0xFF07070A), reason: 'AppColors.ink in the dark theme');
+  });
 }

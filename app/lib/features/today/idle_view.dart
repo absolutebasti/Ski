@@ -159,8 +159,8 @@ class _PbStrip extends StatelessWidget {
     final s = TodayStrings.of(context);
     final tiles = <Widget>[
       if (bests.topSpeedMs != null) PbTile(label: s.topSpeed, value: Fmt.kmh(bests.topSpeedMs!, locale: l.code), unit: s.unitKmh),
-      if (bests.biggestDayDropM != null) PbTile(label: s.biggestDay, value: Fmt.metres(bests.biggestDayDropM!, locale: l.code), unit: s.unitHm),
-      if (bests.longestRunDropM != null) PbTile(label: s.longestRun, value: Fmt.metres(bests.longestRunDropM!, locale: l.code), unit: s.unitHm),
+      if (bests.biggestDayDropM != null) PbTile(label: s.pbBestDay, value: Fmt.metres(bests.biggestDayDropM!, locale: l.code), unit: s.unitHm),
+      if (bests.longestRunDropM != null) PbTile(label: s.pbLongest, value: Fmt.metres(bests.longestRunDropM!, locale: l.code), unit: s.unitHm),
     ];
     return Row(
       children: [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../duel/duel.dart';
 import '../../../app/l10n/app_locale.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../app/theme/typography.dart';
@@ -11,7 +12,6 @@ import '../../achievements/achievements_engine.dart';
 import '../../achievements/achievements_strings.dart';
 import '../../achievements/medal_catalog.dart';
 import '../country_card.dart';
-import '../group_providers.dart';
 import '../leaderboard_providers.dart';
 import '../moderation/moderation_api.dart';
 import '../moderation/moderation_providers.dart';
@@ -70,9 +70,12 @@ class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
     }
     setState(() => _busy = true);
     try {
-      var duel = await api.myDuel(today());
-      duel ??= await api.createDuel(name: ss.duelDefaultName, day: today(), resortId: null);
-      ref.invalidate(myDuelProvider);
+      final duelApi = ref.read(duelApiProvider);
+      final duel = await api.myDuel(today()) ??
+          (duelApi != null
+              ? await duelApi.createDuel(name: ss.duelDefaultName, day: today(), tz: ref.read(deviceTimeZoneProvider), resortId: null)
+              : await api.createDuel(name: ss.duelDefaultName, day: today(), resortId: null));
+      invalidateDuels(ref);
       ref.invalidate(groupBoardProvider(duel.id));
       await ref.read(riderShareProvider)(text: s.challengeText(rider.displayName, duel.code), subject: s.challengeSubject);
     } on SocialError catch (e) {

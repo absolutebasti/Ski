@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/app/l10n/app_locale.dart';
 import 'package:slopetrack/app/shell.dart';
-import 'package:slopetrack/app/widgets/rider.dart';
 import 'package:slopetrack/app/widgets/widgets.dart';
 import 'package:slopetrack/core/core.dart';
 import 'package:slopetrack/core/settings.dart';

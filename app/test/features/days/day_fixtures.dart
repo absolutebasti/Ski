@@ -74,11 +74,23 @@ DayDetail syntheticDayDetail({
   );
 }
 
-/// Records `softDeleteDay` instead of touching a real database.
+/// Records `softDeleteDay` / `updateResort` instead of touching a real database.
 class RecordingRepository extends DaysRepository {
   RecordingRepository() : super(AppDatabase(NativeDatabase.memory()));
   final deleted = <String>[];
+  /// (dayId, resortId, resortName) per `updateResort` call.
+  final resortUpdates = <(String, String?, String?)>[];
 
   @override
   Future<void> softDeleteDay(String id) async => deleted.add(id);
+
+  @override
+  Future<void> updateResort(String dayId, String? resortId, String? resortName) async => resortUpdates.add((dayId, resortId, resortName));
 }
+
+/// Three bundled resorts around Kitzbühel for the picker.
+const List<Resort> fixtureResorts = [
+  Resort(id: 'kitzbuehel', name: 'Kitzbühel', country: 'AT', lat: 47.44, lon: 12.39, radiusKm: 12),
+  Resort(id: 'ischgl', name: 'Ischgl', country: 'AT', lat: 47.01, lon: 10.29, radiusKm: 10),
+  Resort(id: 'zermatt', name: 'Zermatt', country: 'CH', lat: 46.02, lon: 7.75, radiusKm: 12),
+];

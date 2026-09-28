@@ -12,15 +12,15 @@ void main() {
   late DaysRepository repo;
   late FakeSyncApi api;
   late MemorySyncStore store;
-  late List<Duration> slept;
+  late int clock;
 
   SyncService service({int? lastSyncAt, CountryResolver? countryFor}) {
-    store = MemorySyncStore(lastSyncAt);
+    store = MemorySyncStore(cursors: lastSyncAt == null ? null : {'u1': lastSyncAt}, lastUserId: 'u1');
     return SyncService(
       repo: repo,
       api: api,
       store: store,
-      sleep: (d) async => slept.add(d),
+      now: () => clock,
       countryFor: countryFor,
     );
   }
@@ -29,7 +29,7 @@ void main() {
     db = memoryDb();
     repo = DaysRepository(db);
     api = FakeSyncApi();
-    slept = [];
+    clock = DateTime.now().millisecondsSinceEpoch;
   });
   tearDown(() => db.close());
 
@@ -122,7 +122,7 @@ void main() {
 
     expect(api.upserts.single['id'], 'local');
     expect(api.fetchCursors, [sampleStartedAt]);
-    expect(await store.lastSyncAt(), sampleStartedAt + 90000000);
+    expect(await store.lastSyncAt('u1'), sampleStartedAt + 90000000);
     final pulled = await (db.select(db.days)..where((d) => d.id.equals('remote'))).getSingle();
     expect(pulled.resortName, 'Remote-Gebiet');
     expect(s.current.state, SyncState.idle);
@@ -134,7 +134,7 @@ void main() {
   test('pull without rows keeps the cursor (no device-clock drift)', () async {
     final s = service(lastSyncAt: sampleStartedAt);
     await s.pullAll();
-    expect(await store.lastSyncAt(), sampleStartedAt);
+    expect(await store.lastSyncAt('u1'), sampleStartedAt);
   });
 
   test('offline leaves the outbox intact and reports offline', () async {
@@ -156,25 +156,78 @@ void main() {
     expect(s.current.state, SyncState.idle);
   });
 
-  test('a failing push backs off and stops after 3 attempts', () async {
+  test('a failing push backs off exponentially and is retried once due', () async {
     await seedFinishedDay(repo);
-    api.failure = StateError('server said no');
+    api.upsertFailure = StateError('server said no');
     final s = service();
 
+    await s.syncNow();
+    var entry = (await repo.outbox()).single;
+    expect(entry.attempts, 1);
+    expect(entry.lastError, contains('server said no'));
+    expect(s.nextAttemptAt(entry.id), clock + 1000);
+
+    // not due yet → skipped, no attempt bump, the pull still runs
+    await s.syncNow();
+    expect((await repo.outbox()).single.attempts, 1);
+    expect(api.fetchCursors, hasLength(2), reason: 'one stuck day must not block the rest of the sync');
+
+    clock += 1000;
+    await s.syncNow();
+    entry = (await repo.outbox()).single;
+    expect(entry.attempts, 2);
+    expect(s.nextAttemptAt(entry.id), clock + 2000);
+
+    clock += 2000;
+    await s.syncNow();
+    entry = (await repo.outbox()).single;
+    expect(entry.attempts, 3);
+    expect(s.nextAttemptAt(entry.id), clock + 4000);
+
+    // 4th failure still schedules a retry — no hard cap
+    api.upsertFailure = null;
+    clock += 4000;
+    await s.syncNow();
+    expect(api.upserts, hasLength(1), reason: 'retried after the backoff instead of skipped forever');
+    expect(await repo.outbox(), isEmpty);
+    expect(s.nextAttemptAt(entry.id), isNull);
+  });
+
+  test('backoff doubles and caps at one hour', () {
+    expect(SyncService.backoffFor(0), const Duration(seconds: 1));
+    expect(SyncService.backoffFor(1), const Duration(seconds: 1));
+    expect(SyncService.backoffFor(2), const Duration(seconds: 2));
+    expect(SyncService.backoffFor(3), const Duration(seconds: 4));
+    expect(SyncService.backoffFor(12), const Duration(seconds: 2048));
+    expect(SyncService.backoffFor(13), const Duration(hours: 1));
+    expect(SyncService.backoffFor(40), const Duration(hours: 1));
+  });
+
+  test('resetAttempts on start makes a stuck entry due at once', () async {
+    await seedFinishedDay(repo);
+    api.upsertFailure = StateError('500');
+    final s = service();
     for (var i = 0; i < 3; i++) {
+      if (i > 0) clock += SyncService.backoffFor(i).inMilliseconds;
       await s.syncNow();
     }
-    expect((await repo.outbox()).single.attempts, 3);
-    expect(slept, [const Duration(seconds: 1), const Duration(seconds: 2), const Duration(seconds: 4)]);
+    final entry = (await repo.outbox()).single;
+    expect(entry.attempts, 3);
+    expect(s.nextAttemptAt(entry.id), greaterThan(clock));
 
-    expect((await repo.outbox()).single.lastError, contains('server said no'));
+    api.upsertFailure = null;
+    await s.syncFresh();
+    expect((await repo.outbox()), isEmpty);
+    expect(api.upserts, hasLength(1));
+  });
 
-    api.failure = null;
-    await s.syncNow();
-    expect(api.upserts, isEmpty, reason: 'no fourth attempt');
-    expect((await repo.outbox()).single.attempts, 3);
-    // the pull still runs — one stuck day must not block the rest of the sync
-    expect(api.fetchCursors, hasLength(1));
+  test('resetAttempts zeroes the persisted counter', () async {
+    await seedFinishedDay(repo);
+    final id = (await repo.outbox()).single.id;
+    await repo.bumpAttempt(id, 'x');
+    await repo.bumpAttempt(id, 'x');
+    await service().resetAttempts();
+    expect((await repo.outbox()).single.attempts, 0);
   });
 
   test('status stream seeds late listeners and reports pending work', () async {

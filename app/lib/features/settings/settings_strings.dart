@@ -59,6 +59,7 @@ class SettingsStrings {
   String get support => l.pick(de: 'Support', en: 'Support');
   String get supportHint => l.pick(de: 'Hilfe, Fehler melden, Kontakt', en: 'Help, report a problem, contact');
   String get imprint => l.pick(de: 'Impressum & Nutzungsbedingungen', en: 'Imprint & terms');
+  String get lowPower => l.pick(de: 'Stromsparmodus', en: 'Low Power Mode');
   String get licences => l.pick(de: 'Quellen & Lizenzen', en: 'Sources & licences');
   String get licencesHint => l.pick(de: 'Karten, Wetter, Schrift, Pakete', en: 'Maps, weather, font, packages');
   String get licencesIntro => l.pick(

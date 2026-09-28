@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../core/settings.dart';
 import 'brand.dart';
 import 'l10n/app_locale.dart';
+import '../features/social/duel/live_duel_uploader.dart';
 import '../features/social/invite/invite_listener.dart';
 import 'router.dart';
 import 'shell.dart';
@@ -51,7 +52,8 @@ class _SlopeTrackAppState extends ConsumerState<SlopeTrackApp> {
       onGenerateRoute: AppRouter.onGenerateRoute,
       // Invite links (duel / friend codes) are handled inside the Navigator so
       // the toast has an Overlay; the onboarding keeps a pending link for later.
-      home: InviteListener(child: _onboardingDone ? const RootShell() : AppRouter.onboarding()),
+      // LiveDuelSyncHost keeps the live-duel uploader watched (Riverpod 3 pauses unwatched providers).
+      home: LiveDuelSyncHost(child: InviteListener(child: _onboardingDone ? const RootShell() : AppRouter.onboarding())),
     );
   }
 }

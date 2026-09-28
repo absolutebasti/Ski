@@ -6,6 +6,7 @@ import 'package:slopetrack/app/theme/typography.dart';
 import 'package:slopetrack/app/widgets/widgets.dart';
 import 'package:slopetrack/data/sync/auth_service.dart';
 import 'package:slopetrack/features/social/friends/friends.dart';
+import 'package:slopetrack/features/social/invite/invite_links.dart';
 
 import '../../../support/pump.dart';
 
@@ -57,7 +58,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(shared, hasLength(1));
-    expect(shared.single.$1, 'Fahr gegen mich in SlopeTrack – Freundescode KMJ4F2 · https://slopetrack.app/f/KMJ4F2');
+    expect(shared.single.$1, 'Fahr gegen mich in SlopeTrack – Freundescode KMJ4F2 · ${InviteLinks.share(InviteKind.friend, 'KMJ4F2')}');
     expect(shared.single.$2, 'Freunde');
   });
 

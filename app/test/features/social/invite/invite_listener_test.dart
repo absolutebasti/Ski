@@ -1,5 +1,3 @@
-@Skip('SOC-DEEPLINK unfinished 2026-09-28: the listener does not process links yet and is not mounted in the app')
-library;
 
 import 'dart:async';
 
@@ -145,6 +143,53 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Duell gemerkt – melde dich im Konto an'), findsOneWidget);
+    await _settleToast(tester);
+    await source.close();
+  });
+
+  testWidgets('onboarding path: link tapped before the account existed is consumed on the next start once signed in', (tester) async {
+    // Session 1 (signed out, e.g. still in onboarding): the link was kept.
+    SharedPreferences.setMockInitialValues({SharedPrefsPendingInviteStore.key: 'd:KMJ4F2'});
+    final source = FakeInviteLinkSource();
+    final social = FakeSocialApi(userId: 'u1');
+    final auth = StreamController<AuthUser?>();
+    addTearDown(auth.close);
+
+    // Session 2: app starts, auth resolves a moment later.
+    final container = await _pump(tester, [
+      inviteLinkSourceProvider.overrideWithValue(source),
+      socialApiProvider.overrideWithValue(social),
+      friendsApiProvider.overrideWithValue(FakeFriendsApi(userId: 'u1')),
+      authStateProvider.overrideWith((ref) => auth.stream),
+    ]);
+    expect(social.joined, isEmpty, reason: 'nothing happens while auth is unknown');
+    expect(find.text('shell'), findsOneWidget);
+
+    auth.add(_user);
+    await tester.pumpAndSettle();
+
+    expect(social.joined, ['KMJ4F2']);
+    expect(find.text('Duell KMJ4F2 beigetreten'), findsOneWidget);
+    expect(container.read(ranglisteRequestProvider), 1);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.containsKey(SharedPrefsPendingInviteStore.key), isFalse);
+    await _settleToast(tester);
+    await source.close();
+  });
+
+  testWidgets('a launch link (initialLink) while signed in joins straight away', (tester) async {
+    final source = FakeInviteLinkSource(initial: Uri.parse('slopetrack://d/KMJ4F2'));
+    final social = FakeSocialApi(userId: 'u1');
+    final container = await _pump(tester, [
+      inviteLinkSourceProvider.overrideWithValue(source),
+      socialApiProvider.overrideWithValue(social),
+      friendsApiProvider.overrideWithValue(FakeFriendsApi(userId: 'u1')),
+      authStateProvider.overrideWith((ref) => Stream.value(_user)),
+    ]);
+
+    expect(social.joined, ['KMJ4F2']);
+    expect(find.text('Duell KMJ4F2 beigetreten'), findsOneWidget);
+    expect(container.read(ranglisteRequestProvider), 1);
     await _settleToast(tester);
     await source.close();
   });

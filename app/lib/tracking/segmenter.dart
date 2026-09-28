@@ -137,6 +137,10 @@ class Segmenter {
         final flat = g60 != null && g60 < 5 && _hist.length >= 30 && t.ts - _hist.first.$1 >= 55000;
         if (longGap && ((gain != null && gain <= -TrackingConfig.liftGapGainM) || flat)) {
           _transition(SegmentKind.signalLoss, flat ? t.ts - 60000 : (_lastFixTs ?? t.ts));
+          // New baseline: only a fresh +30 m from here is another lift, else the
+          // old gain re-enters LIFT on the very next tick (flip-flop).
+          _gapStartTs = t.ts;
+          _gapStartH = h;
         }
         return;
       }
@@ -164,14 +168,16 @@ class Segmenter {
       _vehicleTicks = 0;
       _slowTicks++;
     }
+    // The interval being closed carries the flag that was valid *during* it:
+    // close first, then toggle, so the vehicle ride itself is the flagged one.
     if (!_vehicle && _vehicleTicks >= TrackingConfig.vehicleSustainS) {
-      _vehicle = true;
       _transition(SegmentKind.other, t.ts - TrackingConfig.vehicleSustainS * 1000);
+      _vehicle = true;
     }
     if (_vehicle) {
       if (_slowTicks >= 30) {
-        _vehicle = false;
         _transition(SegmentKind.other, t.ts);
+        _vehicle = false;
       }
       return;
     }

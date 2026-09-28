@@ -101,7 +101,7 @@ Rules for backend packages: never block the UI on the network; every remote call
 | `socialApiProvider` | `Provider<SocialApi?>` | null without Supabase → offline/signed-out states |
 | `leaderboardProvider` | `FutureProvider.family<List<LeaderboardEntry>, LeaderboardQuery>` | RPC `leaderboard` |
 | `groupBoardProvider` | `FutureProvider.family<List<GroupMemberStats>, String>` | RPC `group_board` |
-| `myDuelProvider`, `openChallengesProvider`, `challengeProgressProvider`, `shareLeaderboardsProvider` (`bool?`), `socialUserIdProvider` | providers | all `retry: noRetry` |
+| `myDuelProvider`, `openChallengesProvider`, `myChallengeIdsProvider`, `challengeBoardProvider(id)`, `challengeHistoryProvider`, `shareLeaderboardsProvider` (`bool?`), `socialUserIdProvider` | providers | all `retry: noRetry`; challenge module in `social/challenge/` |
 | `duelPollIntervalProvider` | `Provider<Duration?>` | 60 s; override with null in tests |
 
 ### WP-15 Konto (done) — features/account
@@ -123,3 +123,16 @@ Rules for backend packages: never block the UI on the network; every remote call
 | `Rider(pose:)`, `RiderLine` | widgets | app/widgets/rider.dart — the mascot (replaces `Leo`/`MascotLine`) |
 | `OnboardingFlow({deviceCountry})` | widget | v3: 3 pages; keys `onboarding-country-<CODE>`, `onboarding-country-other`, `onboarding-resort-toggle`, `onboarding-resort-search`, `onboarding-apple`, `onboarding-primary`, `onboarding-skip`, `onboarding-back` |
 | `LeaderboardQuery.countryCode`, `SocialMetric.points`, `countryBoardProvider` | social | migration 0004: `days.country_code`, `days.points` (generated, no streak bonus), `profiles.country_code`, RPC `country_board(p_season_key)` |
+
+**Riverpod 3 rule (learned 2026-09-28, invite links):** a provider that relies on its own `ref.listen(...)` is *paused* while nobody watches or listens to it — `ref.read` alone leaves it paused and its inner subscriptions silent. Any long-lived handler provider must be watched (`ref.watch`/`ref.listen`/`container.listen`) by whoever starts it (see `InviteListener`).
+
+### Wave 2c (2026-09-28)
+| Symbol | Type | Notes |
+|---|---|---|
+| `syncServiceProvider` | `SyncService` | `syncNow`, `syncFresh` (start + sign-in), `syncOnResume` (5 min debounce), `migrateLocalDays`, `pullAll` (paged 500); `SyncStatus.needsSignIn`; `syncStatusProvider`, `syncNeedsSignInProvider` |
+| `trackRestoreServiceProvider`, `trackRestoreProvider(dayId)`, `hasRemoteTrackProvider(dayId)` | data/sync | downloads + decodes the backed-up bundle; bridged into `dayTrackRestoreProvider` (features/days) in main.dart |
+| `deviceAccessProvider`, `trackingAccessProvider`, `recordingHintsProvider`, `lowPowerModeProvider`, `gpsAltitudeOnlyProvider`, `RecordingController.recheckAccess()` | features/recording | access loss → chip + notification + auto-end after `TrackingConfig.noAccessAutoEndMin`; `TrackingAccessChip`, `GpsAltitudeBadge`, `RecordingHintToaster` |
+| `duelApiProvider`, `myDuelsProvider`, `groupBoardProvider(id)` (rows `DuelMember` incl. `isLive`), `deviceTimeZoneProvider`, `invalidateDuels(ref)`, `LiveDuelSyncHost` | features/social/duel | live duel via `live_days` (0009); host mounted in app.dart |
+| `ProfilePage.open(context)`, `CountryPickerSheet.show`, `avatarPickerProvider` (overridden with `ImagePickerAvatarPicker` in main.dart), `ProfileService.setAvatar` | features/account | Einstellungen › Konto opens the page |
+| `DayListSkeleton`, `DayDetailSkeleton`, `ResortPickerSheet.show`, `DaysRepository.updateResort`, `activeDayResortProvider`, `AppColors.routeGround` | features/days, today, theme | |
+

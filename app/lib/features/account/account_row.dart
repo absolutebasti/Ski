@@ -4,14 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
+import '../social/social_controls.dart';
 import 'account_providers.dart';
-import 'account_sheet.dart';
 import 'account_strings.dart';
+import 'profile_page.dart';
 import 'profile_service.dart';
 
-/// One embeddable row for the Einstellungen sheet: avatar initial, display
-/// name (or "Anmelden" when signed out) and a chevron. Tapping opens
-/// [AccountSheet] unless [onTap] overrides it.
+/// One embeddable row for the Einstellungen sheet: avatar (picture or
+/// initial), display name (or "Anmelden" when signed out) and a chevron.
+/// Tapping opens [ProfilePage] unless [onTap] overrides it.
 class AccountRow extends ConsumerWidget {
   const AccountRow({super.key, this.onTap});
 
@@ -28,7 +29,7 @@ class AccountRow extends ConsumerWidget {
     final initial = signedIn ? (profile?.initial ?? _initialOf(name)) : null;
 
     return Pressable(
-      onTap: onTap ?? () => AccountSheet.show(context),
+      onTap: onTap ?? () => ProfilePage.open(context),
       child: Container(
         key: const ValueKey('account-row'),
         constraints: const BoxConstraints(minHeight: Tokens.minTarget),
@@ -36,19 +37,22 @@ class AccountRow extends ConsumerWidget {
         color: Colors.transparent,
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: signedIn ? c.accentWash : c.glassFill,
-                shape: BoxShape.circle,
-                border: Border.all(color: signedIn ? c.accent.withValues(alpha: 0.45) : c.glassStroke, width: c.hairlineWidth),
+            if (signedIn && profile?.avatarUrl != null)
+              AvatarCircle(name: name, avatarUrl: profile?.avatarUrl, size: 36, accent: true)
+            else
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: signedIn ? c.accentWash : c.glassFill,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: signedIn ? c.accent.withValues(alpha: 0.45) : c.glassStroke, width: c.hairlineWidth),
+                ),
+                child: initial == null
+                    ? Icon(Icons.person_outline_rounded, size: 20, color: c.textTertiary)
+                    : Text(initial, style: AppText.title(c.accent, size: 16)),
               ),
-              child: initial == null
-                  ? Icon(Icons.person_outline_rounded, size: 20, color: c.textTertiary)
-                  : Text(initial, style: AppText.title(c.accent, size: 16)),
-            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

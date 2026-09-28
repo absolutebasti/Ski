@@ -1,5 +1,6 @@
 export 'barometer_source.dart';
 export 'battery_source.dart';
+export 'device_access.dart';
 export 'location_source.dart';
 export 'notification_service.dart';
 export 'permission_service.dart';

@@ -17,7 +17,7 @@ import '../tracking/tracking.dart';
 ///      {"SLOPETRACK_SKIP_ONBOARDING":"1","SLOPETRACK_DEMO":"1","SLOPETRACK_TAB":"tage","SLOPETRACK_ROUTE":"/day/demo-0"}
 ///      — written with `xcrun simctl get_app_container <udid> <bundle> data`, no rebuild needed (tools/shots.sh)
 ///   2. `--dart-define=SLOPETRACK_SKIP_ONBOARDING=1` etc. at build time
-///   SLOPETRACK_ROUTE: a named route pushed after the first frame, or `settings` / `account` / `medals` for the sheets.
+///   SLOPETRACK_ROUTE: a named route pushed after the first frame, or `settings` / `account` / `medals` / `profile` for the sheets and pages.
 ///   SLOPETRACK_APPEARANCE: system | light | dark (screenshots of the light theme).
 ///   SLOPETRACK_LOCALE: de | en | system (store screenshots per language).
 class Demo {

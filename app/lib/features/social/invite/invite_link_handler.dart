@@ -157,8 +157,10 @@ class InviteLinkHandler {
     _sub = null;
   }
 
-  /// Convenience for app.dart: `InviteLinkHandler.start(ref)` in initState.
-  /// [InviteListener] does the same, so either wiring point is enough.
+  /// Convenience for app.dart: `InviteLinkHandler.startWith(ref)` in
+  /// initState. [InviteListener] does the same, so either wiring point is
+  /// enough — but whoever starts the handler must also `ref.watch`
+  /// [inviteLinkHandlerProvider] in build (see the provider's note).
   static Future<void> startWith(WidgetRef ref) => ref.read(inviteLinkHandlerProvider).start();
 }
 
@@ -192,6 +194,11 @@ final ranglisteRequestProvider = NotifierProvider<RanglisteRequests, int>(Rangli
 
 /// The one handler of the app. Follows [authStateProvider]; alive as long as
 /// the ProviderScope.
+///
+/// Must be *watched* (or `ref.listen`ed / `container.listen`ed) by someone —
+/// [InviteListener] does it. Riverpod 3 pauses a provider without active
+/// listeners, and with it the `ref.listen(authStateProvider)` below; a
+/// handler that is only `ref.read` never learns the sign-in state.
 final inviteLinkHandlerProvider = Provider<InviteLinkHandler>((ref) {
   final handler = InviteLinkHandler(
     source: ref.watch(inviteLinkSourceProvider),

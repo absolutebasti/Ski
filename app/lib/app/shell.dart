@@ -40,6 +40,8 @@ class _RootShellState extends ConsumerState<RootShell> {
           AccountSheet.show(context);
         case 'medals':
           MedalsSheet.show(context);
+        case 'profile':
+          ProfilePage.open(context);
         default:
           Navigator.of(context).pushNamed(route);
       }

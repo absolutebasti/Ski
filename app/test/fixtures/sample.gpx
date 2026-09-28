@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="SlopeTrack" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v2">
+  <metadata><name>2026-01-15 · Kitzbühel</name><time>2026-01-15T09:00:00Z</time></metadata>
+  <trk>
+    <name>2026-01-15 · Kitzbühel</name>
+    <type>ski</type>
+    <trkseg>
+      <trkpt lat="47.4491" lon="12.3913"><ele>1650.0</ele><time>2026-01-15T09:00:00Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:speed>12.5</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="47.4490" lon="12.3913"><ele>1648.5</ele><time>2026-01-15T09:00:01Z</time><extensions><gpxtpx:TrackPointExtension><gpxtpx:speed>12.8</gpxtpx:speed></gpxtpx:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="47.4489" lon="12.3913"><ele>1647.0</ele><time>2026-01-15T09:00:02Z</time></trkpt>
+      <trkpt lat="47.4488" lon="12.3914"><time>2026-01-15T09:00:03Z</time></trkpt>
+      <trkpt lat="47.4487" lon="12.3914"><ele>1644.0</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

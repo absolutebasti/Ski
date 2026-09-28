@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,7 +22,7 @@ enum SyncState { idle, syncing, offline, error }
 
 @immutable
 class SyncStatus {
-  const SyncStatus({this.state = SyncState.idle, this.lastSyncAt, this.pending = 0, this.message});
+  const SyncStatus({this.state = SyncState.idle, this.lastSyncAt, this.pending = 0, this.message, this.needsSignIn = false});
 
   final SyncState state;
 
@@ -32,11 +33,16 @@ class SyncStatus {
   final int pending;
   final String? message;
 
-  SyncStatus copyWith({SyncState? state, int? lastSyncAt, int? pending, String? message}) => SyncStatus(
+  /// [SyncState.error] because the session is gone: a 401 survived one token
+  /// refresh. The Konto sheet asks for a fresh Sign in with Apple.
+  final bool needsSignIn;
+
+  SyncStatus copyWith({SyncState? state, int? lastSyncAt, int? pending, String? message, bool? needsSignIn}) => SyncStatus(
         state: state ?? this.state,
         lastSyncAt: lastSyncAt ?? this.lastSyncAt,
         pending: pending ?? this.pending,
         message: message,
+        needsSignIn: needsSignIn ?? this.needsSignIn,
       );
 
   @override
@@ -45,13 +51,14 @@ class SyncStatus {
       other.state == state &&
       other.lastSyncAt == lastSyncAt &&
       other.pending == pending &&
-      other.message == message;
+      other.message == message &&
+      other.needsSignIn == needsSignIn;
 
   @override
-  int get hashCode => Object.hash(state, lastSyncAt, pending, message);
+  int get hashCode => Object.hash(state, lastSyncAt, pending, message, needsSignIn);
 
   @override
-  String toString() => 'SyncStatus($state, pending: $pending, lastSyncAt: $lastSyncAt)';
+  String toString() => 'SyncStatus($state, pending: $pending, lastSyncAt: $lastSyncAt${needsSignIn ? ', needsSignIn' : ''})';
 }
 
 /// Encodes the raw track of a day for the storage backup; null = nothing to
@@ -67,15 +74,20 @@ typedef CountryResolver = String? Function(String? resortId);
 ///
 /// Nothing here ever blocks the UI — callers fire and forget; failures land in
 /// [status] and the outbox.
+///
+/// Retries: a failed push bumps `attempts` and schedules the entry for
+/// `now + backoffFor(attempts)` (1 s … 1 h, in memory); the 30 s poll picks it
+/// up once due. Attempts are reset on app start and on sign-in.
 class SyncService {
   SyncService({
     required this.repo,
     required this.api,
     this.store = const PrefsSyncStore(),
     TrackEncoder? trackEncoder,
-    this.sleep = _realSleep,
-    this.maxAttempts = 3,
     CountryResolver? countryFor,
+    this.now = _realNow,
+    this.pageSize = 500,
+    this.resumeGap = const Duration(minutes: 5),
   }) : countryFor = countryFor ?? _noCountry {
     _trackEncoder = trackEncoder ?? _defaultTrackEncoder;
   }
@@ -89,17 +101,26 @@ class SyncService {
   /// Fills `days.country_code` on push (migration 0004).
   final CountryResolver countryFor;
 
-  /// Injected so tests do not wait out the backoff.
-  final Future<void> Function(Duration) sleep;
+  /// Injected clock (ms epoch) so tests can move through the backoff.
+  final int Function() now;
 
-  /// After this many failed attempts an outbox entry is left alone.
-  final int maxAttempts;
+  /// Rows per `fetchDays` page.
+  final int pageSize;
+
+  /// [syncOnResume] only runs when the last sync is older than this.
+  final Duration resumeGap;
+
+  /// Longest wait between two attempts of one outbox entry.
+  static const Duration maxBackoff = Duration(hours: 1);
 
   late final TrackEncoder _trackEncoder;
   final StreamController<SyncStatus> _status = StreamController<SyncStatus>.broadcast();
+  final Map<int, int> _nextAttemptAt = {};
   SyncStatus _current = const SyncStatus();
   bool _running = false;
   bool _disposed = false;
+  bool _refreshedThisRun = false;
+  int? _lastRunAt;
 
   SyncStatus get current => _current;
 
@@ -113,12 +134,15 @@ class SyncService {
 
   Future<int> pendingCount() => repo.outboxCount();
 
+  /// ms epoch before which [outboxId] is not retried; null = due now.
+  int? nextAttemptAt(int outboxId) => _nextAttemptAt[outboxId];
+
   // ------------------------------------------------------------------ push
 
   /// Upserts the day's aggregates, then (best effort) backs up the raw track.
   Future<void> pushDay(String dayId) => _push(dayId, deleted: false);
 
-  /// Pushes the tombstone of a soft-deleted day.
+  /// Pushes the tombstone of a soft-deleted day and drops its track backup.
   Future<void> pushDelete(String dayId) => _push(dayId, deleted: true);
 
   Future<void> _push(String dayId, {required bool deleted}) async {
@@ -128,19 +152,24 @@ class SyncService {
     final row = await _dayRow(dayId);
     if (row == null) {
       // Hard-discarded locally — nothing left to push.
-      await repo.markSynced(dayId, DateTime.now().millisecondsSinceEpoch);
+      await repo.markSynced(dayId, now());
       return;
     }
-    final deviceUpdatedAt = DateTime.now().millisecondsSinceEpoch;
+    final deviceUpdatedAt = now();
+    final tombstone = deleted || row.deletedAt != null;
     await api.upsertDay(dayRowToRemote(
       row,
       userId: uid,
       deviceUpdatedAtMs: deviceUpdatedAt,
-      deleted: deleted || row.deletedAt != null,
+      deleted: tombstone,
       countryCode: countryFor(row.resortId),
     ));
     await repo.markSynced(dayId, deviceUpdatedAt);
-    if (!deleted && row.deletedAt == null) await _backupTrack(api, dayId);
+    if (tombstone) {
+      await _removeTrack(api, dayId);
+    } else {
+      await _backupTrack(api, dayId);
+    }
   }
 
   /// Storage upload is a bonus, never a reason to fail a push.
@@ -155,30 +184,46 @@ class SyncService {
     }
   }
 
+  /// Same for the storage delete: the tombstone is what matters.
+  Future<void> _removeTrack(SyncApi api, String dayId) async {
+    try {
+      await api.removeTrack(dayId);
+    } catch (e) {
+      debugPrint('track removal failed for $dayId: $e');
+    }
+  }
+
   // ------------------------------------------------------------------ pull
 
-  /// Merges every remote day changed since the stored cursor.
+  /// Merges every remote day changed since the user's stored cursor, page by
+  /// page; the cursor only moves once the last page is in.
   Future<void> pullAll() async {
     final api = this.api;
-    if (api == null || api.userId == null) return;
-    final since = await store.lastSyncAt();
-    final rows = await api.fetchDays(sinceMs: since);
+    final uid = api?.userId;
+    if (api == null || uid == null) return;
+    final since = await store.lastSyncAt(uid);
     var cursor = since ?? 0;
-    for (final row in rows) {
-      final updatedAt = remoteTs(row['updated_at']) ?? remoteTs(row['device_updated_at']) ?? 0;
-      if (updatedAt > cursor) cursor = updatedAt;
-      final id = row['id'] as String?;
-      if (id == null) continue;
-      if (row['deleted_at'] != null) {
-        await repo.softDeleteFromRemote(id, remoteUpdatedAt: updatedAt == 0 ? null : updatedAt);
-      } else {
-        await repo.upsertFromRemote(row);
+    var offset = 0;
+    while (true) {
+      final rows = await api.fetchDays(sinceMs: since, offset: offset, limit: pageSize);
+      for (final row in rows) {
+        final updatedAt = remoteTs(row['updated_at']) ?? remoteTs(row['device_updated_at']) ?? 0;
+        if (updatedAt > cursor) cursor = updatedAt;
+        final id = row['id'] as String?;
+        if (id == null) continue;
+        if (row['deleted_at'] != null) {
+          await repo.softDeleteFromRemote(id, remoteUpdatedAt: updatedAt == 0 ? null : updatedAt);
+        } else {
+          await repo.upsertFromRemote(row);
+        }
       }
+      if (rows.length < pageSize) break;
+      offset += rows.length;
     }
     // Only ever move forward on a server timestamp — the device clock may be
     // off, and advancing it blindly would skip rows written in the meantime.
     if (cursor > (since ?? 0)) {
-      await store.setLastSyncAt(cursor);
+      await store.setLastSyncAt(uid, cursor);
       _current = _current.copyWith(lastSyncAt: cursor);
     }
   }
@@ -190,18 +235,24 @@ class SyncService {
   Future<void> syncNow() async {
     if (_disposed || _running) return;
     final api = this.api;
-    if (api == null || api.userId == null) {
+    final uid = api?.userId;
+    if (api == null || uid == null) {
       await _emit(SyncState.idle);
       return;
     }
     _running = true;
+    _refreshedThisRun = false;
     try {
       await _emit(SyncState.syncing);
+      await _handleUserChange(uid);
       if (!await _drainOutbox()) return;
-      await pullAll();
+      await _withAuthRetry(pullAll);
+      _lastRunAt = now();
       await _emit(SyncState.idle);
     } on SyncOffline catch (e) {
       await _emit(SyncState.offline, message: e.message);
+    } on SyncNeedsSignIn catch (e) {
+      await _emit(SyncState.error, message: e.message, needsSignIn: true);
     } catch (e) {
       await _emit(SyncState.error, message: '$e');
     } finally {
@@ -209,16 +260,67 @@ class SyncService {
     }
   }
 
-  /// Returns false when we went offline and the outbox stays untouched.
+  /// App start and sign-in: every outbox entry gets a fresh run of retries.
+  Future<void> resetAttempts() async {
+    _nextAttemptAt.clear();
+    await repo.resetAttempts();
+  }
+
+  /// [resetAttempts] + [syncNow] — what start and sign-in call.
+  Future<void> syncFresh() async {
+    await resetAttempts();
+    await syncNow();
+  }
+
+  /// `AppLifecycleState.resumed`: a pull at most every [resumeGap].
+  Future<void> syncOnResume() async {
+    final last = _lastRunAt;
+    if (last != null && now() - last < resumeGap.inMilliseconds) return;
+    await syncNow();
+  }
+
+  /// The explicit 'take over my local days' confirm: from now on outbox
+  /// entries follow a Konto switch, and everything unsynced is queued again.
+  Future<void> migrateLocalDays() async {
+    await store.setMigrateOutboxOnUserChange(true);
+    await repo.requeueUnsynced();
+    await syncFresh();
+  }
+
+  /// Another Konto than last time: its cursor starts where it left off (epoch
+  /// for a new one). Entries queued under the previous Konto are dropped —
+  /// the days stay local — unless the confirm flag says to migrate them.
+  Future<void> _handleUserChange(String uid) async {
+    final previous = await store.lastUserId();
+    if (previous == uid) return;
+    if (previous != null) {
+      if (await store.migrateOutboxOnUserChange()) {
+        await resetAttempts();
+      } else {
+        await repo.clearOutbox();
+        _nextAttemptAt.clear();
+      }
+    }
+    await store.setLastUserId(uid);
+    // Explicit: a fresh Konto starts without the previous Konto's cursor.
+    _current = SyncStatus(state: _current.state, pending: _current.pending, lastSyncAt: await store.lastSyncAt(uid), message: _current.message, needsSignIn: _current.needsSignIn);
+  }
+
+  /// Returns false when we went offline (or lost the session) and the outbox
+  /// stays untouched.
   Future<bool> _drainOutbox() async {
     for (final entry in await repo.outbox()) {
-      if (entry.attempts >= maxAttempts) continue;
+      final due = _nextAttemptAt[entry.id];
+      if (due != null && now() < due) continue;
       try {
         final op = SyncOpX.fromDb(entry.op);
-        await _push(entry.dayId, deleted: op == SyncOp.delete);
+        await _withAuthRetry(() => _push(entry.dayId, deleted: op == SyncOp.delete));
+        _nextAttemptAt.remove(entry.id);
       } on SyncOffline catch (e) {
         await _emit(SyncState.offline, message: e.message);
         return false;
+      } on SyncNeedsSignIn {
+        rethrow;
       } on PostgrestException catch (e) {
         // Server throttles (migration 0006): rate_limited (P0005) and
         // too_many_days (P0004) are 'try again later', never a failed attempt.
@@ -226,23 +328,55 @@ class SyncService {
           await _emit(SyncState.offline, message: e.message);
           return false;
         }
-        await repo.bumpAttempt(entry.id, '$e');
-        await sleep(backoffFor(entry.attempts));
+        await _fail(entry, e);
       } catch (e) {
-        await repo.bumpAttempt(entry.id, '$e');
-        await sleep(backoffFor(entry.attempts));
+        await _fail(entry, e);
       }
     }
     return true;
   }
 
-  /// 1 s, 2 s, 4 s — enough to ride out a flaky lift-station connection.
-  static Duration backoffFor(int attempts) => Duration(seconds: 1 << attempts.clamp(0, 6));
+  Future<void> _fail(SyncOutboxRow entry, Object e) async {
+    final attempts = await repo.bumpAttempt(entry.id, '$e');
+    _nextAttemptAt[entry.id] = now() + backoffFor(attempts).inMilliseconds;
+  }
 
-  Future<void> _emit(SyncState state, {String? message}) async {
+  /// Runs [op]; on a 401 refreshes the session once per run and retries. A
+  /// second 401 (or a failed refresh) becomes [SyncNeedsSignIn].
+  Future<T> _withAuthRetry<T>(Future<T> Function() op) async {
+    try {
+      return await op();
+    } catch (e) {
+      if (e is SyncOffline || !SupabaseSyncApi.isAuthError(e)) rethrow;
+      if (_refreshedThisRun) throw SyncNeedsSignIn('$e');
+      _refreshedThisRun = true;
+      final api = this.api;
+      if (api == null || !await api.refreshSession()) throw SyncNeedsSignIn('$e');
+      try {
+        return await op();
+      } catch (e2) {
+        if (e2 is SyncOffline || !SupabaseSyncApi.isAuthError(e2)) rethrow;
+        throw SyncNeedsSignIn('$e2');
+      }
+    }
+  }
+
+  /// Wait after [attempts] failures: 1 s, 2 s, 4 s … capped at [maxBackoff].
+  static Duration backoffFor(int attempts) {
+    final seconds = 1 << (attempts - 1).clamp(0, 12);
+    return Duration(seconds: math.min(seconds, maxBackoff.inSeconds));
+  }
+
+  Future<void> _emit(SyncState state, {String? message, bool needsSignIn = false}) async {
     if (_disposed) return;
     final pending = await pendingCount();
-    _current = SyncStatus(state: state, lastSyncAt: _current.lastSyncAt, pending: pending, message: message);
+    _current = SyncStatus(
+      state: state,
+      lastSyncAt: _current.lastSyncAt,
+      pending: pending,
+      message: message,
+      needsSignIn: needsSignIn,
+    );
     if (!_status.isClosed) _status.add(_current);
   }
 
@@ -266,7 +400,7 @@ class SyncService {
     await _status.close();
   }
 
-  static Future<void> _realSleep(Duration d) => Future<void>.delayed(d);
+  static int _realNow() => DateTime.now().millisecondsSinceEpoch;
 
   static String? _noCountry(String? resortId) => null;
 }
@@ -286,8 +420,14 @@ final syncServiceProvider = Provider<SyncService>((ref) {
   return service;
 });
 
-/// Hook for main.dart: syncs on start, on every sign-in and whenever the
-/// outbox has work while the app is in the foreground.
+/// Live [SyncStatus]; `needsSignIn` is what the Konto sheet looks at.
+final syncStatusProvider = StreamProvider<SyncStatus>((ref) => ref.watch(syncServiceProvider).status);
+
+/// True while the backend rejects the session — show 'Bitte neu anmelden'.
+final syncNeedsSignInProvider = Provider<bool>((ref) => ref.watch(syncStatusProvider).value?.needsSignIn ?? false);
+
+/// Hook for main.dart: syncs on start, on every sign-in, on resume (debounced)
+/// and whenever the outbox has work while the app is in the foreground.
 void startAutoSync(Ref ref) {
   final service = ref.read(syncServiceProvider);
   String? lastUserId;
@@ -299,12 +439,12 @@ void startAutoSync(Ref ref) {
     }
     if (user.id == lastUserId) return;
     lastUserId = user.id;
-    unawaited(service.syncNow());
+    unawaited(service.syncFresh());
     // Team country → profiles.country_code (migration 0004); fire and forget.
     unawaited(ref.read(profileServiceProvider).pushCountry(ref.read(settingsProvider).countryCode, userId: user.id));
   }, fireImmediately: true);
 
-  unawaited(service.syncNow());
+  unawaited(service.syncFresh());
 
   final timer = Timer.periodic(const Duration(seconds: 30), (_) async {
     final lifecycle = WidgetsBinding.instance.lifecycleState;
@@ -312,6 +452,20 @@ void startAutoSync(Ref ref) {
     if (await service.pendingCount() > 0) unawaited(service.syncNow());
   });
   ref.onDispose(timer.cancel);
+
+  final observer = _ResumeObserver(() => unawaited(service.syncOnResume()));
+  WidgetsBinding.instance.addObserver(observer);
+  ref.onDispose(() => WidgetsBinding.instance.removeObserver(observer));
+}
+
+class _ResumeObserver with WidgetsBindingObserver {
+  _ResumeObserver(this.onResumed);
+  final void Function() onResumed;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) onResumed();
+  }
 }
 
 /// `ref.read(autoSyncProvider)` once in main.dart starts the loop.

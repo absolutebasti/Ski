@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../recording/recording_badges.dart';
 import '../../app/l10n/app_locale.dart';
 import '../../app/theme/theme.dart';
 import '../../app/theme/tokens.dart';
@@ -15,9 +16,11 @@ import 'today_strings.dart';
 /// glare theme, one 92 pt lead number, a tempo strip and the hold-to-end dock.
 /// Nothing moves here except the recording dot and the run banner.
 class LiveView extends StatelessWidget {
-  const LiveView({super.key, required this.onEnd, this.banner, this.bannerRun, this.busy = false});
+  const LiveView({super.key, required this.onEnd, this.banner, this.bannerRun, this.busy = false, this.resortName});
 
   final VoidCallback onEnd;
+  /// The active day's resort once resolved; drawn as a caption under the status row.
+  final String? resortName;
   /// Full sentence for the run banner ('Abfahrt 7 · 312 hm · 61 km/h').
   final String? banner;
   /// The run behind [banner]; drives the typeset banner when present.
@@ -38,7 +41,7 @@ class LiveView extends StatelessWidget {
               color: c.bg,
               child: SafeArea(
                 bottom: false,
-                child: _LiveBody(onEnd: onEnd, banner: banner, bannerRun: bannerRun, busy: busy),
+                child: _LiveBody(onEnd: onEnd, banner: banner, bannerRun: bannerRun, busy: busy, resortName: resortName),
               ),
             ),
           );
@@ -49,12 +52,13 @@ class LiveView extends StatelessWidget {
 }
 
 class _LiveBody extends ConsumerWidget {
-  const _LiveBody({required this.onEnd, required this.banner, required this.bannerRun, required this.busy});
+  const _LiveBody({required this.onEnd, required this.banner, required this.bannerRun, required this.busy, required this.resortName});
 
   final VoidCallback onEnd;
   final String? banner;
   final Segment? bannerRun;
   final bool busy;
+  final String? resortName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,6 +77,10 @@ class _LiveBody extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(Tokens.pad, 4, Tokens.pad, 12),
                 children: [
                   _StatusRow(live: live),
+                  if (resortName != null) ...[
+                    const SizedBox(height: 8),
+                    Text(resortName!, style: AppText.caption(c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
                   const SizedBox(height: 18),
                   FittedBox(
                     fit: BoxFit.scaleDown,
@@ -195,6 +203,10 @@ class _StatusRow extends StatelessWidget {
             RecordingPill(text: s.recordingPill(live.gps)),
             const SizedBox(width: 8),
             _StateChip(live: live),
+            const SizedBox(width: 8),
+            const TrackingAccessChip(),
+            const SizedBox(width: 8),
+            const GpsAltitudeBadge(),
           ],
         ),
       ),

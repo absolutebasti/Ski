@@ -161,7 +161,8 @@ class MetricStrip extends StatelessWidget {
               children: [
                 Text(it.$1, style: HeroNumber.numeralStyle(color ?? c.textPrimary, size), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 3),
-                Text(it.$2.overline, style: AppText.label(c.textTertiary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                // List rows (size ≤ 15) get a 10 pt overline: 'HÖHENMETER' fits a 65 pt column.
+                Text(it.$2.overline, style: AppText.label(c.textTertiary, size: size <= 15 ? 10 : 11), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -194,13 +195,19 @@ class PbTile extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label.overline, style: AppText.label(c.textTertiary), maxLines: 2, overflow: TextOverflow.ellipsis),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Flexible(child: Text(value, style: AppText.numS(c.accent), maxLines: 1, overflow: TextOverflow.ellipsis)),
-              if (unit != null) ...[const SizedBox(width: 4), Text(unit!, style: AppText.unit(c.textTertiary, size: 11))],
-            ],
+          // FittedBox: '1.804 hm' scales down at 375 pt instead of ellipsising to '1.8…'.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(value, style: AppText.numS(c.accent), maxLines: 1),
+                if (unit != null) ...[const SizedBox(width: 4), Text(unit!, style: AppText.unit(c.textTertiary, size: 11))],
+              ],
+            ),
           ),
         ],
       ),

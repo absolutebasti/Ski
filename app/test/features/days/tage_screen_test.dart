@@ -5,6 +5,7 @@ import 'package:slopetrack/app/widgets/widgets.dart';
 import 'package:slopetrack/core/core.dart';
 import 'package:slopetrack/data/db/providers.dart';
 import 'package:slopetrack/features/days/day_card.dart';
+import 'package:slopetrack/features/days/day_skeleton.dart';
 import 'package:slopetrack/features/days/tage_screen.dart';
 
 import '../../support/pump.dart';
@@ -60,9 +61,11 @@ void main() {
 
     expect(find.text('SAISON 2025/26'), findsOneWidget);
     expect(find.text('18.240'), findsOneWidget); // season vertical in the hero card
-    expect(find.text('TOP-SPEED'), findsOneWidget);
-    expect(find.text('GRÖSSTER TAG'), findsOneWidget);
-    expect(find.text('LÄNGSTE ABFAHRT'), findsOneWidget);
+    expect(find.text('TOP-SPEED'), findsNWidgets(2)); // season footer, PB tile (day rows show KM/H)
+    // Short PB overlines keep the three tiles on one baseline.
+    expect(find.text('BESTER TAG'), findsOneWidget);
+    expect(find.text('LÄNGSTE'), findsOneWidget);
+    expect(find.text('GRÖSSTER TAG'), findsNothing);
 
     expect(find.text('Kitzbühel'), findsOneWidget);
     expect(find.text('1.804'), findsWidgets); // day row vertical
@@ -87,6 +90,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Ischgl'), findsOneWidget);
     expect(find.byType(DayCard), findsNWidgets(2));
+  });
+
+  testWidgets('while the list loads, skeleton rows stand in — never a spinner', (tester) async {
+    await pumpApp(
+      tester,
+      const TageScreen(),
+      overrides: [
+        daysListProvider.overrideWith((ref) => const Stream<List<DaySummary>>.empty()),
+        seasonTotalsProvider.overrideWith((ref) => const Stream<List<SeasonTotals>>.empty()),
+        personalBestsProvider.overrideWith((ref) => const Stream<PersonalBests>.empty()),
+      ],
+    );
+    await tester.pump();
+    expect(find.byType(DayListSkeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(DayCard), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('empty list shows the mascot empty state', (tester) async {

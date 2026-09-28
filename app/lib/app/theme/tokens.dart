@@ -134,6 +134,8 @@ class AppColors extends ThemeExtension<AppColors> {
 
   // Semantic aliases
   Color get run => accent;
+  /// Ground of route thumbnails and the share-card route block (map/thumbnail_renderer).
+  Color get routeGround => isDark ? const Color(0xFF101216) : const Color(0xFFEDEAE2);
   Color get lift => liftGrey;
   Color get signalLoss => danger.withValues(alpha: 0.6);
   Color get accentWash => accent.withValues(alpha: 0.10);

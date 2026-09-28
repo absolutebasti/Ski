@@ -152,12 +152,12 @@ void main() {
     expect(readSettings(tester).notificationsOptIn, isFalse);
   });
 
-  testWidgets('without onAccount the Konto row opens the account sheet', (tester) async {
+  testWidgets('without onAccount the Konto row opens the profile page', (tester) async {
     await openSheet(tester, overrides: settingsOverrides(notifier: TestSettings()));
 
     await tester.tap(find.byType(AccountRow));
     await tester.pumpAndSettle();
-    expect(find.byType(AccountSheetBody), findsOneWidget);
+    expect(find.byType(ProfilePage), findsOneWidget);
   });
 
   testWidgets('with onAccount wired the Konto row calls it', (tester) async {

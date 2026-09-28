@@ -82,7 +82,7 @@ class _RecoveryCardState extends ConsumerState<RecoveryCard> {
             size: 22,
             items: [
               ('${info.runCount}', s.runs),
-              (Fmt.metres(info.dropM, locale: l.code), s.unitHm),
+              (Fmt.metres(info.dropM, locale: l.code), s.vertical),
             ],
           ),
           const SizedBox(height: 16),

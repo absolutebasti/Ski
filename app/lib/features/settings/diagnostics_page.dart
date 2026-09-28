@@ -13,6 +13,7 @@ import '../recording/recording_controller.dart';
 import '../share/share_service.dart';
 import 'settings_providers.dart';
 import 'settings_sheet.dart';
+import '../recording/recording_access.dart';
 import 'settings_strings.dart';
 
 /// Hidden behind seven taps on the settings footer (docs/DESIGN.md §5):
@@ -113,6 +114,7 @@ class _DiagnosticsPageState extends ConsumerState<DiagnosticsPage> {
     final location = ref.watch(locationStatusProvider).asData?.value;
     final precise = ref.watch(preciseLocationProvider).asData?.value;
     final baro = ref.watch(barometerAvailableProvider).asData?.value;
+    final lowPower = ref.watch(lowPowerModeProvider);
     final days = ref.watch(daysListProvider).asData?.value ?? const <DaySummary>[];
     final selected = days.any((d) => d.id == _selectedId) ? _selectedId! : (days.isEmpty ? null : days.first.id);
     final day = selected == null ? null : days.firstWhere((d) => d.id == selected);
@@ -140,6 +142,7 @@ class _DiagnosticsPageState extends ConsumerState<DiagnosticsPage> {
                         _Line(label: s.gps, value: location == null ? '…' : s.locationState(location)),
                         _Line(label: s.precise, value: precise == null ? '…' : (precise ? s.yes : s.no)),
                         _Line(label: s.barometer, value: baro == null ? '…' : (baro ? s.yes : s.no)),
+                        _Line(label: s.lowPower, value: lowPower == null ? '…' : (lowPower ? s.yes : s.no)),
                         _Line(
                           label: s.fixesToday,
                           value: s.fixes(

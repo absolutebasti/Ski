@@ -29,3 +29,4 @@ build/
 env/*
 !env/example.json
 tools/data/cache/
+.playwright-mcp/

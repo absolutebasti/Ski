@@ -27,6 +27,23 @@ class DaysStrings {
   String get biggestDay => l.pick(de: 'Größter Tag', en: 'Biggest day');
   String get longestRun => l.pick(de: 'Längste Abfahrt', en: 'Longest run');
   String get pbBadge => l.pick(de: 'Rekord', en: 'Record');
+  /// Short PB-tile overlines: three tiles share one 64 pt row, so one line each.
+  String get pbLongest => l.pick(de: 'Längste', en: 'Longest');
+  String get pbBestDay => l.pick(de: 'Bester Tag', en: 'Best day');
+
+  // --- resort picker -------------------------------------------------------
+  String get changeResort => l.pick(de: 'Skigebiet ändern', en: 'Change resort');
+  String get searchResort => l.pick(de: 'Skigebiet suchen', en: 'Search resort');
+  String get freeTerrainHint => l.pick(de: 'Kein Skigebiet zuordnen', en: 'No resort assigned');
+  String get noResortMatch => l.pick(de: 'Kein Skigebiet gefunden.', en: 'No resort found.');
+  String get resortChanged => l.pick(de: 'Skigebiet geändert', en: 'Resort changed');
+  /// '12,4 km' — distance of a resort from the day's first point.
+  String distanceKm(String km) => '$km $unitKm';
+
+  // --- track restore -------------------------------------------------------
+  String get loadTrack => l.pick(de: 'Spur laden', en: 'Load track');
+  String get loadingTrack => l.pick(de: 'Spur wird geladen', en: 'Loading track');
+  String get trackLoadFailed => l.pick(de: 'Spur konnte nicht geladen werden.', en: 'The track could not be loaded.');
 
   // --- actions -------------------------------------------------------------
   String get share => l.pick(de: 'Teilen', en: 'Share');
