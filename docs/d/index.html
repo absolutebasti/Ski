@@ -1,0 +1,64 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Einladung zum Tagesduell · SlopeTrack</title>
+<meta name="robots" content="noindex">
+<meta property="og:title" content="Einladung zum Tagesduell · SlopeTrack"><meta property="og:description" content="Duell-Einladung in SlopeTrack – Abfahrten, Höhenmeter, Top-Speed.">
+<style>
+:root{--bg:#0B0C0E;--card:#15171B;--ink:#F4F1EA;--muted:#A9ABB2;--accent:#E3C88C;--hair:#2A2D33;--onaccent:#0B0C0E}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,Inter,Segoe UI,Helvetica,Arial,sans-serif}
+main{max-width:520px;margin:0 auto;padding:40px 20px 80px}header{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+header .mark{width:28px;height:28px;border-radius:8px;background:var(--accent);display:inline-block;position:relative}
+header .mark:after{content:'';position:absolute;left:7px;top:8px;width:14px;height:14px;border-left:3px solid var(--bg);border-bottom:3px solid var(--bg);transform:rotate(-45deg)}
+header strong{font-size:18px;letter-spacing:.02em}header a{color:inherit;text-decoration:none;display:flex;align-items:center;gap:12px}
+h1{font-size:28px;line-height:1.15;margin:0 0 8px;letter-spacing:-.01em}.sub{color:var(--muted);margin:0 0 24px}
+.card{background:var(--card);border:1px solid var(--hair);border-radius:20px;padding:28px 24px;text-align:center}
+.overline{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.code{font-size:56px;font-weight:800;letter-spacing:.18em;font-variant-numeric:tabular-nums;line-height:1;margin:0 0 6px;color:var(--ink);user-select:all;-webkit-user-select:all}
+.code.missing{font-size:18px;font-weight:500;letter-spacing:0;color:var(--muted)}
+.btn{display:block;width:100%;border:0;border-radius:999px;height:56px;line-height:56px;font-size:17px;font-weight:600;text-align:center;text-decoration:none;cursor:pointer;margin-top:12px;font-family:inherit}
+.primary{background:var(--accent);color:var(--onaccent)}.secondary{background:transparent;color:var(--ink);border:1px solid var(--hair)}
+.btn[aria-disabled="true"]{opacity:.35;pointer-events:none}
+.hint{color:var(--muted);font-size:14px;margin:18px 0 0}.lang{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:28px 0 6px}
+footer{margin-top:48px;color:var(--muted);font-size:13px}footer a{color:var(--muted)}
+.todo{background:#2b2411;border:1px solid #5a4a1c;color:#E3C88C;border-radius:12px;padding:10px 14px;font-size:13px;margin-top:16px;text-align:left}
+</style></head>
+<body><main>
+<header><a href="../index.html"><span class="mark"></span><strong>SlopeTrack</strong></a></header>
+<h1>Einladung zum Tagesduell</h1><p class="sub">Wer holt heute die meisten Höhenmeter? Öffne den Code in SlopeTrack und du bist im Duell.</p>
+<div class="card">
+  <p class="overline">Duell-Code</p>
+  <p class="code" id="code">······</p>
+  <a class="btn primary" id="open" href="#" aria-disabled="true">In SlopeTrack öffnen</a>
+  <button class="btn secondary" id="copy" type="button" disabled>Code kopieren</button>
+  <a class="btn secondary" id="store" href="https://apps.apple.com/app/slopetrack/id0000000000">Im App Store laden</a>
+  <p class="hint">App schon installiert? Tippe auf „In SlopeTrack öffnen“. Sonst App laden, unter Rangliste „Code eingeben“ wählen und den Code eintippen.</p>
+</div>
+<div class="todo">TODO (Founder): App-Store-Link im <code>store</code>-Button eintragen, sobald der App-Store-Connect-Eintrag existiert.</div>
+<span class="lang">English</span>
+<p class="sub">You have been invited to a day duel in SlopeTrack. Tap <em>In SlopeTrack öffnen</em> to open the app, or install it from the App Store and enter the code under Ranks.</p>
+<footer>© 2026 Torch Technology · <a href="../imprint.html">Impressum</a> · <a href="../privacy.html">Datenschutz</a> · <a href="../support.html">Support</a></footer>
+</main>
+<script>
+(function(){
+  // Code comes from ?c=KMJ4F2 / ?code=KMJ4F2, from #KMJ4F2, or from the path
+  // (…/d/KMJ4F2 once a host with path rewrites serves this page).
+  var ALPHABET='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  function normalise(s){return (s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+  function valid(c){if(c.length!==6)return false;for(var i=0;i<6;i++){if(ALPHABET.indexOf(c[i])<0)return false;}return true;}
+  var q=new URLSearchParams(location.search);
+  var candidates=[q.get('c'),q.get('code'),location.hash.slice(1)];
+  var segs=location.pathname.split('/').filter(Boolean);
+  var at=segs.lastIndexOf('d');
+  if(at>=0&&at+1<segs.length)candidates.push(segs[at+1]);
+  var code='';
+  for(var i=0;i<candidates.length;i++){var c=normalise(candidates[i]);if(valid(c)){code=c;break;}}
+  var el=document.getElementById('code'),open=document.getElementById('open'),copy=document.getElementById('copy');
+  if(!code){el.textContent='Kein Code im Link';el.className='code missing';return;}
+  el.textContent=code;
+  var deep='slopetrack://d/'+code;
+  open.href=deep;open.removeAttribute('aria-disabled');
+  copy.disabled=false;
+  copy.addEventListener('click',function(){
+    if(navigator.clipboard){navigator.clipboard.writeText(code).then(function(){copy.textContent='Kopiert';setTimeout(function(){copy.textContent='Code kopieren';},1500);});}
+  });
+})();
+</script>
+</body></html>

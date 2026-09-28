@@ -31,7 +31,9 @@ class StateChip extends StatelessWidget {
         children: [
           if (child != null) ...[child!, const SizedBox(width: 6)],
           if (child == null && icon != null) ...[Icon(icon, size: 14, color: fg), const SizedBox(width: 6)],
-          Text(text, style: AppText.label(fg, size: 12)),
+          // Flexible: a chip squeezed by its parent (Row inside a sheet at
+          // phone width) ellipsises instead of overflowing.
+          Flexible(child: Text(text, style: AppText.label(fg, size: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
         ],
       ),
     );

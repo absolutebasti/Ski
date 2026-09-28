@@ -10,7 +10,24 @@ import 'social_models.dart';
 
 /// Why a social call could not be carried out. Everything the UI has to say
 /// something about gets its own kind; the rest lands in [SocialErrorKind.failed].
-enum SocialErrorKind { offline, notSignedIn, codeNotFound, duelFull, alreadyMember, failed }
+///
+/// Server sqlstates (docs/BACKEND.md): `duel_expired` P0006, `bad_metric`
+/// 22023, `not_a_member` 42501, `rider_not_found` P0002, `self` P0004,
+/// `already_friends` P0005, `rate_limited` P0005 (days).
+enum SocialErrorKind {
+  offline,
+  notSignedIn,
+  codeNotFound,
+  duelFull,
+  duelExpired,
+  alreadyMember,
+  badMetric,
+  notAMember,
+  riderNotFound,
+  alreadyFriends,
+  rateLimited,
+  failed,
+}
 
 class SocialError implements Exception {
   const SocialError(this.kind, [this.detail]);
@@ -34,8 +51,19 @@ abstract class SocialApi {
   /// `profiles.share_leaderboards` of the signed-in user; false when signed out.
   Future<bool> shareLeaderboards();
 
-  /// RPC `leaderboard(p_resort_id, p_season_key, p_metric, p_limit, p_country)`.
+  /// RPC `leaderboard(p_resort_id, p_season_key, p_metric, p_limit, p_country, p_offset)`.
   Future<List<LeaderboardEntry>> leaderboard(LeaderboardQuery query);
+
+  /// RPC `my_rank(p_resort_id, p_season_key, p_metric, p_country)` — the
+  /// caller's row from the same ranked set; null = not ranked (opted out or
+  /// no plausible day in the window).
+  Future<MyRank?> myRank(LeaderboardQuery query);
+
+  /// RPC `add_friend_by_id(p_user_id)` (migration 0013) — the RiderSheet's
+  /// 'Freund hinzufügen'. Returns true when the other side had already asked
+  /// and the request became a friendship at once, false when it is pending.
+  /// Throws [SocialErrorKind.riderNotFound], [SocialErrorKind.alreadyFriends].
+  Future<bool> addFriendById(String userId);
 
   /// RPC `country_board(p_season_key)` — the Länder-Wertung, points desc.
   /// [seasonKey] takes the same season/month/week keys as the leaderboard.
@@ -99,8 +127,31 @@ class SupabaseSocialApi implements SocialApi {
           'p_metric': query.metric.wire,
           'p_limit': query.limit,
           'p_country': query.countryCode,
+          'p_offset': query.offset,
         });
         return _rows(rows).map(LeaderboardEntry.fromJson).toList();
+      });
+
+  @override
+  Future<MyRank?> myRank(LeaderboardQuery query) => _guard(() async {
+        if (userId == null) return null;
+        final rows = await _client.rpc<dynamic>('my_rank', params: {
+          'p_resort_id': query.resortId,
+          'p_season_key': query.wireKey,
+          'p_metric': query.metric.wire,
+          'p_country': query.countryCode,
+        });
+        final list = _rows(rows);
+        return list.isEmpty ? null : MyRank.fromJson(list.first);
+      });
+
+  @override
+  Future<bool> addFriendById(String userId) => _guard(() async {
+        _requireUser();
+        final raw = await _client.rpc<dynamic>('add_friend_by_id', params: {'p_user_id': userId});
+        final rows = _rows(raw);
+        if (rows.isEmpty) throw const SocialError(SocialErrorKind.riderNotFound);
+        return rows.first['status'] == 'accepted';
       });
 
   @override
@@ -154,14 +205,7 @@ class SupabaseSocialApi implements SocialApi {
         // Security-definer RPC (supabase/migrations/0002_social_fixes.sql):
         // invitees cannot read a group before they are in it, and the server
         // enforces max_members.
-        final Object? raw;
-        try {
-          raw = await _client.rpc<dynamic>('join_group', params: {'p_code': normalised});
-        } on PostgrestException catch (e) {
-          if (e.message.contains('code_not_found')) throw const SocialError(SocialErrorKind.codeNotFound);
-          if (e.message.contains('duel_full')) throw const SocialError(SocialErrorKind.duelFull);
-          rethrow;
-        }
+        final raw = await _client.rpc<dynamic>('join_group', params: {'p_code': normalised});
         final rows = _rows(raw);
         if (rows.isEmpty) throw const SocialError(SocialErrorKind.codeNotFound);
         return DuelGroup.fromJson(rows.first);
@@ -219,9 +263,30 @@ class SupabaseSocialApi implements SocialApi {
     } on SocialError {
       rethrow;
     } catch (e) {
-      if (SupabaseSyncApi.isOfflineError(e)) throw SocialError(SocialErrorKind.offline, '$e');
-      throw SocialError(SocialErrorKind.failed, '$e');
+      throw mapError(e);
     }
+  }
+
+  /// Postgrest messages of the social RPCs → [SocialError]; anything
+  /// network-shaped → offline; the rest → failed with the detail attached.
+  static SocialError mapError(Object e) {
+    if (e is SocialError) return e;
+    if (e is PostgrestException) {
+      final m = e.message;
+      if (m.contains('code_not_found')) return const SocialError(SocialErrorKind.codeNotFound);
+      if (m.contains('duel_full')) return const SocialError(SocialErrorKind.duelFull);
+      if (m.contains('duel_expired')) return const SocialError(SocialErrorKind.duelExpired);
+      if (m.contains('bad_metric') || m.contains('bad_season_key')) return const SocialError(SocialErrorKind.badMetric);
+      if (m.contains('not_a_member')) return const SocialError(SocialErrorKind.notAMember);
+      if (m.contains('not_signed_in')) return const SocialError(SocialErrorKind.notSignedIn);
+      if (m.contains('rider_not_found')) return const SocialError(SocialErrorKind.riderNotFound);
+      if (m.contains('already_friends')) return const SocialError(SocialErrorKind.alreadyFriends);
+      if (m.contains('rate_limited')) return const SocialError(SocialErrorKind.rateLimited);
+      if (RegExp(r'(^|\W)self(\W|$)').hasMatch(m)) return const SocialError(SocialErrorKind.alreadyFriends);
+      return SocialError(SocialErrorKind.failed, m);
+    }
+    if (SupabaseSyncApi.isOfflineError(e)) return SocialError(SocialErrorKind.offline, '$e');
+    return SocialError(SocialErrorKind.failed, '$e');
   }
 
   static List<Map<String, Object?>> _rows(Object? raw) {

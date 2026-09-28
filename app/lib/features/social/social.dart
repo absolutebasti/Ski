@@ -10,3 +10,8 @@ export 'social_controls.dart';
 export 'social_models.dart';
 export 'social_screen.dart';
 export 'social_strings.dart';
+export 'challenge/challenge.dart';
+export 'friends/friends.dart';
+export 'rider/rider.dart';
+export 'moderation/moderation.dart';
+export 'invite/invite.dart';

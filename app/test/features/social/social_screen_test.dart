@@ -12,9 +12,10 @@ import 'social_fixtures.dart';
 const _settings = Settings(onboardingDone: true, lastResortId: 'kitzbuehel', countryCode: 'AT');
 
 
-/// The metric chips scroll horizontally; drag their list until [label] is on screen.
-Future<void> _revealChip(WidgetTester tester, String label) async {
-  final chips = find.ancestor(of: find.text('Höhenmeter'), matching: find.byType(ListView)).first;
+/// The metric and scope chips scroll horizontally (lazy ListView): drag the
+/// row that contains [anchor] until [label] is built and on screen.
+Future<void> _revealChip(WidgetTester tester, String label, {String anchor = 'Höhenmeter'}) async {
+  final chips = find.ancestor(of: find.text(anchor), matching: find.byType(ListView)).first;
   await tester.dragUntilVisible(find.text(label), chips, const Offset(-160, 0));
   await tester.pumpAndSettle();
 }
@@ -53,9 +54,9 @@ void main() {
     expect(find.text('Melde dich an und hol dir Platz 1 in Kitzbühel.'), findsOneWidget);
     expect(find.byType(LeaderboardPodium), findsNothing);
 
-    await tester.ensureVisible(find.text('Mit Apple anmelden'));
+    await tester.ensureVisible(find.text('Anmelden'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Mit Apple anmelden'));
+    await tester.tap(find.text('Anmelden'));
     await tester.pumpAndSettle();
     expect(opened, 1);
   });
@@ -83,7 +84,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rangliste freischalten'));
     await tester.pumpAndSettle();
-    expect(opened, 1);
+    // The opt-in is inline now (profile update); the Konto sheet stays closed.
+    expect(opened, 0);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('podium, rows and the own row pinned at the bottom', (tester) async {
@@ -170,7 +173,7 @@ void main() {
     expect(find.text('Gebiet'), findsOneWidget);
     expect(find.text('Ischgl'), findsOneWidget, reason: 'the resort selector is visible under Gebiet');
 
-    await tester.ensureVisible(find.text('Alle'));
+    await _revealChip(tester, 'Alle', anchor: 'Gebiet');
     await tester.tap(find.text('Alle'));
     await tester.pumpAndSettle();
     expect(api.queries.last.resortId, isNull);

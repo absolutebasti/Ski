@@ -13,6 +13,9 @@ import '../../achievements/medal_catalog.dart';
 import '../country_card.dart';
 import '../group_providers.dart';
 import '../leaderboard_providers.dart';
+import '../moderation/moderation_api.dart';
+import '../moderation/moderation_providers.dart';
+import '../moderation/moderation_strings.dart';
 import '../social_api.dart';
 import '../social_controls.dart';
 import '../social_models.dart';
@@ -79,6 +82,22 @@ class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
     }
   }
 
+  /// 'Blockierung aufheben' (SOC-MODERATION): the service drops the block and
+  /// refreshes every board; the sheet leaves its blocked state via
+  /// [blockedIdsProvider].
+  Future<void> _unblock(RiderProfile rider) async {
+    final s = ModerationStrings.of(context);
+    setState(() => _busy = true);
+    try {
+      await ref.read(moderationServiceProvider).unblock(rider.userId);
+      if (mounted) showToast(context, s.unblocked);
+    } on ModerationError catch (e) {
+      if (mounted) showToast(context, s.error(e.kind));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _run(RiderAction action, RiderProfile rider) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -108,18 +127,23 @@ class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
       data: (rider) {
         if (rider == null) return SocialStateBlock(pose: 'look', headline: s.privateHeadline, line: s.privateLine);
         final self = rider.userId == ownId;
+        // SOC-MODERATION: a rider the user blocked shows 'Blockiert' + undo
+        // instead of challenge / friend / block.
+        final blocked = !self && (ref.watch(blockedIdsProvider).asData?.value.contains(rider.userId) ?? false);
         return _Profile(
           rider: rider,
           busy: _busy,
-          onChallenge: self ? null : () => _challenge(rider),
+          blocked: blocked,
+          onUnblock: blocked ? () => _unblock(rider) : null,
+          onChallenge: self || blocked ? null : () => _challenge(rider),
           // ---- actions slot ------------------------------------------------
           // Filled by later packages via [riderActionsProvider]:
           //   SOC-FRIENDS / SOC-RANGLISTE → addFriend ('Freund hinzufügen')
           //   SOC-MODERATION            → report ('Melden'), block ('Blockieren')
           // Buttons render only when a handler is set; never on the own profile.
-          onAddFriend: self || actions.addFriend == null ? null : () => _run(actions.addFriend!, rider),
+          onAddFriend: self || blocked || actions.addFriend == null ? null : () => _run(actions.addFriend!, rider),
           onReport: self || actions.report == null ? null : () => _run(actions.report!, rider),
-          onBlock: self || actions.block == null ? null : () => _run(actions.block!, rider),
+          onBlock: self || blocked || actions.block == null ? null : () => _run(actions.block!, rider),
           // -------------------------------------------------------------------
         );
       },
@@ -131,6 +155,8 @@ class _Profile extends ConsumerWidget {
   const _Profile({
     required this.rider,
     required this.busy,
+    this.blocked = false,
+    this.onUnblock,
     required this.onChallenge,
     required this.onAddFriend,
     required this.onReport,
@@ -139,6 +165,10 @@ class _Profile extends ConsumerWidget {
 
   final RiderProfile rider;
   final bool busy;
+
+  /// The user blocked this rider: chip 'Blockiert' + 'Blockierung aufheben'.
+  final bool blocked;
+  final VoidCallback? onUnblock;
   final VoidCallback? onChallenge;
   final VoidCallback? onAddFriend;
   final VoidCallback? onReport;
@@ -156,7 +186,8 @@ class _Profile extends ConsumerWidget {
     final resortName = rider.homeResortId == null ? null : ref.watch(resortRepositoryProvider).asData?.value.byId(rider.homeResortId!)?.name;
     final country = ss.countryName(rider.countryCode);
     final where = [if (country.isNotEmpty) country, ?resortName].join(' · ');
-    final hasActions = onChallenge != null || onAddFriend != null || onReport != null || onBlock != null;
+    final ms = ModerationStrings.of(context);
+    final hasActions = blocked || onChallenge != null || onAddFriend != null || onReport != null || onBlock != null;
 
     return Semantics(
       label: s.profileOf(rider.displayName),
@@ -230,6 +261,11 @@ class _Profile extends ConsumerWidget {
 
             // ---- actions --------------------------------------------------
             if (hasActions) const SizedBox(height: Tokens.sectionGap),
+            if (blocked) ...[
+              Row(children: [StateChip(key: const ValueKey('rider-blocked'), text: ms.blocked, tone: ChipTone.danger)]),
+              const SizedBox(height: 10),
+              SecondaryButton(key: const ValueKey('rider-unblock'), label: ms.unblock, height: 48, onPressed: busy ? null : onUnblock),
+            ],
             if (onChallenge != null) PrimaryButton(label: s.challenge, height: 52, glow: false, glyph: Glyph.podium, onPressed: busy ? null : onChallenge),
             if (onAddFriend != null) ...[
               const SizedBox(height: 10),

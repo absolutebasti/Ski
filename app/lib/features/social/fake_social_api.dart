@@ -15,6 +15,9 @@ class FakeSocialApi implements SocialApi {
     Map<String, double>? progress,
     this.failWith,
     this.entriesFor,
+    this.rank,
+    this.rankFor,
+    this.friendsToAccept = const {},
   }) : progress = {...?progress};
 
   @override
@@ -40,7 +43,24 @@ class FakeSocialApi implements SocialApi {
   /// When set, every call throws it — used for the offline state.
   SocialError? failWith;
 
+  /// Row of `my_rank` for every query unless [rankFor] answers first; null =
+  /// not ranked.
+  MyRank? rank;
+
+  /// Per-query own rank; return null to fall back to [rank].
+  final MyRank? Function(LeaderboardQuery query)? rankFor;
+
+  /// User ids whose `add_friend_by_id` completes as an accepted friendship
+  /// (they had asked first); everybody else becomes a pending request.
+  final Set<String> friendsToAccept;
+
   final List<LeaderboardQuery> queries = [];
+
+  /// Queries `myRank` was asked for.
+  final List<LeaderboardQuery> rankQueries = [];
+
+  /// User ids handed to `addFriendById`.
+  final List<String> friendRequests = [];
   final List<String> boardCalls = [];
 
   /// Season keys `countryBoard` was asked for.
@@ -66,6 +86,23 @@ class FakeSocialApi implements SocialApi {
     _guard();
     queries.add(query);
     return entriesFor?.call(query) ?? entries;
+  }
+
+  @override
+  Future<MyRank?> myRank(LeaderboardQuery query) async {
+    _guard();
+    if (userId == null) return null;
+    rankQueries.add(query);
+    return rankFor?.call(query) ?? rank;
+  }
+
+  @override
+  Future<bool> addFriendById(String userId) async {
+    _guard();
+    if (this.userId == null) throw const SocialError(SocialErrorKind.notSignedIn);
+    if (userId == this.userId) throw const SocialError(SocialErrorKind.alreadyFriends);
+    friendRequests.add(userId);
+    return friendsToAccept.contains(userId);
   }
 
   @override

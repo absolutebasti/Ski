@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../moderation/rider_actions.dart';
 import '../social_api.dart';
 import 'rider_api.dart';
 import 'rider_models.dart';
@@ -36,7 +37,8 @@ class RiderActions {
   final RiderAction? block;
 }
 
-final riderActionsProvider = Provider<RiderActions>((ref) => const RiderActions());
+// report / block: SOC-MODERATION (moderation/rider_actions.dart).
+final riderActionsProvider = Provider<RiderActions>((ref) => const RiderActions(report: reportRider, block: blockRider));
 
 /// Hands a text to the system share sheet.
 typedef ShareTextSink = Future<void> Function({required String text, required String subject});

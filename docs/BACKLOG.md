@@ -3,6 +3,11 @@
 Source: `.context/plan/backlog-2026-09-27.json` (five auditors, one skeptic each, planner). Wave 1 runs in parallel; wave 2 after it. Founder items at the end.
 
 
+## Status 2026-09-28 (lead)
+- Wave 1 — **done** (BE-01, BE-02, SOC-FRIENDS, SOC-RIDER, UX-01); migrations 0005–0008 + 0006b live; Edge Function v2 deployed.
+- Wave 2a — SOC-MODERATION **done**; SOC-RANGLISTE **mostly done** (friends scope, tappable rows → RiderSheet, my_rank strip, Länder card, 0013 live; review pending); SOC-CHALLENGE **partial** (module + 0010 live, no Dart tests, UI unreviewed); SHARE-CARDS **mostly done** (medal/level/rank/duel cards + goldens, wired into header/sheet/banner); SOC-DEEPLINK **partial** (parser + pages + entitlements done, listener not working, not mounted, app_links not added — listener tests skipped). Agents were cut off by the spend limit; the lead repaired compile errors and tests (453 green).
+- Wave 2b (SYNC-HARDENING, UX-ONBOARDING, SETTINGS-RELEASE, TRACKING-GUARDS, DATA-RESORTS) — script ready in .context/plan/wave2b-workflow.js, not started.
+
 ## Wave 1
 
 ### BE-01 — Backend: RPCs als security definer, Grants, Team-Land, my_rank, Blocks, SQL-Smoke-Test

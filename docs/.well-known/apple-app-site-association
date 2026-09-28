@@ -1,0 +1,18 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["5GDU97KSQU.de.torchtechnology.slopetrack"],
+        "components": [
+          { "/": "/d/*", "comment": "Tagesduell invite: /d/<CODE>, also /d/?c=<CODE>" },
+          { "/": "/f/*", "comment": "Friend invite: /f/<CODE>, also /f/?c=<CODE>" },
+          { "/": "/Ski/d/*", "comment": "GitHub Pages project path (only if this file is ever served from the user-site root)" },
+          { "/": "/Ski/f/*", "comment": "GitHub Pages project path" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["5GDU97KSQU.de.torchtechnology.slopetrack"]
+  }
+}

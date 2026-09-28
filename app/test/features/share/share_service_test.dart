@@ -29,11 +29,7 @@ void main() {
     await tmp.delete(recursive: true);
   });
 
-  ShareService service() => ShareService(
-        repo: repo,
-        tempDir: () async => tmp,
-        sink: (files, {subject, text}) async => shared.add((files, subject, text)),
-      );
+  ShareService service() => ShareService(repo: repo, tempDir: () async => tmp, sink: (files, {subject, text}) async => shared.add((files, subject, text)));
 
   test('shareGpx writes the GPX file to temp and hands it to the sink', () async {
     final detail = syntheticDetail();
