@@ -17,7 +17,7 @@ class OnboardingStrings {
       );
   String get p1Runs => _l.pick(de: 'Abfahrten', en: 'Runs');
   String get p1Vertical => _l.pick(de: 'Höhenmeter', en: 'Vertical');
-  String get p1TopSpeed => 'Top-Speed';
+  String get p1TopSpeed => _l.pick(de: 'Top-Speed', en: 'Top speed');
   String get unitHm => _l.pick(de: 'hm', en: 'm');
   String get unitKmh => 'km/h';
 
@@ -40,6 +40,8 @@ class OnboardingStrings {
   String get p3Account => _l.pick(de: 'Konto', en: 'Account');
   String get p3SignIn => _l.pick(de: 'Mit Apple anmelden', en: 'Sign in with Apple');
   String get p3Benefit => _l.pick(de: 'Backup, Ranglisten, Duelle', en: 'Backup, rankings, duels');
+  String get p3OptIn => _l.pick(de: 'In Ranglisten erscheinen', en: 'Appear in leaderboards');
+  String get p3OptInHint => _l.pick(de: 'Name und Tageswerte, nie die Spur. Jederzeit im Konto änderbar.', en: 'Name and day figures, never the track. Change it any time in Account.');
   String p3SignedIn(String name) => _l.pick(de: 'Angemeldet als $name', en: 'Signed in as $name');
   String get p3Skipped => _l.pick(de: 'Ohne Konto', en: 'Without account');
   String get p3SkippedBody => _l.pick(de: 'Anmelden geht später in den Einstellungen.', en: 'You can sign in later in settings.');

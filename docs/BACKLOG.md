@@ -6,7 +6,8 @@ Source: `.context/plan/backlog-2026-09-27.json` (five auditors, one skeptic each
 ## Status 2026-09-28 (lead)
 - Wave 1 — **done** (BE-01, BE-02, SOC-FRIENDS, SOC-RIDER, UX-01); migrations 0005–0008 + 0006b live; Edge Function v2 deployed.
 - Wave 2a — SOC-MODERATION **done**; SOC-RANGLISTE **mostly done** (friends scope, tappable rows → RiderSheet, my_rank strip, Länder card, 0013 live; review pending); SOC-CHALLENGE **partial** (module + 0010 live, no Dart tests, UI unreviewed); SHARE-CARDS **mostly done** (medal/level/rank/duel cards + goldens, wired into header/sheet/banner); SOC-DEEPLINK **partial** (parser + pages + entitlements done, listener not working, not mounted, app_links not added — listener tests skipped). Agents were cut off by the spend limit; the lead repaired compile errors and tests (453 green).
-- Wave 2b (SYNC-HARDENING, UX-ONBOARDING, SETTINGS-RELEASE, TRACKING-GUARDS, DATA-RESORTS) — script ready in .context/plan/wave2b-workflow.js, not started.
+- Wave 2b, done by the lead on 2026-09-28 while agents were unavailable: DATA-RESORTS **done** (4.929 areas), SETTINGS-RELEASE **mostly done** (privacy manifest, bilingual plist strings, Support/Impressum rows, review note; InfoPlist.strings variant group skipped on purpose), UX-ONBOARDING **done** except the hook-card layout golden, TRACKING-GUARDS **partial** (rollover 03:00 + 16 h cap + resort retry done; permission-revoked handling, motion hint, Low Power hint, per-module tests, bundle fixture, QA.md §F open), SOC-DEEPLINK **mostly done** (app_links adapter, listener mounted, shell follows joins; listener widget tests still @Skip — handler unit-verified), SYNC-HARDENING **open** except the P0004/P0005 retry-later fix.
+- Remaining for agents (wave 2c): SYNC-HARDENING, TRACKING-GUARDS remainder, UX-DAYS, SOC-CHALLENGE tests, SOC-DEEPLINK listener tests, SOC-LIVE-DUEL, PROFILE-PAGE.
 
 ## Wave 1
 

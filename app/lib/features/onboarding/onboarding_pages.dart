@@ -441,6 +441,8 @@ class ReadyPage extends StatelessWidget {
     required this.granted,
     required this.grantedAlways,
     required this.onOpenSettings,
+    this.optIn = true,
+    this.onOptIn,
   });
   final AuthUser? user;
   final bool skipped;
@@ -449,6 +451,9 @@ class ReadyPage extends StatelessWidget {
   final bool granted;
   final bool grantedAlways;
   final VoidCallback onOpenSettings;
+  /// Leaderboard opt-in shown once the account exists (default on, docs/BACKLOG.md UX-ONBOARDING).
+  final bool optIn;
+  final ValueChanged<bool>? onOptIn;
 
   @override
   Widget build(BuildContext context) {
@@ -459,7 +464,31 @@ class ReadyPage extends StatelessWidget {
       account = AppCard(
         tone: CardTone.accent,
         header: s.p3Account,
-        child: _IconLine(icon: Icons.check_circle_rounded, color: c.accent, title: s.p3SignedIn(user!.displayName), caption: s.p3Benefit),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _IconLine(icon: Icons.check_circle_rounded, color: c.accent, title: s.p3SignedIn(user!.displayName), caption: s.p3Benefit),
+            const SizedBox(height: 12),
+            const Hairline(),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(s.p3OptIn, style: AppText.bodyStrong(c.textPrimary)),
+                      const SizedBox(height: 2),
+                      Text(s.p3OptInHint, style: AppText.caption(c.textSecondary)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Switch.adaptive(key: const ValueKey('onboarding-optin'), value: optIn, onChanged: onOptIn),
+              ],
+            ),
+          ],
+        ),
       );
     } else if (skipped) {
       account = AppCard(

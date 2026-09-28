@@ -7,6 +7,7 @@ import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
 import '../../core/settings.dart';
 import '../../data/sync/auth_service.dart';
+import '../account/profile_service.dart';
 import '../../platform/permission_service.dart';
 import '../../platform/providers.dart';
 import 'onboarding_countries.dart';
@@ -40,6 +41,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // page 3
   AuthUser? _user;
   bool _skipped = false;
+  bool _optIn = true;
   bool _signingIn = false;
   bool _signInFailed = false;
   bool _asking = false;
@@ -131,7 +133,20 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   }
 
   Future<void> _finish() async {
-    await ref.read(settingsProvider.notifier).setOnboardingDone();
+    final settings = ref.read(settingsProvider.notifier);
+    await settings.setOnboardingDone();
+    // New accounts are visible on day 1 unless the rider switched it off; the
+    // team country travels with the profile. Never blocks the finish.
+    final user = _user;
+    if (user != null) {
+      try {
+        await ref.read(profileServiceProvider).update(
+              shareLeaderboards: _optIn,
+              countryCode: ref.read(settingsProvider).countryCode,
+              userId: user.id,
+            );
+      } catch (_) {}
+    }
     if (!mounted) return;
     await Navigator.of(context).pushAndRemoveUntil<void>(
       MaterialPageRoute<void>(builder: (_) => const RootShell()),
@@ -153,13 +168,12 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     Widget? skip;
     switch (_index) {
       case 0:
-        primary = PrimaryButton(key: const ValueKey('onboarding-primary'), label: s.next, height: 60, glyph: Glyph.chevronRight, onPressed: () => _goTo(1));
+        primary = PrimaryButton(key: const ValueKey('onboarding-primary'), label: s.next, height: 60, onPressed: () => _goTo(1));
       case 1:
         primary = PrimaryButton(
           key: const ValueKey('onboarding-primary'),
           label: s.next,
           height: 60,
-          glyph: Glyph.chevronRight,
           onPressed: () async {
             await _leaveTeamPage();
             if (mounted) _goTo(2);
@@ -237,6 +251,8 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                         granted: _granted,
                         grantedAlways: _location == LocationPermissionState.always,
                         onOpenSettings: _openSettings,
+                        optIn: _optIn,
+                        onOptIn: (v) => setState(() => _optIn = v),
                       ),
                     ],
                   ),

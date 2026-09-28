@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/app/l10n/app_locale.dart';
 import 'package:slopetrack/app/shell.dart';
 import 'package:slopetrack/app/widgets/rider.dart';
+import 'package:slopetrack/app/widgets/widgets.dart';
 import 'package:slopetrack/core/core.dart';
 import 'package:slopetrack/core/settings.dart';
 import 'package:slopetrack/data/sync/auth_service.dart';
+import 'package:slopetrack/features/account/account.dart';
 import 'package:slopetrack/features/onboarding/onboarding.dart';
 import 'package:slopetrack/platform/permission_service.dart';
 
@@ -58,6 +61,7 @@ Future<void> _pump(
   Locale locale = const Locale('de'),
   String? deviceCountry,
   Settings settings = const Settings(),
+  List<Override> extra = const [],
 }) =>
     pumpApp(
       tester,
@@ -65,6 +69,7 @@ Future<void> _pump(
       overrides: [
         ...screenOverrides(settings: settings, permissions: perms, resorts: _resorts),
         onboardingSignInProvider.overrideWithValue(signIn ?? () async => null),
+        ...extra,
       ],
       locale: locale,
     );
@@ -280,6 +285,43 @@ void main() {
     await _primary(tester); // Los geht's
     expect(perms.calls, ['whenInUse', 'always', 'motion']);
     expect(find.byType(RootShell), findsOneWidget);
+  });
+
+
+  testWidgets('after sign-in the leaderboard opt-in is on by default and reaches the profile', (tester) async {
+    final api = FakeProfileApi(userId: 'u1');
+    await _pump(tester, RecordingPermissions(), signIn: () async => const AuthUser(id: 'u1', displayName: 'Sebastian'),
+        extra: [profileApiProvider.overrideWithValue(api)]);
+    await _primary(tester);
+    await _primary(tester);
+    await _primary(tester); // sign in
+    final sw = find.byKey(const ValueKey('onboarding-optin'));
+    expect(sw, findsOneWidget);
+    expect(tester.widget<Switch>(sw).value, isTrue);
+    await _primary(tester); // Los geht's
+    expect(find.byType(RootShell), findsOneWidget);
+    expect(api.patches, isNotEmpty);
+    expect(api.patches.last['share_leaderboards'], isTrue);
+  });
+
+  testWidgets('switching the opt-in off sends false', (tester) async {
+    final api = FakeProfileApi(userId: 'u1');
+    await _pump(tester, RecordingPermissions(), signIn: () async => const AuthUser(id: 'u1', displayName: 'Sebastian'),
+        extra: [profileApiProvider.overrideWithValue(api)]);
+    await _primary(tester);
+    await _primary(tester);
+    await _primary(tester); // sign in
+    await tester.ensureVisible(find.byKey(const ValueKey('onboarding-optin')));
+    await tester.tap(find.byKey(const ValueKey('onboarding-optin')));
+    await tester.pumpAndSettle();
+    await _primary(tester); // Los geht's
+    expect(api.patches.last['share_leaderboards'], isFalse);
+  });
+
+  testWidgets('the primary button carries no leading chevron', (tester) async {
+    await _pump(tester, RecordingPermissions());
+    final button = tester.widget<PrimaryButton>(find.byKey(const ValueKey('onboarding-primary')));
+    expect(button.glyph, isNull);
   });
 
   testWidgets('english copy is used for the en locale', (tester) async {
