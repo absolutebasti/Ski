@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../../app/brand.dart';
+import '../invite/invite_links.dart';
 import '../../../app/l10n/app_locale.dart';
 import 'friends_api.dart';
 import 'friends_models.dart';
@@ -32,8 +33,8 @@ class FriendsStrings {
   String shareText(String code) {
     final c = FriendCode.normalise(code);
     return l.pick(
-      de: 'Fahr gegen mich in $kAppName – Freundescode $c · ${FriendCode.link(c)}',
-      en: 'Race me in $kAppName – friend code $c · ${FriendCode.link(c)}',
+      de: 'Fahr gegen mich in $kAppName – Freundescode $c · ${InviteLinks.share(InviteKind.friend, c)}',
+      en: 'Race me in $kAppName – friend code $c · ${InviteLinks.share(InviteKind.friend, c)}',
     );
   }
 

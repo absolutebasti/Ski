@@ -8,7 +8,6 @@ import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
-import '../map/route_colors.dart';
 import 'days_strings.dart';
 
 /// 112 pt list row: route thumbnail, date + resort, a 3-up metric strip,
