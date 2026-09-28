@@ -8,7 +8,7 @@ Principle: **local-first, cloud-second.** The phone remains the source of truth 
 - Keys in the app via `--dart-define-from-file=env/prod.json` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`); `env/` is gitignored.
 - CLI config: `supabase/config.toml` (project_id `slopetrack`, exposed schemas `public` + `graphql_public` only, `[functions.delete-account] verify_jwt = true`).
 
-## Applied migrations (snapshot 2026-09-27, live project)
+## Applied migrations (snapshot 2026-09-28, live project)
 Applied via the Management API (`POST /v1/projects/<ref>/database/query`), so `supabase migration list` shows nothing — the dashboard check below is the source of truth.
 
 | Migration | State | What |
@@ -18,7 +18,13 @@ Applied via the Management API (`POST /v1/projects/<ref>/database/query`), so `s
 | `0003_challenges_privacy_total.sql` | applied | `ensure_weekly_challenges` + pg_cron `weekly-challenges`, `shares_group_with`, leaderboard `total` |
 | `0004_country_teams.sql` | applied | `profiles.country_code`, `days.country_code`, `days.points`, `country_board`, `p_country` |
 | `0005_rpc_security.sql` | applied + verified (8/8 smoke tests) | definer RPCs, grants, schema `private`, team country, `my_rank`, `blocks` |
-| `0006_integrity.sql` … `0008_rider_profile.sql` | applied by the wave-1 packages BE-02 / SOC-FRIENDS / SOC-RIDER on the same day | see their headers |
+| `0006_integrity.sql` | applied | check constraints, cross-field `suspicious`, `days_guard` (3 days/local date, rate limit), `profiles read own`, `reports`, bucket `avatars`, `join_group` expiry |
+| `0006b_rate_limit.sql` | applied 2026-09-28 | `days_guard` rate limit 30 → 200 upserts/hour (a full local history must sync) |
+| `0007_friends.sql` | applied | `profiles.friend_code`, `friendships`, `add_friend_by_code`, `accept_friend`, `remove_friend`, `friends_list`, `friends_board` |
+| `0008_rider_profile.sql` | applied | `rider_profile(p_user_id)` (visibility: opted-in, friends, duel partners, self) |
+| `0010_challenges.sql` | applied | `challenge_participants`, `challenge_board`, `my_challenge_history`, `private.challenge_title`, cron creates bilingual weekly challenges |
+| `0013_rangliste.sql` | applied | `add_friend_by_id`, `friends_board`/`friends_list` honour `blocks` + team country, `leaderboard` recreated, `new_friend_code` grants revoked |
+| free numbers | — | 0009 (SOC-LIVE-DUEL), 0011 (SOC-SEASONS), 0012 (BE-TZ) |
 
 Founder's dashboard check (SQL editor, read-only) — expected: every board RPC `definer = true`, `authenticated = true` only for the client RPCs, `anon = false` everywhere:
 ```sql
