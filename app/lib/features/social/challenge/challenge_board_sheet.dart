@@ -75,7 +75,7 @@ class _ChallengeBoardSheetBodyState extends ConsumerState<ChallengeBoardSheetBod
     final ch = widget.challenge;
     final board = ref.watch(challengeBoardProvider(ch.id));
     final ownId = ref.watch(socialUserIdProvider);
-    final joined = ref.watch(myChallengeIdsProvider).asData?.value?.contains(ch.id) ?? false;
+    final joined = ref.watch(myChallengeIdsProvider).asData?.value.contains(ch.id) ?? false;
     final now = widget.now ?? DateTime.now();
     final ended = ch.daysLeft(now) < 0;
     final (targetText, targetUnit) = s.value(ch.metric, ch.target);

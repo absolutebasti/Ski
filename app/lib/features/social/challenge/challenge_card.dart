@@ -76,7 +76,7 @@ class _ChallengeCardState extends ConsumerState<ChallengeCard> {
     final cs = ChallengeStrings.of(context);
     final ch = widget.challenge;
     final days = ref.watch(daysListProvider).asData?.value ?? const <DaySummary>[];
-    final joined = ref.watch(myChallengeIdsProvider).asData?.value?.contains(ch.id) ?? false;
+    final joined = ref.watch(myChallengeIdsProvider).asData?.value.contains(ch.id) ?? false;
     final board = ref.watch(challengeBoardProvider(ch.id)).asData?.value;
     final value = localProgress(days, ch);
     final ratio = ch.target <= 0 ? 0.0 : (value / ch.target).clamp(0.0, 1.0).toDouble();
