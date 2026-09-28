@@ -21,6 +21,8 @@ class NotificationIds {
   static const battery = 3;
   static const vehicle = 4;
   static const summary = 5;
+  /// Location access lost mid-day; stays until access returns or the day ends.
+  static const access = 6;
 }
 
 class LocalNotificationService implements NotificationService {

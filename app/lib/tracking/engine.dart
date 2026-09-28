@@ -44,9 +44,16 @@ class TrackingEngine {
   VerticalAccumulator? _vertical;
 
   final List<TrackPoint> points = [];
+  final PointAggregate _agg = PointAggregate();
   List<Segment> _segments = const [];
   DayStats _stats = DayStats.empty;
   LiveState _live = LiveState.empty;
+
+  /// Frozen head of [_segments] after the last full recompute (see [_recompute]).
+  List<Segment> _prefix = const [];
+  int _prefixRuns = 0;
+  int? _prefixEndTs;
+  int _fullRecomputes = 0;
 
   RawFix? _pendingFix;
   PressureSample? _pendingPressure;
@@ -136,13 +143,14 @@ class TrackingEngine {
       heartRateBpm: hr,
     );
     points.add(point);
+    _agg.add(point);
     _lastTickTs = ts;
 
     _ticksSinceRecompute++;
     var newSegs = const <Segment>[];
     var changed = false;
     if (intervalsChanged || _ticksSinceRecompute >= 5) {
-      _recompute();
+      _recompute(full: intervalsChanged);
       _ticksSinceRecompute = 0;
       if (_segments.length > _finalizedCount || intervalsChanged) {
         changed = true;
@@ -154,10 +162,62 @@ class TrackingEngine {
     return EngineTick(point: point, live: _live, newSegments: newSegs, segmentsChanged: changed);
   }
 
-  void _recompute() {
-    _segments = finalizeSegments(_segmenter.allIntervals, points, dayId: dayId);
-    _stats = computeDayStats(_segments, points, hasBarometer: _alt.hasBarometer);
+  /// Segments + stats. A *full* recompute (state transition, [finish]) runs the
+  /// finalize rules over the whole day and then freezes every segment that ends
+  /// more than a minute before the open interval started: nothing in the merge
+  /// or snap rules reaches further back than that. The 5-tick live refresh only
+  /// re-finalizes the tail behind the frozen prefix, so per-tick cost stays
+  /// bounded over a 10 h day instead of growing with the point count. The tail
+  /// is provisional; the next transition (or `finish`) recomputes everything.
+  void _recompute({bool full = true}) {
+    final all = _segmenter.allIntervals;
+    if (full || _prefixEndTs == null) {
+      _fullRecomputes++;
+      _segments = finalizeSegments(all, points, dayId: dayId);
+      _freezePrefix();
+    } else {
+      final cut = _prefixEndTs!;
+      final tail = <RawInterval>[];
+      for (final r in all) {
+        if (r.endTs <= cut) continue;
+        tail.add(RawInterval(kind: r.kind, startTs: r.startTs < cut ? cut : r.startTs, endTs: r.endTs, vehicle: r.vehicle));
+      }
+      final from = lowerBoundTs(points, cut - 60000);
+      final tailSegs = finalizeSegments(tail, points.sublist(from), dayId: dayId, firstIdx: _prefix.length, firstRunNumber: _prefixRuns + 1);
+      _segments = [..._prefix, ...tailSegs];
+    }
+    _stats = dayStatsFrom(_segments, _agg, hasBarometer: _alt.hasBarometer);
   }
+
+  void _freezePrefix() {
+    final open = _segmenter.open;
+    if (open == null) {
+      _prefix = const [];
+      _prefixRuns = 0;
+      _prefixEndTs = null;
+      return;
+    }
+    final cut = open.startTs - 60000;
+    var n = 0;
+    var runs = 0;
+    for (final s in _segments) {
+      if (s.endTs > cut) break;
+      n++;
+      if (s.kind == SegmentKind.run) runs++;
+    }
+    if (n == 0) {
+      _prefix = const [];
+      _prefixRuns = 0;
+      _prefixEndTs = null;
+      return;
+    }
+    _prefix = _segments.sublist(0, n);
+    _prefixRuns = runs;
+    _prefixEndTs = _prefix.last.endTs;
+  }
+
+  /// Diagnostics: full finalize passes so far (≈ state transitions + finish).
+  int get fullRecomputes => _fullRecomputes;
 
   void _refreshLive(int nowMs, {required bool hasFix}) {
     Segment? lastRun;
@@ -185,9 +245,9 @@ class TrackingEngine {
     );
   }
 
-  /// Final segments + stats (forces a recompute).
+  /// Final segments + stats (forces a full recompute).
   DayComputation finish() {
-    _recompute();
+    _recompute(full: true);
     return DayComputation(segments: _segments, stats: _stats, points: List.unmodifiable(points));
   }
 

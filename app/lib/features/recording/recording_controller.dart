@@ -11,6 +11,7 @@ import '../../data/db/providers.dart';
 import '../../data/resorts/resort_repository.dart';
 import '../../data/weather/weather_provider.dart';
 import '../map/thumbnail_renderer.dart';
+import '../../platform/device_access.dart';
 import '../../platform/notification_service.dart';
 import '../../platform/permission_service.dart';
 import '../../platform/providers.dart';
@@ -19,6 +20,7 @@ import 'batch_writer.dart';
 import 'guards.dart';
 import 'live_state_provider.dart';
 import 'live_track_provider.dart';
+import 'recording_access.dart';
 import 'recording_clock.dart';
 import 'recording_strings.dart';
 import 'recovery_service.dart';
@@ -42,6 +44,7 @@ class RecordingController extends Notifier<RecordingState> {
   StreamSubscription<RawFix>? _fixSub;
   StreamSubscription<PressureSample>? _pressSub;
   StreamSubscription<int>? _hrSub;
+  StreamSubscription<bool>? _serviceSub;
   AppLifecycleListener? _lifecycle;
   int _lastSegmentsWriteMs = 0;
   int _lastWatchdogMs = 0;
@@ -51,6 +54,8 @@ class RecordingController extends Notifier<RecordingState> {
   int _lastResortTryMs = 0;
   bool _ending = false;
   bool _watchHrSeen = false;
+  int? _accessLostSinceMs;
+  bool _recheckingAccess = false;
 
   DaysRepository get _repo => ref.read(daysRepositoryProvider);
   RecordingClock get _clock => ref.read(recordingClockProvider);
@@ -60,6 +65,7 @@ class RecordingController extends Notifier<RecordingState> {
   HeartRateSource get _hr => ref.read(heartRateSourceProvider);
   PermissionService get _perm => ref.read(permissionServiceProvider);
   NotificationService get _notif => ref.read(notificationServiceProvider);
+  DeviceAccessSource get _access => ref.read(deviceAccessProvider);
   RecordingStrings get _s => RecordingStrings.forLocale(ref.read(settingsProvider).locale, WidgetsBinding.instance.platformDispatcher.locale.languageCode);
 
   @override
@@ -137,8 +143,14 @@ class RecordingController extends Notifier<RecordingState> {
     _battery.clear();
     _ending = false;
     _watchHrSeen = false;
+    _accessLostSinceMs = null;
+    ref.read(recordingHintsProvider.notifier).reset();
+    ref.read(trackingAccessProvider.notifier).reset();
+    // iOS: CMAltimeter needs Motion & Fitness; without it the day is GPS-only.
+    if (!await _access.isMotionGranted()) ref.read(recordingHintsProvider.notifier).push(RecordingHint.motionDenied);
 
     _fixSub = _location.fixes.listen((f) => _engine?.addFix(f), onError: (_) {});
+    _serviceSub = _access.locationServiceChanges.listen(_onServiceStatus);
     _pressSub = _baro.samples.listen((s) => _engine?.addPressure(s));
     _hrSub = _hr.bpm.listen((b) {
       _watchHrSeen = true;
@@ -148,7 +160,12 @@ class RecordingController extends Notifier<RecordingState> {
     await _baro.start();
     await ref.read(watchdogChannelProvider).start();
 
-    _lifecycle = AppLifecycleListener(onPause: () => unawaited(_writer?.flush(_clock.now())), onDetach: () => unawaited(_writer?.flush(_clock.now())));
+    _lifecycle = AppLifecycleListener(
+      onPause: () => unawaited(_writer?.flush(_clock.now())),
+      onDetach: () => unawaited(_writer?.flush(_clock.now())),
+      // Settings may have changed while we were in the background.
+      onResume: () => unawaited(recheckAccess()),
+    );
     _ticker = _clock.periodic(const Duration(seconds: 1), _onTick);
 
     ref.read(isRecordingProvider.notifier).set(true);
@@ -192,9 +209,58 @@ class RecordingController extends Notifier<RecordingState> {
       _lastBatterySampleMs = now;
       unawaited(_sampleBattery(now));
     }
-    for (final a in _guards!.evaluate(tick.live, now)) {
+    for (final a in _guards!.evaluate(tick.live, now, accessLostSinceMs: _accessLostSinceMs)) {
       unawaited(_handleGuard(a));
     }
+  }
+
+  // ---------------------------------------------------------------- access
+
+  void _onServiceStatus(bool enabled) {
+    if (!enabled) {
+      _setAccess(TrackingAccess.serviceOff);
+    } else {
+      unawaited(recheckAccess());
+    }
+  }
+
+  /// Re-reads service state + permission (on resume and when the service
+  /// comes back). Public so the Heute screen can call it after Settings.
+  Future<void> recheckAccess() async {
+    if (!state.isRecording || _recheckingAccess) return;
+    _recheckingAccess = true;
+    try {
+      final on = await _perm.isLocationServiceEnabled();
+      final st = await _perm.status();
+      if (!state.isRecording) return;
+      if (!on) {
+        _setAccess(TrackingAccess.serviceOff);
+      } else if (st == LocationPermissionState.denied || st == LocationPermissionState.deniedForever) {
+        _setAccess(TrackingAccess.permissionDenied);
+      } else {
+        _setAccess(TrackingAccess.ok);
+      }
+    } catch (_) {
+      // plugin hiccup: keep the current state
+    } finally {
+      _recheckingAccess = false;
+    }
+  }
+
+  void _setAccess(TrackingAccess a) {
+    if (!state.isRecording || _ending) return;
+    final prev = ref.read(trackingAccessProvider);
+    if (prev.access == a) return;
+    if (a == TrackingAccess.ok) {
+      _accessLostSinceMs = null;
+      ref.read(trackingAccessProvider.notifier).reset();
+      unawaited(_notif.cancel(NotificationIds.access));
+      return;
+    }
+    _accessLostSinceMs ??= _clock.now();
+    ref.read(trackingAccessProvider.notifier).set(TrackingAccessState(access: a, lostSinceMs: _accessLostSinceMs));
+    // Not gated by the reminder opt-in: nothing is being recorded right now.
+    unawaited(_notif.showReminder(NotificationIds.access, _s.accessLostTitle, _s.accessLostBody(a)));
   }
 
   Future<void> _resolveResort(TrackPoint p) async {
@@ -208,6 +274,9 @@ class RecordingController extends Notifier<RecordingState> {
   }
 
   Future<void> _sampleBattery(int now) async {
+    final lowPower = await _access.isLowPowerMode();
+    ref.read(lowPowerModeProvider.notifier).set(lowPower);
+    if (lowPower) ref.read(recordingHintsProvider.notifier).push(RecordingHint.lowPowerMode);
     final pct = await _batterySrc.level();
     if (pct == null) return;
     _battery.add((now, pct));
@@ -244,6 +313,9 @@ class RecordingController extends Notifier<RecordingState> {
         // Forgotten recording: close it, trimming the trailing idle time.
         final id = await endDay(trimTrailingIdleFrom: _guards?.stopSince);
         if (optIn && id != null) await _notif.showReminder(NotificationIds.summary, _s.autoEndTitle, _s.autoEndLongBody);
+      case GuardAction.autoEndNoAccess:
+        final id = await endDay(trimTrailingIdleFrom: _accessLostSinceMs);
+        if (id != null) await _notif.showReminder(NotificationIds.summary, _s.autoEndTitle, _s.autoEndNoAccessBody);
     }
   }
 
@@ -314,9 +386,11 @@ class RecordingController extends Notifier<RecordingState> {
     await _fixSub?.cancel();
     await _pressSub?.cancel();
     await _hrSub?.cancel();
+    await _serviceSub?.cancel();
     _fixSub = null;
     _pressSub = null;
     _hrSub = null;
+    _serviceSub = null;
     _lifecycle?.dispose();
     _lifecycle = null;
     await _location.stop();
@@ -324,6 +398,7 @@ class RecordingController extends Notifier<RecordingState> {
     await ref.read(watchdogChannelProvider).stop();
     await _notif.cancel(NotificationIds.dayReminder);
     await _notif.cancel(NotificationIds.idle);
+    await _notif.cancel(NotificationIds.access);
   }
 
   void _teardownState() {
@@ -331,6 +406,9 @@ class RecordingController extends Notifier<RecordingState> {
     _writer = null;
     _guards = null;
     _ending = false;
+    _accessLostSinceMs = null;
+    ref.read(trackingAccessProvider.notifier).reset();
+    ref.read(recordingHintsProvider.notifier).reset();
     ref.read(isRecordingProvider.notifier).set(false);
     ref.read(liveStateNotifierProvider.notifier).reset();
     ref.read(liveTrackProvider.notifier).clear();
@@ -343,6 +421,7 @@ class RecordingController extends Notifier<RecordingState> {
     _fixSub?.cancel();
     _pressSub?.cancel();
     _hrSub?.cancel();
+    _serviceSub?.cancel();
     _lifecycle?.dispose();
   }
 

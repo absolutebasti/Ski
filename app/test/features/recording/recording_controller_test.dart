@@ -1,68 +1,14 @@
 import 'package:drift/native.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/core/core.dart';
 import 'package:slopetrack/core/settings.dart';
 import 'package:slopetrack/data/db/database.dart';
 import 'package:slopetrack/data/db/providers.dart';
-import 'package:slopetrack/data/resorts/resort_repository.dart';
 import 'package:slopetrack/features/recording/recording.dart';
 import 'package:slopetrack/platform/permission_service.dart';
-import 'package:slopetrack/platform/providers.dart';
 import 'package:slopetrack/tracking/synthetic.dart';
 
-import '../../support/fakes.dart';
-
-class Harness {
-  Harness(this.db, {int startMs = 1735288800000}) : clock = FakeClock(startMs);
-  final AppDatabase db;
-  final FakeClock clock;
-  final loc = ManualLocationSource();
-  final baro = ManualBarometerSource();
-  final notif = FakeNotificationService();
-  final watchdog = FakeWatchdog();
-  final perm = FakePermissionService();
-  late final ProviderContainer container = ProviderContainer(overrides: overrides());
-
-  List<Override> overrides() => [
-        databaseProvider.overrideWithValue(db),
-        recordingClockProvider.overrideWithValue(clock),
-        locationSourceProvider.overrideWithValue(loc),
-        barometerSourceProvider.overrideWithValue(baro),
-        batterySourceProvider.overrideWithValue(FakeBatterySource(80)),
-        heartRateSourceProvider.overrideWithValue(NoHeartRate()),
-        permissionServiceProvider.overrideWithValue(perm),
-        notificationServiceProvider.overrideWithValue(notif),
-        watchdogChannelProvider.overrideWithValue(watchdog),
-        settingsProvider.overrideWith(() => SettingsNotifier(null)),
-        resortRepositoryProvider.overrideWith((ref) async => ResortRepository(const [
-              Resort(id: 'kitzbuehel', name: 'Kitzbühel', country: 'AT', lat: 47.4491, lon: 12.3913, radiusKm: 12),
-            ])),
-      ];
-
-  RecordingController get ctrl => container.read(recordingControllerProvider.notifier);
-
-  /// Feed [day] second by second from index [from] to [to] (exclusive), ticking the clock.
-  Future<void> feed(SyntheticDay day, {int from = 0, int? to}) async {
-    final end = to ?? day.pressures.length;
-    var fi = 0;
-    while (fi < day.fixes.length && day.fixes[fi].ts < day.pressures[from].ts) {
-      fi++;
-    }
-    for (var i = from; i < end; i++) {
-      final ts = day.pressures[i].ts;
-      while (fi < day.fixes.length && day.fixes[fi].ts <= ts) {
-        loc.push(day.fixes[fi++]);
-      }
-      baro.push(day.pressures[i]);
-      await Future<void>.delayed(Duration.zero); // deliver stream events
-      clock.advance(1000);
-      if (i % 200 == 0) await Future<void>.delayed(Duration.zero);
-    }
-    await Future<void>.delayed(Duration.zero);
-  }
-}
+import 'harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -157,5 +103,30 @@ void main() {
     h.perm.state = LocationPermissionState.denied;
     await expectLater(h.ctrl.startDay(), throwsA(isA<RecordingError>()));
     expect(h.container.read(recordingControllerProvider).status, RecordingStatus.idle);
+  });
+
+  test('first fix outside any resort leaves the day unresolved; a later fix inside sets it', () async {
+    // 14.5 km north of the Kitzbühel centre (radius 12 km) → nearest() is null.
+    final outside = SyntheticDayGenerator(seed: 1, lat0: 47.58, startTs: 1735288800000).generate(const [Phase.walk(70)]);
+    // 400 s later, at the centre: the implied speed of the jump stays under the gate's 45 m/s.
+    final inside = SyntheticDayGenerator(seed: 2, startTs: outside.pressures.last.ts + 400000).generate(const [Phase.walk(90)]);
+    final h = Harness(db, startMs: outside.pressures.first.ts - 1000);
+    await h.ctrl.startDay();
+    final id = h.container.read(recordingControllerProvider).dayId!;
+    final repo = h.container.read(daysRepositoryProvider);
+
+    await h.feed(outside);
+    await h.settle();
+    expect((await repo.day(id))!.resortId, isNull, reason: 'outside every radius → not resolved, no resort written');
+    expect(h.container.read(settingsProvider).lastResortId, isNull);
+
+    h.clock.advance(inside.pressures.first.ts - 1000 - h.clock.now());
+    await h.feed(inside);
+    await h.settle();
+    final d = await repo.day(id);
+    expect(d!.resortId, 'kitzbuehel', reason: 'retry after 60 s of accepted fixes finds the resort');
+    expect(d.resortName, 'Kitzbühel');
+    expect(h.container.read(settingsProvider).lastResortId, 'kitzbuehel');
+    expect(h.container.read(recordingControllerProvider).isRecording, isTrue);
   });
 }

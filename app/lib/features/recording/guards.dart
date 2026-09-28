@@ -1,6 +1,10 @@
 import '../../core/core.dart';
 
-enum GuardAction { none, remindIdle, autoEndIdle, autoEndVehicle, remindFourHours, warnBattery, autoEndMidnight, autoEndMaxDuration }
+enum GuardAction { none, remindIdle, autoEndIdle, autoEndVehicle, remindFourHours, warnBattery, autoEndMidnight, autoEndMaxDuration, autoEndNoAccess }
+
+/// Minutes without location access (service off / permission revoked) after
+/// which the day is closed. Local until TrackingConfig.noAccessAutoEndMin exists.
+const int kNoAccessAutoEndMin = 30;
 
 /// Pure decision logic for the safety guards (docs/PLAN.md §5). Stateful so
 /// each reminder fires once per day.
@@ -12,10 +16,16 @@ class Guards {
   int? _lastRunEndMs;
   int? _stopSince;
 
-  List<GuardAction> evaluate(LiveState live, int nowMs) {
+  /// [accessLostSinceMs]: wall clock when location access was lost, null while ok.
+  List<GuardAction> evaluate(LiveState live, int nowMs, {int? accessLostSinceMs}) {
     final out = <GuardAction>[];
     final run = live.lastRun;
     if (run != null) _lastRunEndMs = run.endTs;
+
+    // no access: nothing is being recorded; close the day after 30 min.
+    if (accessLostSinceMs != null && nowMs - accessLostSinceMs >= kNoAccessAutoEndMin * 60000) {
+      out.add(GuardAction.autoEndNoAccess);
+    }
 
     // day boundary: a recording never spans two calendar days (local 03:00
     // after a start on the previous day) and never runs longer than maxDayH.

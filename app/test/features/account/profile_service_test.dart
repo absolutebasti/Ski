@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/core/settings.dart';
@@ -141,6 +143,52 @@ void main() {
       final profile = await container.read(profileProvider.future);
       expect(profile?.countryCode, 'AT');
       expect(api.patches.where((p) => p['country_code'] == 'AT'), hasLength(1));
+    });
+  });
+
+  group('avatar (PROFILE-PAGE)', () {
+    final picked = PickedAvatar(Uint8List.fromList([1, 2, 3]));
+
+    test('setAvatar uploads to <uid>/avatar.jpg, then patches avatar_url', () async {
+      final api = FakeProfileApi(userId: 'u1', row: {'id': 'u1', 'display_name': 'Sebastian'});
+      final service = ProfileService(api: api);
+      await service.load(userId: 'u1');
+
+      expect(await service.setAvatar(picked), isTrue);
+      expect(api.uploads.single.path, 'u1/avatar.jpg');
+      expect(api.uploads.single.contentType, 'image/jpeg');
+      final url = '${FakeProfileApi.publicBase}u1/avatar.jpg';
+      expect(api.patches, [
+        {'avatar_url': url},
+      ]);
+      expect(service.cached?.avatarUrl, url);
+
+      final png = PickedAvatar(Uint8List.fromList([4]), contentType: 'image/png');
+      expect(await service.setAvatar(png), isTrue);
+      expect(api.uploads.last.path, 'u1/avatar.png');
+    });
+
+    test('a failed upload leaves the row untouched and returns false', () async {
+      final api = FakeProfileApi(userId: 'u1', row: {'id': 'u1', 'display_name': 'Sebastian'}, failUpload: true);
+      final service = ProfileService(api: api);
+      await service.load(userId: 'u1');
+      expect(await service.setAvatar(picked), isFalse);
+      expect(api.patches, isEmpty);
+      expect(service.cached?.avatarUrl, isNull);
+    });
+
+    test('without an api or a user nothing happens', () async {
+      expect(await ProfileService().setAvatar(picked), isFalse);
+      expect(await ProfileService(api: FakeProfileApi()).setAvatar(picked), isFalse);
+    });
+
+    test('update(avatarUrl: null) clears the picture', () async {
+      final api = FakeProfileApi(userId: 'u1', row: {'id': 'u1', 'display_name': 'Sebastian', 'avatar_url': 'https://x/a.jpg'});
+      final service = ProfileService(api: api);
+      expect((await service.load(userId: 'u1'))?.avatarUrl, 'https://x/a.jpg');
+      await service.update(avatarUrl: null);
+      expect(api.patches.last, {'avatar_url': null});
+      expect(service.cached?.avatarUrl, isNull);
     });
   });
 }

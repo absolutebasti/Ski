@@ -68,4 +68,47 @@ void main() {
     expect(g.evaluate(low, start + 1000), contains(GuardAction.warnBattery));
     expect(g.evaluate(low, start + 2000), isNot(contains(GuardAction.warnBattery)));
   });
+
+  group('no location access', () {
+    final start = at(2027, 1, 10, 9);
+    test('null → never', () {
+      final g = Guards(dayStartMs: start);
+      expect(g.evaluate(skiing, start + 5 * 3600000, accessLostSinceMs: null), isNot(contains(GuardAction.autoEndNoAccess)));
+    });
+    for (final (minutes, expected) in [(0, false), (29, false), (30, true), (45, true)]) {
+      test('$minutes min without access → auto-end $expected', () {
+        final g = Guards(dayStartMs: start);
+        final lost = start + 3600000;
+        final actions = g.evaluate(skiing, lost + minutes * 60000, accessLostSinceMs: lost);
+        expect(actions.contains(GuardAction.autoEndNoAccess), expected);
+      });
+    }
+    test('fires alongside the other guards, never alone with none', () {
+      final g = Guards(dayStartMs: start);
+      final lost = start + 60000;
+      final actions = g.evaluate(resting, lost + 40 * 60000, accessLostSinceMs: lost);
+      expect(actions, contains(GuardAction.autoEndNoAccess));
+      expect(actions, isNot(contains(GuardAction.none)));
+    });
+  });
+
+  group('rollover table', () {
+    for (final (startH, endsByCap) in [(3, true), (9, true), (11, true), (12, false), (18, false), (23, false)]) {
+      test('start $startH:00 → ${endsByCap ? '16 h cap' : '03:00 rollover'} closes the day', () {
+        final start = at(2027, 1, 10, startH);
+        final g = Guards(dayStartMs: start);
+        // walk forward in 10-min steps until an auto-end appears
+        GuardAction? first;
+        var t = start;
+        while (first == null && t < start + 30 * 3600000) {
+          t += 600000;
+          final a = g.evaluate(skiing, t);
+          if (a.contains(GuardAction.autoEndMaxDuration)) first = GuardAction.autoEndMaxDuration;
+          if (a.contains(GuardAction.autoEndMidnight)) first = GuardAction.autoEndMidnight;
+        }
+        expect(first, endsByCap ? GuardAction.autoEndMaxDuration : GuardAction.autoEndMidnight);
+        expect(t - start, lessThanOrEqualTo(TrackingConfig.maxDayH * 3600000));
+      });
+    }
+  });
 }

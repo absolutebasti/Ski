@@ -87,4 +87,37 @@ class AccountStrings {
   String get signedInAs => l.pick(de: 'Angemeldet', en: 'Signed in');
   String get rowHint => l.pick(de: 'Sichern, Ranglisten, Freunde', en: 'Backup, leaderboards, friends');
   String get holdToDelete => l.pick(de: 'Endgültig löschen · halten', en: 'Delete for good · hold');
+
+  // --- profile page (PROFILE-PAGE) ------------------------------------------
+  String get profileTitle => l.pick(de: 'Konto', en: 'Account');
+  String get changePhoto => l.pick(de: 'Foto ändern', en: 'Change photo');
+  String get photoUploading => l.pick(de: 'Foto wird hochgeladen …', en: 'Uploading photo …');
+  String get photoSaved => l.pick(de: 'Foto gesichert', en: 'Photo saved');
+  String get photoFailed => l.pick(de: 'Foto konnte nicht gesichert werden.', en: 'The photo could not be saved.');
+  String get photoUnavailable => l.pick(de: 'Fotoauswahl ist auf diesem Gerät nicht verfügbar.', en: 'Photo picking is not available on this device.');
+  String get team => l.pick(de: 'Team', en: 'Team');
+  String get noTeam => l.pick(de: 'Kein Team', en: 'No team');
+  String get changeTeam => l.pick(de: 'Team ändern', en: 'Change team');
+  String get teamHint => l.pick(
+        de: 'Dein Land in der Länderwertung. Deine Tage zählen ab sofort für das neue Team.',
+        en: 'Your country in the country ranking. From now on your days count for the new team.',
+      );
+  String get teamSaved => l.pick(de: 'Team geändert', en: 'Team changed');
+  String get sectionLevel => l.pick(de: 'Level', en: 'Level');
+  String get sectionSeason => l.pick(de: 'Saison', en: 'Season');
+  String get lifetime => l.pick(de: 'Gesamt', en: 'All time');
+  String season(String key) => l.pick(de: 'Saison $key', en: 'Season $key');
+  String get days => l.pick(de: 'Tage', en: 'Days');
+  String get vertical => l.pick(de: 'Höhenmeter', en: 'Vertical');
+  String get distance => l.pick(de: 'Ski-km', en: 'Ski km');
+  String get topSpeed => l.pick(de: 'Top-Speed', en: 'Top speed');
+  String get sectionFriends => l.pick(de: 'Freunde', en: 'Friends');
+  String get friendCode => l.pick(de: 'Dein Freundescode', en: 'Your friend code');
+  String get friendCodeUnavailable => l.pick(de: 'Gerade nicht verfügbar', en: 'Not available right now');
+  String get friends => l.pick(de: 'Freunde', en: 'Friends');
+  String get sectionSupport => l.pick(de: 'Hilfe', en: 'Help');
+  String get contact => l.pick(de: 'Kontakt', en: 'Contact');
+  String get contactHint => l.pick(de: 'Fragen, Fehler, Wünsche — schreib uns.', en: 'Questions, bugs, wishes — write to us.');
+  String get mailSubject => l.pick(de: 'SlopeTrack — Feedback', en: 'SlopeTrack — feedback');
+  String get medalsOpen => l.pick(de: 'Medaillen', en: 'Medals');
 }

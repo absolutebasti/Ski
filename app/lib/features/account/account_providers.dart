@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/supabase/supabase_client.dart';
 import '../../data/sync/auth_service.dart';
@@ -33,6 +34,13 @@ final Provider<AccountAction> accountSignOutProvider =
 
 final Provider<AccountAction> accountDeleteProvider =
     Provider<AccountAction>((ref) => ref.read(authServiceProvider).deleteAccount);
+
+/// Opens a `mailto:` (support row on the profile page). Indirection so a
+/// widget test can capture the URI instead of hitting url_launcher.
+typedef OpenUri = Future<void> Function(Uri uri);
+
+final Provider<OpenUri> accountOpenUriProvider =
+    Provider<OpenUri>((ref) => (uri) => launchUrl(uri, mode: LaunchMode.externalApplication));
 
 /// The signed-in user without a first-frame flash: while the auth stream is
 /// still loading, fall back to the session Supabase already restored.

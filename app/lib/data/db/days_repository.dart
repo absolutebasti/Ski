@@ -148,12 +148,50 @@ class DaysRepository {
     return DayDetail(day: d, segments: segs, points: picked.map(pointFromRow).toList());
   }
 
+  /// Hides the day and queues the tombstone. Points and segments go right
+  /// away (SYNC-HARDENING): a deleted day must not keep megabytes of track on
+  /// the phone; the aggregates stay for the backend round-trip.
   Future<void> softDeleteDay(String id) => db.transaction(() async {
         await (db.update(db.days)..where((d) => d.id.equals(id))).write(
           DaysCompanion(deletedAt: Value(_now()), updatedAt: Value(_now())),
         );
+        await (db.delete(db.points)..where((p) => p.dayId.equals(id))).go();
+        await (db.delete(db.segments)..where((s) => s.dayId.equals(id))).go();
         await _enqueue(id, SyncOp.delete);
       });
+
+  /// Raw point count of a day (any accepted state) — cheap check for 'Spur laden'.
+  Future<int> pointCount(String dayId) async {
+    final n = db.points.id.count();
+    final q = db.selectOnly(db.points)
+      ..addColumns([n])
+      ..where(db.points.dayId.equals(dayId));
+    return (await q.getSingle()).read(n) ?? 0;
+  }
+
+  /// Writes a downloaded track back under a pulled day (SYNC-HARDENING):
+  /// replaces points and segments and rewrites the DayStats columns with the
+  /// recomputed values. Neither bumps `updatedAt` nor queues a push — the
+  /// backend row stays the truth for the aggregates.
+  Future<void> restoreTrack(String dayId, {required List<TrackPoint> points, required List<Segment> segments, required DayStats stats}) async {
+    await db.transaction(() async {
+      await (db.delete(db.points)..where((p) => p.dayId.equals(dayId))).go();
+      await (db.delete(db.segments)..where((s) => s.dayId.equals(dayId))).go();
+      if (points.isNotEmpty) {
+        await db.batch((b) => b.insertAll(db.points, points.map((p) => pointToCompanion(dayId, p))));
+      }
+      if (segments.isNotEmpty) {
+        await db.batch((b) => b.insertAll(db.segments, segments.map(segmentToCompanion)));
+      }
+      int? lastFix;
+      for (final p in points) {
+        if (p.accepted) lastFix = p.ts;
+      }
+      await (db.update(db.days)..where((d) => d.id.equals(dayId))).write(
+        statsToCompanion(stats).copyWith(lastFixAt: lastFix != null ? Value(lastFix) : const Value.absent()),
+      );
+    });
+  }
 
   Future<void> deleteAll() async {
     await db.transaction(() async {
@@ -260,15 +298,36 @@ class DaysRepository {
         await (db.delete(db.syncOutbox)..where((o) => o.dayId.equals(dayId))).go();
       });
 
-  /// One failed attempt; the entry stays queued until [SyncOp] retries run out.
-  Future<void> bumpAttempt(int outboxId, String error) async {
+  /// One failed attempt; returns the new count (0 when the entry is gone).
+  /// The entry stays queued — SyncService spaces retries with a backoff.
+  Future<int> bumpAttempt(int outboxId, String error) async {
     final row = await (db.select(db.syncOutbox)..where((o) => o.id.equals(outboxId))).getSingleOrNull();
-    if (row == null) return;
+    if (row == null) return 0;
+    final attempts = row.attempts + 1;
     await (db.update(db.syncOutbox)..where((o) => o.id.equals(outboxId)))
-        .write(SyncOutboxCompanion(attempts: Value(row.attempts + 1), lastError: Value(_trim(error))));
+        .write(SyncOutboxCompanion(attempts: Value(attempts), lastError: Value(_trim(error))));
+    return attempts;
   }
 
   Future<void> dropFromOutbox(int outboxId) => (db.delete(db.syncOutbox)..where((o) => o.id.equals(outboxId))).go();
+
+  /// App start / sign-in: every entry gets a fresh run of retries.
+  Future<void> resetAttempts() => db.update(db.syncOutbox).write(const SyncOutboxCompanion(attempts: Value(0)));
+
+  /// Re-queues every finished day that never reached the backend (or changed
+  /// since its last push). Used when a Konto confirms taking over the local
+  /// days recorded under another Konto.
+  Future<int> requeueUnsynced() => db.transaction(() async {
+        final rows = await (db.select(db.days)..where((d) => d.status.equals(DayStatus.finished.dbValue))).get();
+        var n = 0;
+        for (final r in rows) {
+          final synced = r.syncedAt;
+          if (synced != null && r.updatedAt <= synced) continue;
+          await _enqueue(r.id, r.deletedAt == null ? SyncOp.upsert : SyncOp.delete);
+          n++;
+        }
+        return n;
+      });
 
   Future<void> clearOutbox() => db.delete(db.syncOutbox).go();
 

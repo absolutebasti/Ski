@@ -15,6 +15,8 @@ import '../../platform/providers.dart';
 import '../achievements/achievements.dart';
 import '../achievements/ui/ui.dart';
 import '../share/share_service.dart';
+import '../social/duel/duel.dart';
+import '../social/leaderboard_providers.dart';
 import 'count_up.dart';
 import 'mascot_line.dart';
 import 'notifications_sheet.dart';
@@ -218,6 +220,18 @@ class _Body extends StatelessWidget {
                   color: AppColors.of(context).accent,
                 ),
               ),
+              // 'Platz 14 in Kitzbühel · Saison' (SOC-LIVE-DUEL) — a line,
+              // never a card; absent while offline or not ranked.
+              _Gutter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: RankTeaser(
+                    seasonKey: seasonKeyFromMs(detail.day.startedAt),
+                    resortId: detail.day.resortId,
+                    resortName: detail.day.resortName,
+                  ),
+                ),
+              ),
               const SizedBox(height: 20),
               _Gutter(
                 child: Row(
@@ -264,6 +278,8 @@ class _Body extends StatelessWidget {
                   child: NewMedalsBanner(ids: newMedals, solid: pbs.isEmpty),
                 ),
               ],
+              // The duel of this day, once the user was in one (SOC-LIVE-DUEL).
+              _DuelSection(detail: detail),
               const SizedBox(height: 24),
               _Gutter(child: _BestRunCard(detail: detail)),
               const SizedBox(height: 20),
@@ -299,6 +315,25 @@ class _Body extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Result card of the Tagesduell this day was part of — nothing while the
+/// user had none, is signed out or the backend is unreachable.
+class _DuelSection extends ConsumerWidget {
+  const _DuelSection({required this.detail});
+  final DayDetail detail;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final duel = ref.watch(dayDuelProvider(detail.day.startedAt)).asData?.value;
+    if (duel == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: _Gutter(
+        child: DuelResultCard(duel: duel, ownUserId: ref.watch(socialUserIdProvider), resortName: detail.day.resortName),
+      ),
     );
   }
 }

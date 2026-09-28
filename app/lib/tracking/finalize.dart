@@ -6,7 +6,12 @@ import 'speed.dart';
 
 /// Applies validity + merge rules to raw intervals and computes per-segment stats
 /// from the accepted points. Deterministic: same inputs → same segments.
-List<Segment> finalizeSegments(List<RawInterval> raw, List<TrackPoint> points, {required String dayId}) {
+///
+/// [firstIdx] / [firstRunNumber] let the engine finalize only the tail of a
+/// day (provisional live view) and splice it behind already finalized
+/// segments. Every scan over [points] starts at a binary-searched index, so
+/// one call costs O(n + S·log n) instead of O(S·n).
+List<Segment> finalizeSegments(List<RawInterval> raw, List<TrackPoint> points, {required String dayId, int firstIdx = 0, int firstRunNumber = 1}) {
   if (raw.isEmpty) return const [];
   // 1. copy + sort + merge adjacent same kind
   final iv = raw.map((r) => RawInterval(kind: r.kind, startTs: r.startTs, endTs: r.endTs, vehicle: r.vehicle)).toList()
@@ -57,8 +62,8 @@ List<Segment> finalizeSegments(List<RawInterval> raw, List<TrackPoint> points, {
     final wantMax = cur.kind == SegmentKind.run;
     int? bestTs;
     double? best;
-    for (final p in accepted) {
-      if (p.ts < cur.startTs - 60000) continue;
+    for (var k = lowerBoundTs(accepted, cur.startTs - 60000); k < accepted.length; k++) {
+      final p = accepted[k];
       if (p.ts > cur.startTs + 10000) break;
       if (p.ts <= prev.startTs) continue;
       final a = p.fusedAltM!;
@@ -76,13 +81,27 @@ List<Segment> finalizeSegments(List<RawInterval> raw, List<TrackPoint> points, {
 
   // 4. stats
   final out = <Segment>[];
-  var run = 0;
+  var run = firstRunNumber - 1;
   for (var i = 0; i < iv.length; i++) {
     final r = iv[i];
-    final seg = _stats(r, accepted, dayId: dayId, idx: i, runNumber: r.kind == SegmentKind.run ? ++run : null);
+    final seg = _stats(r, accepted, dayId: dayId, idx: firstIdx + i, runNumber: r.kind == SegmentKind.run ? ++run : null);
     out.add(seg);
   }
   return out;
+}
+
+/// Index of the first point with `ts >= tsMs` in a list sorted by ts.
+int lowerBoundTs(List<TrackPoint> sorted, int tsMs) {
+  var lo = 0, hi = sorted.length;
+  while (lo < hi) {
+    final mid = (lo + hi) >> 1;
+    if (sorted[mid].ts < tsMs) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  return lo;
 }
 
 void _mergeAdjacent(List<RawInterval> iv) {
@@ -96,8 +115,8 @@ void _mergeAdjacent(List<RawInterval> iv) {
 
 (double?, double?) _endAlts(List<TrackPoint> accepted, int startTs, int endTs) {
   double? s, e;
-  for (final p in accepted) {
-    if (p.ts < startTs) continue;
+  for (var k = lowerBoundTs(accepted, startTs); k < accepted.length; k++) {
+    final p = accepted[k];
     if (p.ts > endTs) break;
     s ??= p.fusedAltM;
     e = p.fusedAltM;
@@ -116,8 +135,8 @@ Segment _stats(RawInterval r, List<TrackPoint> accepted, {required String dayId,
   final cumD = <double>[];
   final alts = <double>[];
   double? steepest;
-  for (final p in accepted) {
-    if (p.ts < r.startTs) continue;
+  for (var k = lowerBoundTs(accepted, r.startTs); k < accepted.length; k++) {
+    final p = accepted[k];
     if (p.ts > r.endTs) break;
     sAlt ??= p.fusedAltM;
     sTs ??= p.ts;
@@ -136,13 +155,14 @@ Segment _stats(RawInterval r, List<TrackPoint> accepted, {required String dayId,
       horiz += d;
       cumD.add(horiz);
       alts.add(p.fusedAltM ?? alts.lastOrNull ?? 0);
-      // slide window
+      // shortest trailing window of ≥ 100 m: walk back while the window is short
       var j = cumD.length - 1;
       while (j > 0 && horiz - cumD[j - 1] < 100) {
         j--;
       }
-      if (j < cumD.length - 1 && horiz - cumD[j] >= 100) {
-        final g = (alts[j] - alts.last) / (horiz - cumD[j]) * 100;
+      if (j > 0 && horiz - cumD[j - 1] >= 100) {
+        final i0 = j - 1;
+        final g = (alts[i0] - alts.last) / (horiz - cumD[i0]) * 100;
         if (steepest == null || g > steepest) steepest = g;
       }
     }
@@ -181,8 +201,56 @@ Segment _stats(RawInterval r, List<TrackPoint> accepted, {required String dayId,
   );
 }
 
-/// Day aggregates from finalized segments and all points.
-DayStats computeDayStats(List<Segment> segments, List<TrackPoint> points, {required bool hasBarometer}) {
+/// Day aggregates from finalized segments and all points (offline path).
+DayStats computeDayStats(List<Segment> segments, List<TrackPoint> points, {required bool hasBarometer}) =>
+    dayStatsFrom(segments, PointAggregate.of(points), hasBarometer: hasBarometer);
+
+/// The point-derived part of [DayStats], maintained incrementally by the live
+/// engine so a recompute never walks the whole day again.
+class PointAggregate {
+  PointAggregate();
+
+  factory PointAggregate.of(Iterable<TrackPoint> points) {
+    final a = PointAggregate();
+    for (final p in points) {
+      a.add(p);
+    }
+    return a;
+  }
+
+  int accepted = 0, rejected = 0;
+  double? maxAltM, minAltM;
+  int hrSum = 0, hrN = 0, hrMax = 0;
+  int? firstTs, lastTs;
+
+  int get elapsedMs => firstTs == null ? 0 : lastTs! - firstTs!;
+
+  void add(TrackPoint p) {
+    firstTs ??= p.ts;
+    lastTs = p.ts;
+    if (p.hasPosition) {
+      if (p.accepted) {
+        accepted++;
+      } else {
+        rejected++;
+      }
+    }
+    final a = p.fusedAltM;
+    if (a != null && p.accepted) {
+      maxAltM = maxAltM == null ? a : math.max(maxAltM!, a);
+      minAltM = minAltM == null ? a : math.min(minAltM!, a);
+    }
+    final hr = p.heartRateBpm;
+    if (hr != null && hr > 0) {
+      hrSum += hr;
+      hrN++;
+      if (hr > hrMax) hrMax = hr;
+    }
+  }
+}
+
+/// Segment totals + the point aggregate → [DayStats]. O(segments).
+DayStats dayStatsFrom(List<Segment> segments, PointAggregate agg, {required bool hasBarometer}) {
   int ski = 0, lift = 0, pause = 0, loss = 0, other = 0, runs = 0, lifts = 0;
   double drop = 0, ascent = 0, skiD = 0, liftD = 0, totalD = 0, maxV = 0, runMoving = 0;
   String? maxId, longestId;
@@ -219,36 +287,12 @@ DayStats computeDayStats(List<Segment> segments, List<TrackPoint> points, {requi
         loss += s.durationMs;
     }
   }
-  double? maxAlt, minAlt;
-  int acc = 0, rej = 0;
-  int hrSum = 0, hrN = 0, hrMax = 0;
-  for (final p in points) {
-    if (p.hasPosition) {
-      if (p.accepted) {
-        acc++;
-      } else {
-        rej++;
-      }
-    }
-    final a = p.fusedAltM;
-    if (a != null && p.accepted) {
-      maxAlt = maxAlt == null ? a : math.max(maxAlt, a);
-      minAlt = minAlt == null ? a : math.min(minAlt, a);
-    }
-    final hr = p.heartRateBpm;
-    if (hr != null && hr > 0) {
-      hrSum += hr;
-      hrN++;
-      if (hr > hrMax) hrMax = hr;
-    }
-  }
-  final elapsed = points.isEmpty ? 0 : points.last.ts - points.first.ts;
   return DayStats(
-    elapsedMs: elapsed, skiMs: ski, liftMs: lift, pauseMs: pause, signalLossMs: loss, otherMs: other,
+    elapsedMs: agg.elapsedMs, skiMs: ski, liftMs: lift, pauseMs: pause, signalLossMs: loss, otherMs: other,
     runCount: runs, liftCount: lifts, dropM: drop, ascentM: ascent, skiDistanceM: skiD, liftDistanceM: liftD,
     totalDistanceM: totalD, maxSpeedMs: maxV, avgSkiSpeedMs: runMoving > 0 ? skiD / (runMoving / 1000) : 0,
-    maxAltM: maxAlt, minAltM: minAlt, maxSpeedSegmentId: maxId, longestRunSegmentId: longestId,
-    acceptedFixes: acc, rejectedFixes: rej, hasBarometer: hasBarometer, vehicleFlag: vehicle,
-    avgHeartRateBpm: hrN > 0 ? (hrSum / hrN).round() : null, maxHeartRateBpm: hrN > 0 ? hrMax : null,
+    maxAltM: agg.maxAltM, minAltM: agg.minAltM, maxSpeedSegmentId: maxId, longestRunSegmentId: longestId,
+    acceptedFixes: agg.accepted, rejectedFixes: agg.rejected, hasBarometer: hasBarometer, vehicleFlag: vehicle,
+    avgHeartRateBpm: agg.hrN > 0 ? (agg.hrSum / agg.hrN).round() : null, maxHeartRateBpm: agg.hrN > 0 ? agg.hrMax : null,
   );
 }

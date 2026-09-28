@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/settings.dart';
 import '../../data/sync/auth_service.dart';
+import 'avatar_picker.dart';
 import 'profile_api.dart';
 
 /// Sentinel for "leave this column untouched" — `null` means "clear it".
@@ -206,6 +207,24 @@ class ProfileService {
     if (_cached?.id != uid) await load(userId: uid);
     if (_cached?.countryCode == country) return;
     await update(countryCode: country, userId: uid);
+  }
+
+  /// Uploads [picked] to the avatars bucket and points `avatar_url` at it.
+  /// False when there is no api / user or the upload failed; the profile row
+  /// is only touched after a successful upload. Never throws.
+  Future<bool> setAvatar(PickedAvatar picked, {String? userId}) async {
+    final api = this.api;
+    final uid = userId ?? _cached?.id ?? api?.userId;
+    if (api == null || uid == null) return false;
+    final String url;
+    try {
+      url = await api.uploadAvatar(uid, picked.bytes, contentType: picked.contentType);
+    } catch (e) {
+      debugPrint('avatar upload failed: $e');
+      return false;
+    }
+    await update(avatarUrl: url, userId: uid);
+    return true;
   }
 
   /// Drops the cache — called on sign out.

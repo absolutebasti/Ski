@@ -121,47 +121,114 @@ class FakeSyncApi implements SyncApi {
   String? userId;
 
   final List<Map<String, Object?>> upserts = [];
+
+  /// `sinceMs` of every fetchDays call (one per page).
   final List<int?> fetchCursors = [];
+
+  /// `offset` of every fetchDays call.
+  final List<int> fetchOffsets = [];
   final List<String> uploads = [];
+  final List<String> removed = [];
   final Map<String, String> trackPaths = {};
+
+  /// Storage: path → gzip bytes.
+  final Map<String, List<int>> storage = {};
 
   List<Map<String, Object?>> remoteDays = [];
 
   /// Thrown by every call while set.
   Object? failure;
 
+  /// Thrown by [upsertDay] only — a 500 on the write while the pull works.
+  Object? upsertFailure;
+
+  /// Thrown by the next [failuresLeft] calls only, then cleared.
+  int failuresLeft = 0;
+
   /// Pretends there is no network: the outbox must stay intact.
   bool offline = false;
+
+  int refreshCalls = 0;
+
+  /// What [refreshSession] answers; set false to simulate a dead refresh token.
+  bool refreshResult = true;
+
+  /// Runs after a successful refresh — e.g. to clear [failure].
+  void Function()? onRefresh;
 
   void _check() {
     if (offline) throw const SyncOffline('test offline');
     final f = failure;
-    if (f != null) throw f;
+    if (f != null) {
+      if (failuresLeft > 0) {
+        failuresLeft--;
+        if (failuresLeft == 0) failure = null;
+      }
+      throw f;
+    }
   }
 
   @override
   Future<void> upsertDay(Map<String, Object?> row) async {
     _check();
+    final f = upsertFailure;
+    if (f != null) throw f;
     upserts.add(row);
   }
 
   @override
-  Future<List<Map<String, Object?>>> fetchDays({int? sinceMs}) async {
-    _check();
+  Future<List<Map<String, Object?>>> fetchDays({int? sinceMs, int offset = 0, int limit = 500}) async {
     fetchCursors.add(sinceMs);
-    return remoteDays;
+    fetchOffsets.add(offset);
+    _check();
+    final rows = [
+      for (final r in remoteDays)
+        if (sinceMs == null || (DateTime.tryParse(r['updated_at'] as String? ?? '')?.millisecondsSinceEpoch ?? 0) > sinceMs) r,
+    ];
+    if (offset >= rows.length) return [];
+    return rows.sublist(offset, (offset + limit).clamp(0, rows.length));
   }
 
   @override
   Future<String> uploadTrack(String dayId, List<int> gzipBytes) async {
     _check();
     uploads.add(dayId);
-    return '$userId/$dayId.json.gz';
+    final path = '$userId/$dayId.json.gz';
+    storage[path] = gzipBytes;
+    return path;
   }
 
   @override
   Future<void> setTrackPath(String dayId, String path) async {
     _check();
     trackPaths[dayId] = path;
+  }
+
+  @override
+  Future<String?> trackPathOf(String dayId) async {
+    _check();
+    return trackPaths[dayId];
+  }
+
+  @override
+  Future<List<int>?> downloadTrack(String dayId) async {
+    _check();
+    final path = trackPaths[dayId];
+    return path == null ? null : storage[path];
+  }
+
+  @override
+  Future<void> removeTrack(String dayId) async {
+    _check();
+    removed.add(dayId);
+    storage.remove('$userId/$dayId.json.gz');
+  }
+
+  @override
+  Future<bool> refreshSession() async {
+    if (offline) throw const SyncOffline('test offline');
+    refreshCalls++;
+    if (refreshResult) onRefresh?.call();
+    return refreshResult;
   }
 }
