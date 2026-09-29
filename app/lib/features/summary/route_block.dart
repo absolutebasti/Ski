@@ -223,27 +223,55 @@ class RouteGeometry {
   }
 }
 
-/// Draws [geometry] inset into the canvas: champagne radial glow, dashed lifts,
-/// the run stroke revealed up to [t] (0–1) along its total length.
+/// Draws [geometry] inset into the canvas: champagne radial glow centred on
+/// the route, dashed lifts, the run stroke revealed up to [t] (0–1) along its
+/// total length.
+///
+/// [inset] keeps the route clear of the date plate: the default leaves 110 pt
+/// at the bottom (plate ≈ 80 pt + 18 pt margin + breathing room), 34 pt on the
+/// other sides. [routeRect] exposes the area the route is mapped into.
 class RoutePainter extends CustomPainter {
-  const RoutePainter({required this.t, required this.geometry, required this.run, required this.lift, this.inset = 34, this.strokeWidth = 4});
+  const RoutePainter({
+    required this.t,
+    required this.geometry,
+    required this.run,
+    required this.lift,
+    this.inset = defaultInset,
+    this.strokeWidth = 4,
+  });
+
+  /// Default inset: the bottom clears the date plate.
+  static const EdgeInsets defaultInset = EdgeInsets.fromLTRB(34, 34, 34, 110);
 
   final double t;
   final RouteGeometry geometry;
   final Color run;
   final Color lift;
-  final double inset;
+  final EdgeInsets inset;
   final double strokeWidth;
+
+  /// The square the unit route is mapped into for a canvas of [size]: the
+  /// inset rectangle, shrunk to a centred square so the aspect stays intact.
+  /// No route pixel lies outside it (apart from half the stroke width).
+  Rect routeRect(Size size) {
+    final rect = Rect.fromLTWH(
+      inset.left,
+      inset.top,
+      math.max(1, size.width - inset.horizontal),
+      math.max(1, size.height - inset.vertical),
+    );
+    final side = math.min(rect.width, rect.height);
+    return Rect.fromLTWH(rect.left + (rect.width - side) / 2, rect.top + (rect.height - side) / 2, side, side);
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(inset, inset, math.max(1, size.width - inset * 2), math.max(1, size.height - inset * 2));
-    final side = math.min(rect.width, rect.height);
-    final ox = rect.left + (rect.width - side) / 2, oy = rect.top + (rect.height - side) / 2;
-    Offset map(Offset n) => Offset(ox + n.dx * side, oy + n.dy * side);
+    final square = routeRect(size);
+    Offset map(Offset n) => Offset(square.left + n.dx * square.width, square.top + n.dy * square.height);
 
-    // Champagne radial glow behind the route (one of the three gradients).
-    final centre = Offset(size.width / 2, size.height * 0.46);
+    // Champagne radial glow behind the route (one of the three gradients),
+    // centred on the route bounds rather than on the canvas.
+    final centre = _boundsCentre(map);
     final glowRect = Rect.fromCircle(center: centre, radius: 210);
     canvas.drawCircle(
       centre,
@@ -297,6 +325,21 @@ class RoutePainter extends CustomPainter {
     }
   }
 
+  /// Centre of the drawn strokes' bounding box in canvas coordinates.
+  Offset _boundsCentre(Offset Function(Offset) map) {
+    var minX = double.infinity, minY = double.infinity, maxX = double.negativeInfinity, maxY = double.negativeInfinity;
+    for (final s in geometry.strokes) {
+      for (final p in s.points) {
+        minX = math.min(minX, p.dx);
+        minY = math.min(minY, p.dy);
+        maxX = math.max(maxX, p.dx);
+        maxY = math.max(maxY, p.dy);
+      }
+    }
+    if (!minX.isFinite) return map(const Offset(0.5, 0.5));
+    return map(Offset((minX + maxX) / 2, (minY + maxY) / 2));
+  }
+
   static Path _extract(Path path, double t) {
     if (t >= 1) return path;
     final out = Path();
@@ -328,5 +371,5 @@ class RoutePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant RoutePainter old) =>
-      old.t != t || old.geometry != geometry || old.run != run || old.lift != lift;
+      old.t != t || old.geometry != geometry || old.run != run || old.lift != lift || old.inset != inset;
 }

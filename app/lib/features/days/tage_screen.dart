@@ -67,7 +67,15 @@ class _TageScreenState extends ConsumerState<TageScreen> {
                 padding: const EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, 32),
                 children: [
                   ScreenHeader(title: s.title, padding: const EdgeInsets.fromLTRB(0, 8, 0, 16)),
-                  EmptyState(headline: s.emptyHeadline, line: s.emptyLine),
+                  // Three 6 % skeleton rows behind the state card: the shape
+                  // of what is coming (docs/DESIGN.md §5).
+                  Stack(
+                    fit: StackFit.passthrough,
+                    children: [
+                      const IgnorePointer(child: DaySkeletonRows()),
+                      EmptyState(headline: s.emptyHeadline, line: s.emptyLine),
+                    ],
+                  ),
                 ],
               ),
             );

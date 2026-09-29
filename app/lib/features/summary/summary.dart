@@ -5,3 +5,4 @@ export 'route_block.dart';
 export 'summary_skeleton.dart';
 export 'summary_strings.dart';
 export 'tagesbilanz_screen.dart';
+export 'time_legend.dart';

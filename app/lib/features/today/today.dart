@@ -1,6 +1,9 @@
+export 'duel_line.dart';
 export 'heute_screen.dart';
 export 'idle_view.dart';
 export 'live_view.dart';
 export 'recovery_card.dart';
+export 'season_card.dart';
+export 'season_goal_sheet.dart';
 export 'today_providers.dart';
 export 'today_strings.dart';

@@ -11,7 +11,10 @@ import 'profile_strings.dart';
 
 /// Time-based altitude profile of one ski day (docs/DESIGN.md §4 "Charts").
 ///
-/// x = elapsed time since the first accepted point, y = fused altitude.
+/// x = clock time (three ticks at ¼, ½, ¾ of the day), y = fused altitude with
+/// the unit on the top label ('2.000 m'). A 10 pt legend row
+/// ('Abfahrt · Lift · Signalverlust', the last only when the day has a gap)
+/// sits below the [height] pt chart.
 /// Champagne 2 pt stroke over an accent area that fades to nothing, lift rides
 /// shaded liftGrey, signal-loss gaps hatched danger. Dragging over the chart
 /// draws a 1 px ice cursor with a floating glass readout ("11:42 · 1.980 m")
@@ -25,8 +28,11 @@ class AltitudeProfile extends StatefulWidget {
   final ValueChanged<int?>? onScrub;
   final double height;
 
-  /// Space fl_chart reserves for the altitude labels on the left.
-  static const double leftAxis = 48;
+  /// Space fl_chart reserves for the altitude labels on the left ('2.000 m').
+  static const double leftAxis = 60;
+
+  /// Height of the legend row below the chart (plus its 8 pt gap).
+  static const double legendHeight = 14;
 
   /// Space fl_chart reserves for the time labels at the bottom.
   static const double bottomAxis = 22;
@@ -118,22 +124,28 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
             showTitles: true,
             reservedSize: AltitudeProfile.leftAxis,
             interval: axis.interval,
-            getTitlesWidget: (v, meta) => Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: Text(Fmt.metres(v, locale: l.code), style: AppText.label(c.textTertiary, size: 10), textAlign: TextAlign.right),
-            ),
+            getTitlesWidget: (v, meta) {
+              // The unit once, on the top label: '2.000 m'.
+              final top = v >= meta.max - 1e-6;
+              final text = top ? '${Fmt.metres(v, locale: l.code)} ${s.unitM}' : Fmt.metres(v, locale: l.code);
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Text(text, style: AppText.label(c.textTertiary, size: 10), textAlign: TextAlign.right, maxLines: 1, softWrap: false),
+              );
+            },
           ),
         ),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: AltitudeProfile.bottomAxis,
-            interval: _series.timeInterval,
+            interval: _series.clockInterval,
             getTitlesWidget: (v, meta) {
-              if (v <= 0 || v >= meta.max) return const SizedBox.shrink();
+              // Clock time at ¼ · ½ · ¾ — the edges stay free.
+              if (v <= 0 || v >= meta.max - 1e-6) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(Fmt.durationCompact((v * 1000).round(), locale: l.code), style: AppText.label(c.textTertiary, size: 10)),
+                child: Text(Fmt.timeOfDay(_series.t0 + (v * 1000).round(), locale: l.code), style: AppText.label(c.textTertiary, size: 10)),
               );
             },
           ),
@@ -166,26 +178,37 @@ class _AltitudeProfileState extends State<AltitudeProfile> {
 
     return Semantics(
       label: s.chartLabel,
-      child: SizedBox(
-        height: widget.height,
-        child: LayoutBuilder(
-          builder: (context, box) => Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned.fill(child: LineChart(data, duration: Duration.zero)),
-              if (scrub != null)
-                Positioned(
-                  top: 0,
-                  left: _chipLeft(box.maxWidth, scrub.elapsedS, maxX),
-                  child: _ScrubReadout(
-                    time: Fmt.timeOfDay(scrub.ts, locale: l.code),
-                    altitude: Fmt.metres(scrub.altM, locale: l.code),
-                    unit: s.unitM,
-                  ),
-                ),
-            ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: widget.height,
+            child: LayoutBuilder(
+              builder: (context, box) => Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(child: LineChart(data, duration: Duration.zero)),
+                  if (scrub != null)
+                    Positioned(
+                      top: 0,
+                      left: _chipLeft(box.maxWidth, scrub.elapsedS, maxX),
+                      child: _ScrubReadout(
+                        time: Fmt.timeOfDay(scrub.ts, locale: l.code),
+                        altitude: Fmt.metres(scrub.altM, locale: l.code),
+                        unit: s.unitM,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: AltitudeProfile.leftAxis),
+            child: ProfileLegend(showSignalLoss: _series.signalLoss.isNotEmpty),
+          ),
+        ],
       ),
     );
   }
@@ -237,4 +260,53 @@ class _ScrubReadout extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 10 pt legend row under the chart: 'Abfahrt · Lift · Signalverlust' with the
+/// chart's own swatches (champagne line, liftGrey wash, hatched danger).
+class ProfileLegend extends StatelessWidget {
+  const ProfileLegend({super.key, this.showSignalLoss = false});
+  final bool showSignalLoss;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final s = ProfileStrings.of(context);
+    final style = AppText.caption(c.textTertiary, size: 10);
+    final dot = Text(' · ', style: style);
+    return SizedBox(
+      height: AltitudeProfile.legendHeight,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _Swatch(color: c.run, line: true),
+          const SizedBox(width: 5),
+          Text(s.legendRun, style: style),
+          dot,
+          _Swatch(color: c.liftGrey.withValues(alpha: 0.5)),
+          const SizedBox(width: 5),
+          Text(s.legendLift, style: style),
+          if (showSignalLoss) ...[
+            dot,
+            _Swatch(color: c.danger.withValues(alpha: 0.5)),
+            const SizedBox(width: 5),
+            Text(s.legendSignalLoss, style: style),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Swatch extends StatelessWidget {
+  const _Swatch({required this.color, this.line = false});
+  final Color color;
+  final bool line;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 10,
+        height: line ? 2 : 8,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+      );
 }

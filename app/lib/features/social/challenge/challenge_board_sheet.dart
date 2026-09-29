@@ -168,7 +168,7 @@ class ChallengeBoardRow extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(width: 32, child: Text('${entry.rank}', style: AppText.numS(c.textTertiary).copyWith(fontSize: 18))),
-                AvatarCircle(name: entry.displayName, size: 36, accent: own),
+                AvatarCircle(name: entry.displayName, size: 36, accent: own, avatarUrl: entry.avatarUrl),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

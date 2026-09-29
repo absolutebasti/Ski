@@ -22,6 +22,10 @@ Future<void> _pump(
   Locale locale = const Locale('de'),
   List<Override> extra = const [],
 }) async {
+  // Tall viewport: challenge caption + four action buttons must stay tappable.
+  tester.view.physicalSize = const Size(1179, 3200);
+  tester.view.devicePixelRatio = 3;
+  addTearDown(tester.view.reset);
   await pumpApp(
     tester,
     Scaffold(backgroundColor: Colors.transparent, body: Padding(padding: const EdgeInsets.all(20), child: RiderSheetBody(userId: userId))),
@@ -34,6 +38,12 @@ Future<void> _pump(
     ],
   );
   await tester.pump();
+}
+
+/// Lets the floating toast expire so no timer outlives the test.
+Future<void> _settleToast(WidgetTester tester) async {
+  await tester.pump(const Duration(seconds: 4));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -62,7 +72,7 @@ void main() {
     expect(find.text('120 km gesamt'), findsOneWidget);
     expect(find.textContaining('Zuletzt am'), findsOneWidget);
     expect(find.text('Herausfordern'), findsOneWidget);
-    expect(find.text('Freund hinzufügen'), findsNothing, reason: 'slot empty until SOC-FRIENDS fills it');
+    expect(find.text('Freund hinzufügen'), findsNothing, reason: 'the test overrides the slot with an empty RiderActions; the default is covered in rider_sheet_actions_test');
     expect(find.bySemanticsLabel('Profil von Lena Bergmann'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
@@ -123,6 +133,27 @@ void main() {
     expect(share.shared.single.$1, contains('KMJ4F2'));
     expect(share.shared.single.$1, contains('Lena Bergmann'));
     expect(share.shared.single.$2, 'Tagesduell');
+    expect(find.text('Duell-Code an Lena Bergmann senden'), findsOneWidget, reason: 'toast says where the share sheet leads');
+    await _settleToast(tester);
+  });
+
+  testWidgets('Herausfordern carries a caption explaining the share sheet', (tester) async {
+    await _pump(tester, rider: FakeRiderApi(profiles: {'u9': kLena}));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('rider-challenge-caption')), findsOneWidget);
+    expect(find.text('Schickt deinen Duell-Code über das Teilen-Menü.'), findsOneWidget);
+  });
+
+  testWidgets('Herausfordern caption and toast in English', (tester) async {
+    final share = ShareRecorder();
+    await _pump(tester, rider: FakeRiderApi(profiles: {'u9': kLena}), share: share, locale: const Locale('en'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sends your duel code via the share sheet.'), findsOneWidget);
+    await tester.tap(find.text('Challenge'));
+    await tester.pumpAndSettle();
+    expect(find.text('Send the duel code to Lena Bergmann'), findsOneWidget);
+    expect(share.shared.single.$1, contains('KMJ4F2'));
+    await _settleToast(tester);
   });
 
   testWidgets('Herausfordern reuses the duel of the day instead of creating a second one', (tester) async {
@@ -136,6 +167,7 @@ void main() {
 
     expect(social.created, isEmpty);
     expect(share.shared.single.$1, contains('PQRS23'));
+    await _settleToast(tester);
   });
 
   testWidgets('signed out, Herausfordern asks for an account and shares nothing', (tester) async {

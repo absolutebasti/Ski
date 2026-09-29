@@ -275,7 +275,8 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- T7  Blocks: Anna blocks Bernd → gone for Anna only; RLS on blocks.
+-- T7  Blocks: Anna blocks Bernd → gone for Anna, and (0014) Anna gone for
+--     Bernd; Chris/others unaffected; RLS on blocks.
 -- ---------------------------------------------------------------------------
 do $$
 declare n int; ok boolean := false; r record;
@@ -298,11 +299,12 @@ begin
   select * into r from public.my_rank(null, '2025/26', 'drop_m', null);
   if r.total <> 251 then raise exception 'T7: total for anna should drop to 251, got %', r.total; end if;
 
+  -- 0014: the block is invisible both ways — Bernd does not see Anna either.
   perform pg_temp.login(pg_temp.id('bernd'));
   select count(*) into n from public.leaderboard('kitzbuehel', '2025/26', 'drop_m', 100, null);
-  if n <> 2 then raise exception 'T7: bernd must still see both rows, got %', n; end if;
+  if n <> 1 then raise exception 'T7: bernd must see only himself after being blocked, got %', n; end if;
   select count(*) into n from public.group_board(pg_temp.id('duel'));
-  if n <> 2 then raise exception 'T7: bernd duel board must still show both, got %', n; end if;
+  if n <> 1 then raise exception 'T7: bernd duel board must hide anna, got %', n; end if;
   select count(*) into n from public.blocks;
   if n <> 0 then raise exception 'T7: bernd must not read anna''s block row'; end if;
 
@@ -310,7 +312,7 @@ begin
   delete from public.blocks where blocked_id = pg_temp.id('bernd');
   select count(*) into n from public.leaderboard('kitzbuehel', '2025/26', 'drop_m', 100, null);
   if n <> 2 then raise exception 'T7: unblock should restore 2 rows, got %', n; end if;
-  perform pg_temp.pass('T7 blocks hide the blocked rider for the blocker only');
+  perform pg_temp.pass('T7 blocks hide the pair from each other (0014), unblock restores');
 end $$;
 
 -- ---------------------------------------------------------------------------

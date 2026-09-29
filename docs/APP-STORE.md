@@ -65,11 +65,12 @@ EN: First release – one-tap recording, leaderboards, duels, challenges, levels
 | Data type | Collected | Linked to user | Tracking | Purpose |
 |---|---|---|---|---|
 | Precise Location | yes (while recording) | **yes when signed in** (days synced to the account), no otherwise | no | App Functionality |
-| Fitness (workout figures, heart rate with Watch) | yes | yes when signed in | no | App Functionality |
+| Fitness (workout figures; heart rate only once the Watch app ships — planned, not in 1.0) | yes | yes when signed in | no | App Functionality |
+| Photos or Videos (profile photo, optional, picked from the library) | yes (signed in, only if the user sets one) | yes | no | App Functionality |
 | User ID (Apple sign-in id) | yes (signed in) | yes | no | App Functionality |
 | Name (from Apple, optional) | yes (signed in) | yes | no | App Functionality |
 | Email (Apple relay, optional) | yes (signed in) | yes | no | App Functionality |
-| User Content (display name, country, home resort) | yes (signed in) | yes | no | App Functionality |
+| User Content (display name, country, home resort, profile photo) | yes (signed in) | yes | no | App Functionality |
 | Other: none. No advertising, no analytics SDKs, no ATT prompt. Third parties: Supabase (processor, EU), Open-Meteo/OpenTopoMap/OpenSnowMap (tile/weather servers see IP only). |
 
 ## Age rating questionnaire
@@ -89,7 +90,7 @@ SlopeTrack works fully without an account; Sign in with Apple is optional and on
 5. Settings → tap the version 7 times to open "Diagnose" (GPS points, sensor status).
 Background location is used only while a ski day is being recorded. ITSAppUsesNonExemptEncryption = false (HTTPS only). Account deletion: Settings › Account › Delete account.
 
-User-generated content: limited to display names (max. 24 characters, filtered on device against a DE/EN word list before they are saved) and avatars. Every rider profile reached from a leaderboard, duel or friends list offers "Melden" (Report) with a reason and "Blockieren" (Block). Reports are stored server-side with reporter, target and reason and are reviewed within 24 hours; the support address is in Settings › Support. Blocking hides the blocked rider from the user's leaderboards, duel boards and friends list immediately and ends an existing friendship; the user can undo it from the same profile. No messaging, comments or free-text posts exist in the app.
+User-generated content: limited to display names (max. 24 characters, filtered on device against a DE/EN word list before they are saved) and avatars. Every rider profile reached from a leaderboard, duel or friends list offers "Melden" (Report) with a reason and "Blockieren" (Block). Reports are stored server-side with reporter, target and reason and are reviewed promptly by the operator (an e-mail notification per report is planned, backlog BE-14); the support address is in Settings › Support. Blocking hides the blocked rider from the user's leaderboards, duel boards and friends list immediately and ends an existing friendship; the user can undo it from the same profile. No messaging, comments or free-text posts exist in the app.
 
 
 ## Screenshots (6.9" 1320×2868 required; 6.5" 1284×2778 optional)
@@ -103,8 +104,8 @@ Captured on the iPhone 17 Pro Max simulator with demo data via `OUT=.context/sho
 - Am Abend "Diagnosepaket teilen" an hello@torchtechnology.de.
 
 ## Founder to-do before submission
-1. Apple ID of team 5GDU97KSQU in Xcode **or** App Store Connect API key → `tools/testflight.sh --upload`.
-2. Create the app record "SlopeTrack – Ski-Tracker & Duelle" with the bundle id; paste this sheet.
+1. Create the App Store Connect app record "SlopeTrack – Ski-Tracker & Duelle" with bundle id `de.torchtechnology.slopetrack`; paste this sheet.
+2. `tools/testflight.sh --upload` with the signed-in Xcode account of team 5GDU97KSQU (Apple Distribution certificate is present on this Mac) **or** an App Store Connect API key (`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH`). The script refuses stale archives (CFBundleVersion must equal `BUILD_NUMBER`).
 3. Fill in `docs/imprint.html` (address, legal form, VAT id) — mandatory in DE.
 4. Optional: custom domain for the pages (e.g. slopetrack.app → GitHub Pages CNAME).
 5. Apple provider secret in Supabase expires every 6 months — set a calendar reminder.

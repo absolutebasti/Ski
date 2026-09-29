@@ -47,7 +47,23 @@ Consecutive calendar days (device time zone) with at least one finished day. `cu
 | countries (distinct) | 2 | 3 | 4 | 5 |
 | resorts (distinct) | 3 | 10 | 25 | 50 |
 | points (lifetime) | 1.000 | 5.000 | 20.000 | 100.000 |
-Medal ids: `<metric>-<tier>` (e.g. `streak-gold`). Titles are short and adult ("Sieben am Stück", not "Super!"). A medal is earned by the first day that crosses the threshold; `newMedalIds` lists the medals earned by the most recent day so the Tagesbilanz can show them once.
+Medal ids: `<metric>-<tier>` (e.g. `streak-gold`). Titles are short, adult ("Sieben am Stück", not "Super!") and never bare numbers — the tile shows the threshold on its own row, the Tagesbilanz banner captions a new medal with its hint ("3 Skitage in Folge"). Names (de / en):
+
+| Metric | bronze | silver | gold | black |
+|---|---|---|---|---|
+| days | Erster Tag / First day | Zehn Tage / Ten days | Fünfundzwanzig / Twenty-five | Hundert Tage / Hundred days |
+| streak | Drei am Stück / Three straight | Fünf am Stück / Five straight | Sieben am Stück / Seven straight | Zwei Wochen / Two weeks |
+| vertical | Zehntausender / Ten thousand | Fünfzigtausend / Fifty thousand | Hunderttausend / Hundred thousand | Halbe Million / Half a million |
+| distance | Hundert / Hundred | Fünfhundert / Five hundred | Tausend / Thousand | Fünftausend / Five thousand |
+| top speed | Sechziger / Sixty | Achtziger / Eighty | Hunderter / Hundred | Hundertzwanzig / One-twenty |
+| avg ski speed | Gleichmäßig / Steady | Zügig / Brisk | Schnell / Fast | Rennlinie / Race line |
+| runs | Fünfzig Abfahrten / Fifty runs | Zweihundertfünfzig / Two-fifty | Tausend Abfahrten / Thousand runs | Fünftausend / Five thousand |
+| day vertical | Zweitausender / Two-thousander | Dreitausender / Three-thousander | Viertausender / Four-thousander | Sechstausender / Six-thousander |
+| day runs | Zehn am Tag / Ten a day | Zwanzig am Tag / Twenty a day | Dreißig am Tag / Thirty a day | Vierzig am Tag / Forty a day |
+| countries | Grenzgänger / Border crosser | Drei Länder / Three countries | Vier Länder / Four countries | Fünf Länder / Five countries |
+| resorts | Drei Gebiete / Three resorts | Zehn Gebiete / Ten resorts | Fünfundzwanzig / Twenty-five | Fünfzig Gebiete / Fifty resorts |
+| points | Tausend Punkte / Thousand points | Fünftausend Punkte / Five thousand points | Zwanzigtausend Punkte / Twenty thousand points | Hunderttausend Punkte / Hundred thousand points |
+ A medal is earned by the first day that crosses the threshold; `newMedalIds` lists the medals earned by the most recent day so the Tagesbilanz can show them once.
 
 ## 5. Where it shows
 - Rangliste tab, top: level ring + points + streak chip + medal count → tap opens the Medaillen sheet (grid by metric, locked medals dimmed with progress).

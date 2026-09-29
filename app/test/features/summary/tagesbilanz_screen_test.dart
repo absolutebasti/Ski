@@ -14,6 +14,7 @@ import 'package:slopetrack/features/achievements/ui/ui.dart';
 import 'package:slopetrack/features/summary/route_block.dart';
 import 'package:slopetrack/features/summary/summary_skeleton.dart';
 import 'package:slopetrack/features/summary/tagesbilanz_screen.dart';
+import 'package:slopetrack/features/summary/time_legend.dart';
 import 'package:slopetrack/platform/providers.dart';
 
 import '../../support/fakes.dart';

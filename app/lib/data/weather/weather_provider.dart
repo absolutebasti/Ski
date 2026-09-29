@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/core.dart';
 import 'open_meteo_client.dart';
+import 'weather_report.dart';
 
 final openMeteoClientProvider = Provider<OpenMeteoClient>((ref) => OpenMeteoClient());
 
@@ -10,16 +11,16 @@ final openMeteoClientProvider = Provider<OpenMeteoClient>((ref) => OpenMeteoClie
 class WeatherCache {
   WeatherCache({this.ttl = const Duration(minutes: 30)});
   final Duration ttl;
-  final _mem = <String, WeatherSnapshot>{};
+  final _mem = <String, WeatherReport>{};
 
-  Future<WeatherSnapshot?> get(String resortId, int nowMs) async {
+  Future<WeatherReport?> get(String resortId, int nowMs) async {
     final m = _mem[resortId];
     if (m != null && nowMs - m.fetchedAt < ttl.inMilliseconds) return m;
     try {
       final p = await SharedPreferences.getInstance();
       final raw = p.getString('weather.$resortId');
       if (raw != null) {
-        final s = WeatherSnapshot.fromJson(_decode(raw));
+        final s = WeatherReport.fromJson(_decode(raw));
         if (nowMs - s.fetchedAt < ttl.inMilliseconds) {
           _mem[resortId] = s;
           return s;
@@ -30,10 +31,11 @@ class WeatherCache {
   }
 
   Future<void> put(String resortId, WeatherSnapshot s) async {
-    _mem[resortId] = s;
+    final r = WeatherReport.from(s);
+    _mem[resortId] = r;
     try {
       final p = await SharedPreferences.getInstance();
-      await p.setString('weather.$resortId', _encode(s.toJson()));
+      await p.setString('weather.$resortId', _encode(r.toJson()));
     } catch (_) {}
   }
 
@@ -53,7 +55,9 @@ class WeatherCache {
 
 final weatherCacheProvider = Provider<WeatherCache>((ref) => WeatherCache());
 
-final weatherProvider = FutureProvider.family<WeatherSnapshot?, Resort>((ref, resort) async {
+/// Typed as [WeatherReport] (a [WeatherSnapshot] with snow depth) so the
+/// conditions strip reads it without a cast; older consumers see the base type.
+final weatherProvider = FutureProvider.family<WeatherReport?, Resort>((ref, resort) async {
   final now = DateTime.now().millisecondsSinceEpoch;
   final cache = ref.watch(weatherCacheProvider);
   final cached = await cache.get(resort.id, now);

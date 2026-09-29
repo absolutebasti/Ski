@@ -12,7 +12,8 @@ import 'invite_links.dart';
 /// sentence case, adult tone, no exclamation marks.
 ///
 /// The share text builders are the single source for 'Duell teilen' and
-/// 'Freunde einladen': code, working link and the App Store line.
+/// 'Freunde einladen' (FriendsStrings.shareText routes here): code, working
+/// link and — once [InviteLinks.appStoreLinkLive] — the App Store line.
 class InviteStrings {
   const InviteStrings(this.l);
   final AppLocale l;
@@ -22,31 +23,35 @@ class InviteStrings {
   // --- share texts ---------------------------------------------------------
 
   /// Duell in SlopeTrack: Code KMJ4F2. Wer holt heute die meisten Höhenmeter?
-  /// `<link>` / `App laden: <store>` on the next lines.
+  /// `<link>` on the next line, `App laden: <store>` once the store link is live.
   String duelShareText(String code) {
     final c = InviteLinks.normaliseCode(code);
-    final link = InviteLinks.share(InviteKind.duel, c);
-    return l.pick(
-      de: 'Duell in $kAppName: Code $c. Wer holt heute die meisten Höhenmeter?\n$link\n$appStoreLine',
-      en: 'Duel in $kAppName: code $c. Who grabs the most vertical today?\n$link\n$appStoreLine',
+    final head = l.pick(
+      de: 'Duell in $kAppName: Code $c. Wer holt heute die meisten Höhenmeter?',
+      en: 'Duel in $kAppName: code $c. Who grabs the most vertical today?',
     );
+    return _lines(head, InviteLinks.share(InviteKind.duel, c));
   }
 
   /// Fahr gegen mich in SlopeTrack – Freundescode KMJ4F2
-  /// `<link>` / `App laden: <store>` on the next lines.
+  /// `<link>` on the next line, `App laden: <store>` once the store link is live.
   String friendShareText(String code) {
     final c = InviteLinks.normaliseCode(code);
-    final link = InviteLinks.share(InviteKind.friend, c);
-    return l.pick(
-      de: 'Fahr gegen mich in $kAppName – Freundescode $c\n$link\n$appStoreLine',
-      en: 'Race me in $kAppName – friend code $c\n$link\n$appStoreLine',
+    final head = l.pick(
+      de: 'Fahr gegen mich in $kAppName – Freundescode $c',
+      en: 'Race me in $kAppName – friend code $c',
     );
+    return _lines(head, InviteLinks.share(InviteKind.friend, c));
   }
 
+  /// `App laden: <store>` — only part of a share text while
+  /// [InviteLinks.appStoreLinkLive]; the placeholder id must never be shared.
   String get appStoreLine => l.pick(
         de: 'App laden: ${InviteLinks.appStoreUrlPlaceholder}',
         en: 'Get the app: ${InviteLinks.appStoreUrlPlaceholder}',
       );
+
+  String _lines(String head, String link) => [head, link, if (InviteLinks.appStoreLinkLive) appStoreLine].join('\n');
 
   String get duelSubject => l.pick(de: 'Tagesduell', en: 'Day duel');
   String get friendSubject => l.pick(de: 'Freunde', en: 'Friends');

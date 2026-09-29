@@ -341,7 +341,7 @@ class _Identity extends StatelessWidget {
     final flag = flagEmoji(friend.countryCode);
     return Row(
       children: [
-        AvatarCircle(name: friend.displayName, size: 36),
+        AvatarCircle(name: friend.displayName, size: 36, avatarUrl: friend.avatarUrl),
         const SizedBox(width: 12),
         Expanded(
           child: Column(

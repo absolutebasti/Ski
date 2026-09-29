@@ -1,7 +1,7 @@
-# SlopeTrack — Handover (2026-09-28)
+# SlopeTrack — Handover (2026-09-29)
 
 ## What this is
-The ski-day tracker rebuilt from the 2025 PWA as a Flutter app (iOS first, Android builds, native Apple Watch companion). One tap records the whole day; runs, lifts and stops are detected automatically; tracking keeps running with the phone locked. Brand: **SlopeTrack**, bundle id `de.torchtechnology.dropline`, Team 5GDU97KSQU.
+The ski-day tracker rebuilt from the 2025 PWA as a Flutter app (iOS first, Android builds, native Apple Watch companion). One tap records the whole day; runs, lifts and stops are detected automatically; tracking keeps running with the phone locked. Brand: **SlopeTrack**, bundle id `de.torchtechnology.slopetrack`, Team 5GDU97KSQU.
 
 Read in this order: `docs/PLAN.md` (§0 amendments first), `docs/ANALYSIS.md`, `app/lib/CONTRACTS.md`, `docs/QA.md`, `docs/APP-STORE.md`.
 
@@ -21,7 +21,7 @@ Read in this order: `docs/PLAN.md` (§0 amendments first), `docs/ANALYSIS.md`, `
 `cd app && flutter analyze && flutter test` → 0 issues, all green at the last lead commit. The app runs on the iPhone 17 Pro simulator (placeholder screens until WP-12 wiring).
 
 ## Also done since 12:40 (merged in PR #2)
-Onboarding (3 steps, mascot hero + cards, two-step Always flow) · Heute idle/live · Tagesbilanz (count-up, PB chips, notification opt-in) · Tage list + Tag detail (map, altitude profile, stats grid, run list, share/delete) · altitude profile, share card PNG, GPX 1.1, diagnostics bundle · Settings sheet + hidden Diagnose page · Apple Watch SwiftUI app sources + WatchConnectivity bridge + heart-rate source (target is added with `python3 app/ios/SlopeTrackWatch/tools/add_watch_target.py` once the watchOS SDK is installed; see docs/WATCH.md) · router/main wiring, thumbnail + weather written at End · review fixes (hold-button dispose, autoDispose day detail, resting-state permission cards) · debug launch switches for the simulator (`--dart-define=DROPLINE_SKIP_ONBOARDING=1`, `DROPLINE_DEMO=1`, `DROPLINE_TAB=tage`). 150 tests, analyzer clean, `main` = ce6782b.
+Onboarding (3 steps, mascot hero + cards, two-step Always flow) · Heute idle/live · Tagesbilanz (count-up, PB chips, notification opt-in) · Tage list + Tag detail (map, altitude profile, stats grid, run list, share/delete) · altitude profile, share card PNG, GPX 1.1, diagnostics bundle · Settings sheet + hidden Diagnose page · Apple Watch SwiftUI app sources + WatchConnectivity bridge + heart-rate source (target is added with `python3 app/ios/SlopeTrackWatch/tools/add_watch_target.py` once the watchOS SDK is installed; see docs/WATCH.md) · router/main wiring, thumbnail + weather written at End · review fixes (hold-button dispose, autoDispose day detail, resting-state permission cards) · debug launch switches for the simulator (`--dart-define=SLOPETRACK_SKIP_ONBOARDING=1`, `SLOPETRACK_DEMO=1`, `SLOPETRACK_TAB=tage`; also `SLOPETRACK_ROUTE`, `SLOPETRACK_APPEARANCE`, `SLOPETRACK_LOCALE`, see `app/lib/app/demo.dart`). 150 tests, analyzer clean, `main` = ce6782b.
 
 ## Also done since 14:00 (this branch)
 Onboarding v2 (4 interactive pages: self-drawing route + vertical slider, home resort + season goal, Sign in with Apple + invite code, permissions) · snow-leopard mascot "Leo" as transparent cut-outs (`tools/assets/cutout_leopard.py`, poses in `app/assets/mascot/`) · design v2 on every remaining screen (Tag detail with collapsing map hero, Tagesbilanz with route reveal, live view in glare theme, settings sheet, share card in three formats, altitude profile, map sheet) · Konto sheet (`features/account`) · Rangliste tab (`features/social`: Saison/Monat/Woche leaderboard, Tagesduell with codes, Wochen-Challenge; fake API for tests) · appearance setting · Supabase migration 0002 (join_group RPC, membership helper, month/week leaderboard keys) applied · screenshot tooling `tools/shots.sh` (writes `demo.json` into the app container, no rebuild per screen; screens in `.context/shots/`). 258 tests, analyzer clean.
@@ -34,8 +34,11 @@ Rename to SlopeTrack · gap audit (`docs/GAPS.md`) with most code items closed �
 ## Also done 2026-09-28
 Audit → `docs/BACKLOG.md`; three agent waves + lead work: RPC security fix (leaderboards saw only own days), integrity + moderation schema, friends, rider profiles, report/block, Rangliste core (friends scope, own rank, tappable rows), challenges module, share cards, invite links (URL scheme + Universal Links via GitHub Pages), OpenSkiMap resort import (4.929 areas), release package (privacy manifest, bilingual permission texts, Support/Impressum rows, hosted legal pages at https://absolutebasti.github.io/Ski/), onboarding opt-in, recording guards (03:00 rollover, 16 h cap, access loss, low power), sync hardening (backoff, 401 refresh, per-user cursor, paged pull, track restore), live duel (0009), profile page with avatar and team change. 861 tests green. Store screenshots DE/EN in `design/store`.
 
+## Also done 2026-09-29
+TestFlight blockers (TF-PLIST): photo/camera/microphone purpose strings for the image_picker static scan (ITMS-90683), English base values in Info.plist with DE/EN `InfoPlist.strings`, privacy manifest lists Photos or Videos, nutrition table + privacy policy mention the optional profile photo, Watch/heart-rate wording qualified as planned, `tools/testflight.sh` hardened (no stale archive, build failure aborts, CFBundleVersion assertion, empty-auth fix for bash 3.2).
+
 ## Next steps, in order
-1. Founder: Xcode account for Team 5GDU97KSQU **or** App Store Connect API key; create the App Store Connect record "SlopeTrack"; confirm the name. Then `tools/testflight.sh --upload`.
+1. Founder: create the App Store Connect app record "SlopeTrack" (bundle id `de.torchtechnology.slopetrack`), then `tools/testflight.sh --upload` with the signed-in Xcode account (Apple Distribution 5GDU97KSQU present) or an ASC API key.
 2. Device QA (`docs/QA.md`): one locked-phone hour, one kill/resume, one mountain day → diagnostics bundle → engine fixture.
 3. TestFlight build 2: Watch app, Live Activity, `Gebiet` info card.
 4. Backend open items (`docs/BACKEND.md`): server-side participant count for `MyRank.total`, Edge Function so `deleteAccount` also removes the `auth.users` row, seed weekly challenges (table `challenges` is empty), rate limits.
@@ -48,8 +51,9 @@ Audit → `docs/BACKLOG.md`; three agent waves + lead work: RPC security fix (le
 - Map provider for the store release (Mapbox/MapTiler key); TestFlight uses OpenTopoMap + OpenSnowMap without a key.
 
 ## Known blockers / risks
-- No Apple account on this Mac for the team → export/upload blocked (archive itself signs fine).
+- First upload: create the App Store Connect app record for `de.torchtechnology.slopetrack`, then run `tools/testflight.sh --upload` with the signed-in Xcode account (Apple Distribution certificate for 5GDU97KSQU is present on this Mac; an ASC API key via `ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_PATH` works too). The script deletes stale archives before the build and refuses to export when the archive's CFBundleVersion differs from `BUILD_NUMBER`.
+- `de.lproj/en.lproj/InfoPlist.strings` are referenced from `Runner.xcodeproj` as a variant group (2026-09-29) → permission prompts follow the device language.
 - Background continuity and battery can only be proven on a real device.
 - Segmenter thresholds are tuned on synthetic days; first real fixtures will move them (raw points are stored, `Neu berechnen` re-runs the engine).
 - The legacy Mapbox token in `legacy-pwa/reviews/initial-assessment.md` is public → rotate.
-- The Fable model tier hit its spend limit twice today; agents run on Opus.
+- The Fable model tier hit its spend limit twice on 2026-09-28; agents ran on Opus.

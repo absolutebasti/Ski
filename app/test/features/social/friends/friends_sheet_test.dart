@@ -58,7 +58,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(shared, hasLength(1));
-    expect(shared.single.$1, 'Fahr gegen mich in SlopeTrack – Freundescode KMJ4F2 · ${InviteLinks.share(InviteKind.friend, 'KMJ4F2')}');
+    expect(shared.single.$1, 'Fahr gegen mich in SlopeTrack – Freundescode KMJ4F2\n${InviteLinks.share(InviteKind.friend, 'KMJ4F2')}');
     expect(shared.single.$2, 'Freunde');
   });
 

@@ -10,11 +10,13 @@ import '../../data/weather/wmo.dart';
 
 /// 'Kitzbühel · −4° Berg · 12 cm Neuschnee' — omits whatever is missing.
 class WeatherLine extends ConsumerWidget {
-  const WeatherLine({super.key, required this.resort});
+  const WeatherLine({super.key, required this.resort, this.includeResort = true});
   final Resort resort;
+  /// False where a header caption already names the resort (Heute).
+  final bool includeResort;
 
-  static String format(Resort r, WeatherSnapshot? w, {required bool de}) {
-    final parts = <String>[r.name];
+  static String format(Resort r, WeatherSnapshot? w, {required bool de, bool includeResort = true}) {
+    final parts = <String>[if (includeResort) r.name];
     if (w != null) {
       final t = w.tempSummitC ?? w.tempBaseC;
       if (t != null) parts.add('${Fmt.temp(t)} ${w.tempSummitC != null ? (de ? 'Berg' : 'summit') : (de ? 'Tal' : 'base')}');
@@ -35,7 +37,14 @@ class WeatherLine extends ConsumerWidget {
       children: [
         Icon(wmoIcon(wmoBucket(w?.wmoCode)), size: 16, color: c.textSecondary),
         const SizedBox(width: 6),
-        Flexible(child: Text(format(resort, w, de: l.isGerman), style: AppText.bodyText(c.textSecondary, size: 15), maxLines: 1, overflow: TextOverflow.ellipsis)),
+        Flexible(
+          child: Text(
+            format(resort, w, de: l.isGerman, includeResort: includeResort),
+            style: AppText.bodyText(c.textSecondary, size: 15),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }

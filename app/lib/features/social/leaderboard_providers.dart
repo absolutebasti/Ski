@@ -2,8 +2,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/widgets/toast.dart';
+import '../../core/core.dart';
+import '../../core/settings.dart';
+import '../../data/db/providers.dart';
 import '../../data/sync/auth_service.dart';
 import '../account/profile_service.dart';
+import '../share/share_card_data.dart';
+import '../share/share_service.dart';
 import 'friends/friends_api.dart';
 import 'friends/friends_providers.dart';
 import 'social_api.dart';
@@ -95,6 +100,49 @@ final shareLeaderboardsProvider = FutureProvider<bool?>((ref) async {
     return null;
   }
 }, retry: noRetry);
+
+/// Incoming friend requests waiting for an answer — the badge on the Freunde
+/// header button. 0 while loading, offline or signed out. (SOC-LOOP adds a
+/// `pendingRequestCountProvider` in the friends module; this one stays the
+/// board's own reading of `pendingRequestsProvider` so the two never clash.)
+final friendsBadgeCountProvider = Provider<int>((ref) => ref.watch(pendingRequestsProvider).asData?.value.length ?? 0);
+
+/// Resort the Gebiet scope starts on: the home resort from Settings, else
+/// the resort of the most recent local day, else null — then the Gebiet
+/// chip is hidden until the user picks one (never `resorts.all.first`).
+final boardDefaultResortIdProvider = Provider<String?>((ref) {
+  final home = ref.watch(settingsProvider.select((s) => s.lastResortId));
+  if (home != null) return home;
+  final days = ref.watch(daysListProvider).asData?.value ?? const <DaySummary>[];
+  return lastDayResortId(days);
+});
+
+/// Resort id of the newest day that has one; [days] newest first.
+String? lastDayResortId(List<DaySummary> days) {
+  for (final d in days) {
+    final id = d.resortId;
+    if (id != null && id.isNotEmpty) return id;
+  }
+  return null;
+}
+
+/// Hands a [RankCardData] to the share sheet — `ShareService.shareCard(rank)`
+/// by default, a recording fake in widget tests.
+typedef RankShare = Future<void> Function(BuildContext context, RankCardData data);
+
+final rankShareProvider = Provider<RankShare>(
+  (ref) => (context, data) => ref.read(shareServiceProvider).shareCard(context, ShareCardKind.rank, data),
+);
+
+/// The share card's metric for a board metric.
+ShareMetric shareMetricOf(SocialMetric m) => switch (m) {
+      SocialMetric.dropM => ShareMetric.vertical,
+      SocialMetric.runCount => ShareMetric.runs,
+      SocialMetric.skiDistanceM => ShareMetric.distance,
+      SocialMetric.maxSpeedMs => ShareMetric.topSpeed,
+      SocialMetric.dayCount => ShareMetric.days,
+      SocialMetric.points => ShareMetric.points,
+    };
 
 /// Id of the signed-in Konto, null when signed out.
 final socialUserIdProvider = Provider<String?>((ref) {

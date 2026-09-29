@@ -32,6 +32,10 @@ final pendingRequestsProvider = Provider<AsyncValue<List<Friend>>>((ref) {
   return ref.watch(friendshipsProvider).whenData((rows) => rows.where((f) => f.isIncomingRequest).toList());
 });
 
+/// Number of incoming requests waiting for an answer — the badge on the
+/// Freunde chip (SOC-RANGLISTE-2). 0 while loading, offline or signed out.
+final pendingRequestCountProvider = Provider<int>((ref) => ref.watch(pendingRequestsProvider).asData?.value.length ?? 0);
+
 /// Requests the user sent that are not answered yet.
 final sentRequestsProvider = Provider<AsyncValue<List<Friend>>>((ref) {
   return ref.watch(friendshipsProvider).whenData((rows) => rows.where((f) => f.isOutgoingRequest).toList());

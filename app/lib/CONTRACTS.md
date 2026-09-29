@@ -136,3 +136,12 @@ Rules for backend packages: never block the UI on the network; every remote call
 | `ProfilePage.open(context)`, `CountryPickerSheet.show`, `avatarPickerProvider` (overridden with `ImagePickerAvatarPicker` in main.dart), `ProfileService.setAvatar` | features/account | Einstellungen › Konto opens the page |
 | `DayListSkeleton`, `DayDetailSkeleton`, `ResortPickerSheet.show`, `DaysRepository.updateResort`, `activeDayResortProvider`, `AppColors.routeGround` | features/days, today, theme | |
 
+### Backlog v2 wave 1 (2026-09-29)
+| Package | Exposes | Notes |
+|---|---|---|
+| SOC-LOOP | `riderActionsProvider` (addFriend/challenge/report/block), `friendsBadgeCountProvider` = `pendingRequestsProvider.length` | Board rows → RiderSheet → add friend by id (RPC `add_friend_by_id`), avatars on rows. |
+| SOC-RANGLISTE-2 | `ResortPickerSheet` in the Gebiet scope, `OwnRankStrip` 'noch nicht gewertet', rank share via `ShareCards.rank` | Friends button with badge in the Rangliste chrome (DESIGN §Rangliste). |
+| TODAY-LIVE | `DuelLine` (live view), `SeasonGoalSheet.show`, season share, `ConditionsStrip` (weather + snow) | `WeatherReport` in data/weather; conditions strip replaces the duplicate weather line (DESIGN §Heute). |
+| UX-POLISH-1 | `RecordCard`, `TimeLegend`, altitude-profile axes, medal titles | Goldens under summary/profile/achievements. |
+| TF-PLIST | `de.lproj/en.lproj/InfoPlist.strings` (variant group wired by the lead), PrivacyInfo photo type, `tools/testflight.sh` | Purpose strings for image_picker's static scan. |
+| BE-14 | migration 0014 (`create_duel` RPC, two-way blocks, reports guard + pg_net → `report-notify`) | Client `createDuel` still inserts directly → SOC-DUEL-INVITES switches to the RPC. |

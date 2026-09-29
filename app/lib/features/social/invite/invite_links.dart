@@ -83,6 +83,11 @@ class InviteLinks {
   /// app/brand.dart once the App Store Connect record exists (asks_lead).
   static const String appStoreUrlPlaceholder = 'https://apps.apple.com/app/slopetrack/id0000000000';
 
+  /// True once [appStoreUrlPlaceholder] points at a real App Store record.
+  /// Share texts carry the 'App laden' line only then — a dead store link in
+  /// a message reads as broken.
+  static bool get appStoreLinkLive => !appStoreUrlPlaceholder.endsWith('/id0000000000');
+
   static const String codeAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   static const int codeLength = 6;
 

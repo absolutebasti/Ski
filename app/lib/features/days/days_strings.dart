@@ -64,12 +64,12 @@ class DaysStrings {
   String get liftKm => l.pick(de: 'Lift-km', en: 'Lift km');
   String get drop => l.pick(de: 'Abfahrt', en: 'Descent');
   String get ascent => l.pick(de: 'Aufstieg', en: 'Ascent');
-  String get avgSkiSpeed => l.pick(de: 'Ø Speed beim Skifahren', en: 'Avg speed while skiing');
+  String get avgSkiSpeed => l.pick(de: 'Ø Tempo beim Skifahren', en: 'Avg speed while skiing');
   String get highLow => l.pick(de: 'Höchster/Tiefster Punkt', en: 'Highest/lowest point');
   String get lifts => l.pick(de: 'Lifte', en: 'Lifts');
 
   /// Short overlines for the 2×4 tile grid — a tile is ~160 pt wide.
-  String get avgSkiSpeedShort => l.pick(de: 'Ø Speed', en: 'Avg speed');
+  String get avgSkiSpeedShort => l.pick(de: 'Ø Tempo', en: 'Avg speed');
   String get highLowShort => l.pick(de: 'Hoch/Tief', en: 'High/low');
 
   // --- tag detail ----------------------------------------------------------

@@ -34,8 +34,29 @@ class DayListSkeleton extends StatelessWidget {
             _Block(height: cardHeight, fill: fill),
             const SizedBox(height: Tokens.sectionGap),
           ],
+          DaySkeletonRows(rows: rows),
+        ],
+      ),
+    );
+  }
+}
+
+/// [rows] 112 pt list-row blocks at 6 % opacity with card gaps — the shape of
+/// the Tage list. Stands in while loading and sits behind the empty state
+/// (docs/DESIGN.md §5 "Tage · Empty").
+class DaySkeletonRows extends StatelessWidget {
+  const DaySkeletonRows({super.key, this.rows = 3});
+  final int rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = _fill(context);
+    return ExcludeSemantics(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           for (var i = 0; i < rows; i++) ...[
-            _Block(height: rowHeight, fill: fill),
+            _Block(height: DayListSkeleton.rowHeight, fill: fill),
             const SizedBox(height: Tokens.cardGap),
           ],
         ],

@@ -6,13 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/tokens.dart';
 import '../../app/widgets/widgets.dart';
-import '../../core/core.dart';
 import '../../core/settings.dart';
 import '../../data/resorts/resort_repository.dart';
 import '../../data/sync/auth_service.dart';
 import '../../data/sync/sync_service.dart';
 import '../account/account_providers.dart';
 import '../achievements/ui/ui.dart';
+import '../days/resort_picker.dart';
+import '../share/share_card_data.dart';
 import 'challenge/challenge.dart';
 import 'country_card.dart';
 import 'duel_card.dart';
@@ -35,7 +36,12 @@ import 'social_strings.dart';
 ///
 /// Scope row: 'Freunde' ranks accepted friends + self (RPC `friends_board`),
 /// 'Mein Land' the own team country, 'Gebiet' one resort, 'Alle' everyone;
-/// the Länder card below the board sums points per country.
+/// the Länder card below the board sums points per country. The Gebiet is
+/// one chip ('Gebiet: Kitzbühel ›') that opens the resort picker; it starts
+/// on the home resort, else the resort of the last local day, and is hidden
+/// while neither exists. The header carries the 'Freunde' button (with the
+/// pending-request badge) so the friends sheet stays reachable once the
+/// board is no longer empty.
 ///
 /// Refresh: every board provider is dropped when a sync finished pushing
 /// days, when the tab is re-entered after [staleAfter], on pull-to-refresh
@@ -163,19 +169,23 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBinding
     final user = auth.asData?.value;
     final userId = user?.id ?? api?.userId;
     final resorts = ref.watch(resortRepositoryProvider).asData?.value;
-    final settings = ref.watch(settingsProvider);
-    final homeResortId = settings.lastResortId;
-    final countryCode = settings.countryCode;
-    // Default scope: the home resort when known, else the own team, else all.
-    final scope = _scope ??
-        (homeResortId != null
+    final countryCode = ref.watch(settingsProvider.select((st) => st.countryCode));
+    final defaultResortId = ref.watch(boardDefaultResortIdProvider);
+    // The Gebiet chip needs a resort to name — none known: no Gebiet scope.
+    final chosenResort = _resortTouched ? _resortId : defaultResortId;
+    final hasResort = chosenResort != null;
+    // Default scope: the resort when known, else the own team, else all. A
+    // remembered Gebiet choice without a resort (home cleared) falls back too.
+    final wanted = _scope;
+    final scope = wanted != null && (wanted != LeaderboardScope.resort || hasResort)
+        ? wanted
+        : hasResort
             ? LeaderboardScope.resort
             : countryCode != null
                 ? LeaderboardScope.country
-                : LeaderboardScope.all);
-    final chosenResort = _resortTouched ? _resortId : homeResortId;
-    final resortId = scope == LeaderboardScope.resort ? (chosenResort ?? resorts?.all.firstOrNull?.id) : null;
-    final resortName = resortId == null ? null : resorts?.byId(resortId)?.name;
+                : LeaderboardScope.all;
+    final resortId = scope == LeaderboardScope.resort ? chosenResort : null;
+    final resortName = resortId == null ? null : resorts?.byId(resortId)?.name ?? resortId;
     final query = LeaderboardQuery.at(
       _now,
       period: _period,
@@ -219,6 +229,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBinding
         period: _period,
         metric: _metric,
         scope: scope,
+        hasResort: hasResort,
         countryCode: countryCode,
         onPeriod: (p) => _select(() => _period = p),
         onMetric: (m) => _select(() => _metric = m),
@@ -252,6 +263,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBinding
                         title: s.title,
                         caption: s.caption(_period, query.seasonKey, where),
                         padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+                        trailing: signedIn ? [_FriendsButton(onTap: _invite)] : null,
                       ),
                       // Level · Punkte · Streak · Medaillen (docs/GAMIFICATION.md §5)
                       const AchievementsHeader(padding: EdgeInsets.zero),
@@ -267,6 +279,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBinding
                 query: query,
                 userId: userId,
                 userName: user.displayName,
+                scopeName: where,
                 onJump: (rank) => setState(() => _offset = query.offsetAround(rank)),
                 onTop: _offset == 0 ? null : () => setState(() => _offset = 0),
               ),
@@ -289,6 +302,7 @@ class _SignedIn extends ConsumerWidget {
     required this.period,
     required this.metric,
     required this.scope,
+    required this.hasResort,
     required this.countryCode,
     required this.onPeriod,
     required this.onMetric,
@@ -310,6 +324,9 @@ class _SignedIn extends ConsumerWidget {
   final SocialMetric metric;
   final LeaderboardScope scope;
 
+  /// False hides the 'Gebiet' chip: no home resort, no local day with one.
+  final bool hasResort;
+
   /// `Settings.countryCode`; null hides the 'Mein Land' chip.
   final String? countryCode;
   final ValueChanged<LeaderboardPeriod> onPeriod;
@@ -329,14 +346,13 @@ class _SignedIn extends ConsumerWidget {
     final optedIn = ref.watch(shareLeaderboardsProvider).asData?.value;
     final challenges = ref.watch(openChallengesProvider).asData?.value ?? const <Challenge>[];
     final challenge = currentChallenge(challenges, now);
-    final options = _resortOptions();
-    final selectedResort = options.indexWhere((o) => o.$1 == resortId);
     final scopes = [
       LeaderboardScope.friends,
       if (countryCode != null) LeaderboardScope.country,
-      LeaderboardScope.resort,
+      if (hasResort) LeaderboardScope.resort,
       LeaderboardScope.all,
     ];
+    final name = resortName;
     // Friends see each other by consent — the opt-in gate is for the public boards.
     final gated = optedIn == false && scope != LeaderboardScope.friends;
 
@@ -360,12 +376,12 @@ class _SignedIn extends ConsumerWidget {
           selected: scopes.indexOf(scope),
           onSelect: (i) => onScope(scopes[i]),
         ),
-        if (scope == LeaderboardScope.resort && options.isNotEmpty) ...[
+        if (scope == LeaderboardScope.resort && name != null) ...[
           const SizedBox(height: 10),
-          SocialChipRow(
-            labels: [for (final o in options) o.$2],
-            selected: selectedResort < 0 ? 0 : selectedResort,
-            onSelect: (i) => onResort(options[i].$1),
+          SocialPickerChip(
+            key: const ValueKey('resort-chip'),
+            label: s.resortChip(name),
+            onTap: () => _pickResort(context),
           ),
         ],
         const SizedBox(height: 10),
@@ -391,15 +407,32 @@ class _SignedIn extends ConsumerWidget {
     );
   }
 
-  /// The home resort first, then the rest of the bundled list.
-  List<(String?, String)> _resortOptions() {
-    final all = resorts?.all ?? const <Resort>[];
-    final home = resortId == null ? null : all.where((r) => r.id == resortId).firstOrNull;
-    return <(String?, String)>[
-      if (home != null) (home.id, home.name),
-      for (final r in all)
-        if (r.id != home?.id) (r.id, r.name),
-    ];
+  /// The resort picker of Tage, nearest to the current Gebiet first. Dismiss
+  /// and 'Freies Gelände' (no resort) leave the board as it is.
+  Future<void> _pickResort(BuildContext context) async {
+    final repo = resorts;
+    if (repo == null) return;
+    final current = resortId == null ? null : repo.byId(resortId!);
+    final pick = await ResortPickerSheet.show(context, resorts: repo.all, lat: current?.lat, lon: current?.lon, currentId: resortId);
+    final picked = pick?.resort;
+    if (picked != null) onResort(picked.id);
+  }
+}
+
+/// The header action: two-rider glyph + the count of incoming requests.
+class _FriendsButton extends ConsumerWidget {
+  const _FriendsButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pending = ref.watch(friendsBadgeCountProvider);
+    return FriendsHeaderButton(
+      key: const ValueKey('friends-button'),
+      pending: pending,
+      label: SocialStrings.of(context).friendsButton(pending),
+      onTap: onTap,
+    );
   }
 }
 
@@ -508,23 +541,45 @@ class _Offline extends StatelessWidget {
 
 /// 'Du · Platz 14 von 250 · 12.480 hm' above the tab bar — from the fetched
 /// slice when the user is in it, else from `my_rank`; 'Du bist noch nicht
-/// gewertet' when the server has no row. Hidden only while opted out, while
-/// the rank is still loading or when the board itself failed.
+/// gewertet' when the board has loaded, the user is opted in and the server
+/// has no row. Hidden while opted out, while board or rank are still loading
+/// and when either failed. The share glyph builds the rank card.
 class _PinnedOwnRow extends ConsumerWidget {
-  const _PinnedOwnRow({required this.query, required this.userId, required this.userName, required this.onJump, required this.onTop});
+  const _PinnedOwnRow({
+    required this.query,
+    required this.userId,
+    required this.userName,
+    required this.scopeName,
+    required this.onJump,
+    required this.onTop,
+  });
 
   final LeaderboardQuery query;
   final String? userId;
   final String userName;
+
+  /// Resort / country / 'Freunde' for the share card; null = every resort.
+  final String? scopeName;
   final ValueChanged<int> onJump;
   final VoidCallback? onTop;
 
+  RankCardData _cardData(BuildContext context, MyRank r) => RankCardData(
+        rank: r.rank,
+        total: r.total,
+        value: r.value,
+        metric: shareMetricOf(query.metric),
+        seasonKey: query.seasonKey,
+        scopeName: scopeName,
+        periodLabel: SocialStrings.of(context).sharePeriodLabel(query.period, query.wireKey),
+      );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final optedOut = ref.watch(shareLeaderboardsProvider).asData?.value == false;
-    if (optedOut && !query.friends) return const SizedBox.shrink();
+    final optedIn = ref.watch(shareLeaderboardsProvider).asData?.value;
+    // Friends see each other by consent; every other board needs the opt-in.
+    if (optedIn != true && !query.friends) return const SizedBox.shrink();
     final board = ref.watch(boardProvider(query));
-    if (board.hasError) return const SizedBox.shrink();
+    if (!board.hasValue || board.hasError) return const SizedBox.shrink();
     final entries = board.asData?.value ?? const <LeaderboardEntry>[];
     final inSlice = myRankOf(entries, userId);
     final MyRank? rank;
@@ -532,13 +587,11 @@ class _PinnedOwnRow extends ConsumerWidget {
       rank = inSlice;
     } else {
       final remote = ref.watch(myRankProvider(query));
-      if (!remote.hasValue) return const SizedBox.shrink();
+      if (!remote.hasValue || remote.hasError) return const SizedBox.shrink();
       rank = remote.value;
     }
     final r = rank;
-    // Not in the slice and not ranked server-side: nothing to pin.
-    if (r == null) return const SizedBox.shrink();
-    final canJump = inSlice == null && !query.friends && !query.covers(r.rank);
+    final canJump = r != null && inSlice == null && !query.friends && !query.covers(r.rank);
     return Positioned(
       left: 0,
       right: 0,
@@ -550,6 +603,7 @@ class _PinnedOwnRow extends ConsumerWidget {
         bottomPadding: 56 + MediaQuery.paddingOf(context).bottom,
         onJump: canJump ? () => onJump(r.rank) : null,
         onTop: onTop,
+        onShare: r == null ? null : () => unawaited(ref.read(rankShareProvider)(context, _cardData(context, r))),
       ),
     );
   }

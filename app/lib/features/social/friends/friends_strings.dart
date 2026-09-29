@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../app/brand.dart';
-import '../invite/invite_links.dart';
+import '../invite/invite_strings.dart';
 import '../../../app/l10n/app_locale.dart';
 import 'friends_api.dart';
 import 'friends_models.dart';
@@ -29,14 +28,9 @@ class FriendsStrings {
   String get copy => l.pick(de: 'Kopieren', en: 'Copy');
   String get copied => l.pick(de: 'Code kopiert', en: 'Code copied');
 
-  /// 'Fahr gegen mich in SlopeTrack – Freundescode KMJ4F2 · https://slopetrack.app/f/KMJ4F2'
-  String shareText(String code) {
-    final c = FriendCode.normalise(code);
-    return l.pick(
-      de: 'Fahr gegen mich in $kAppName – Freundescode $c · ${InviteLinks.share(InviteKind.friend, c)}',
-      en: 'Race me in $kAppName – friend code $c · ${InviteLinks.share(InviteKind.friend, c)}',
-    );
-  }
+  /// 'Fahr gegen mich in SlopeTrack – Freundescode KMJ4F2' + link — one text
+  /// source for every friend invite: [InviteStrings.friendShareText].
+  String shareText(String code) => InviteStrings(l).friendShareText(FriendCode.normalise(code));
 
   // --- add by code ---------------------------------------------------------
   String get addFriend => l.pick(de: 'Freund hinzufügen', en: 'Add a friend');

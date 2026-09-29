@@ -49,6 +49,19 @@ void main() {
     }
   });
 
+  test('titles are names, never bare numbers (the tile shows the threshold itself)', () {
+    final digits = RegExp(r'\d');
+    for (final m in medalCatalog) {
+      expect(m.titleDe, isNot(matches(digits)), reason: m.id);
+      expect(m.titleEn, isNot(matches(digits)), reason: m.id);
+      expect(m.hintDe, isNot(equals(m.titleDe)), reason: m.id);
+    }
+    expect(medalById('vertical-bronze')!.titleDe, 'Zehntausender');
+    expect(medalById('vertical-black')!.titleDe, 'Halbe Million');
+    expect(medalById('distance-gold')!.titleDe, 'Tausend');
+    expect(medalById('distance-black')!.titleEn, 'Five thousand');
+  });
+
   test('level table has 14 ascending bands from 0', () {
     expect(levelTable.length, 14);
     expect(levelTable.first.minM, 0);

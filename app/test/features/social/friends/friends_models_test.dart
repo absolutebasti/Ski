@@ -5,6 +5,7 @@ import 'package:slopetrack/app/l10n/app_locale.dart';
 import 'package:slopetrack/data/sync/auth_service.dart';
 import 'package:slopetrack/features/social/friends/friends.dart';
 import 'package:slopetrack/features/social/invite/invite_links.dart';
+import 'package:slopetrack/features/social/invite/invite_strings.dart';
 import 'package:slopetrack/features/social/social_models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
@@ -23,8 +24,11 @@ void main() {
     });
 
     test('share text carries the code and the link in both languages', () {
-      expect(_de.shareText('kmj4f2'), 'Fahr gegen mich in SlopeTrack – Freundescode KMJ4F2 · ${InviteLinks.share(InviteKind.friend, 'KMJ4F2')}');
-      expect(_en.shareText('KMJ4F2'), 'Race me in SlopeTrack – friend code KMJ4F2 · ${InviteLinks.share(InviteKind.friend, 'KMJ4F2')}');
+      // One text source: InviteStrings.friendShareText.
+      expect(_de.shareText('kmj4f2'), 'Fahr gegen mich in SlopeTrack – Freundescode KMJ4F2\n${InviteLinks.share(InviteKind.friend, 'KMJ4F2')}');
+      expect(_en.shareText('KMJ4F2'), 'Race me in SlopeTrack – friend code KMJ4F2\n${InviteLinks.share(InviteKind.friend, 'KMJ4F2')}');
+      expect(_de.shareText('KMJ4F2'), const InviteStrings(AppLocale(Locale('de'))).friendShareText('KMJ4F2'));
+      expect(_de.shareText('KMJ4F2'), isNot(contains('id0000000000')));
     });
   });
 

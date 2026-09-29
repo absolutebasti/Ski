@@ -30,3 +30,6 @@ env/*
 !env/example.json
 tools/data/cache/
 .playwright-mcp/
+
+# golden diff output
+**/failures/
