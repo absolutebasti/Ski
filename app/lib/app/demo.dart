@@ -106,7 +106,7 @@ class Demo {
       await repo.finishDay('demo-$i', endedAt: r.points.last.ts, stats: r.stats, segments: r.segments);
       try {
         final detail = await repo.dayDetail('demo-$i');
-        if (detail != null) await repo.updateMapThumb('demo-$i', await ThumbnailRenderer.render(detail));
+        if (detail != null) await repo.updateMapThumb('demo-$i', await ThumbnailRenderer.renderBoth(detail));
       } catch (_) {}
     }
     await container.read(settingsProvider.notifier).update((s) => s.copyWith(lastResortId: 'kitzbuehel'));

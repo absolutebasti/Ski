@@ -28,6 +28,9 @@ import 'duel_providers.dart';
 /// Riverpod 3 pauses a provider nobody watches, so the uploader lives behind
 /// [liveDuelUploaderProvider] and is kept alive by [LiveDuelSyncHost] (mount
 /// it once in the app tree).
+/// Local calendar day used by the midnight guard; tests pin it to the fixture date.
+final liveDuelClockProvider = Provider<DateTime Function()>((ref) => today);
+
 class LiveDuelUploader {
   LiveDuelUploader(this._ref, {required this.interval});
 
@@ -67,7 +70,9 @@ class LiveDuelUploader {
     return api == null || api.userId == null ? null : api;
   }
 
-  bool get _shouldRun => !_disposed && _ref.read(isRecordingProvider) && _duel != null && _api != null;
+  // The cached duel must be today's: an app kept alive over midnight must not
+  // write live rows into yesterday's duel.
+  bool get _shouldRun => !_disposed && _ref.read(isRecordingProvider) && _duel != null && _api != null && _duel!.day == _ref.read(liveDuelClockProvider)();
 
   void _evaluate() {
     if (_shouldRun) {

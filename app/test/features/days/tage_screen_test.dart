@@ -114,6 +114,15 @@ void main() {
     await tester.pump();
     expect(find.byType(EmptyState), findsOneWidget);
     expect(find.byType(DayCard), findsNothing);
+    // Three 6 % skeleton rows sit behind the state card (docs/DESIGN.md §5).
+    expect(find.byType(DaySkeletonRows), findsOneWidget);
+    expect(find.byType(DayListSkeleton), findsNothing);
+    final rows = tester.widget<DaySkeletonRows>(find.byType(DaySkeletonRows));
+    expect(rows.rows, 3);
+    final skeleton = tester.getRect(find.byType(DaySkeletonRows));
+    final card = tester.getRect(find.byType(EmptyState));
+    expect(skeleton.top, card.top, reason: 'rows start where the card starts');
+    expect(skeleton.height, 3 * DayListSkeleton.rowHeight + 3 * 12);
   });
 
   testWidgets('tapping a card opens the day route', (tester) async {

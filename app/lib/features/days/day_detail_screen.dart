@@ -15,6 +15,7 @@ import '../../data/resorts/resort_repository.dart';
 import '../../data/weather/wmo.dart';
 import '../map/map.dart';
 import '../profile/profile.dart';
+import '../summary/time_legend.dart';
 import 'day_actions.dart';
 import 'day_skeleton.dart';
 import 'days_strings.dart';
@@ -218,14 +219,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                       trailing: Text(Fmt.durationCompact(st.elapsedMs, locale: l.code), style: AppText.numXs(c.textPrimary)),
                       child: Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: StackedTimeBar(
-                          skiMs: st.skiMs,
-                          liftMs: st.liftMs,
-                          pauseMs: st.pauseMs,
-                          signalLossMs: st.signalLossMs,
-                          otherMs: st.otherMs,
-                          labels: s.timeBarLabels,
-                        ),
+                        child: _TimeBar(stats: st, labels: s.timeBarLabels),
                       ),
                     ),
                     const SizedBox(height: Tokens.sectionGap),
@@ -569,6 +563,26 @@ class _ResortLine extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// ZEIT bar of the detail: whole-minute segments whose sum equals the header
+/// value (the pause takes the remainder — see [timeLegendSegments]).
+class _TimeBar extends StatelessWidget {
+  const _TimeBar({required this.stats, required this.labels});
+  final DayStats stats;
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final seg = timeLegendSegments(stats);
+    return StackedTimeBar(
+      skiMs: seg.skiMs,
+      liftMs: seg.liftMs,
+      pauseMs: seg.pauseMs,
+      signalLossMs: seg.signalLossMs,
+      labels: labels,
     );
   }
 }

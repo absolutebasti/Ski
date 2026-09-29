@@ -1,60 +1,51 @@
 import 'package:flutter/material.dart';
 
+import '../theme/surfaces.dart';
 import '../theme/tokens.dart';
 import '../theme/typography.dart';
 import 'buttons.dart';
+import 'rider.dart';
 
-/// Full-width mascot card: 16:9 still with an ink gradient, headline, body, action.
-/// `EmptyState(line:)` (v1 signature) still works and renders the compact form.
+/// Empty state in the Rider pattern: surface card, the rider (pose selectable),
+/// headline, one statement line, optional primary action. `asset` and `size`
+/// stay for source compatibility (`size` scales the rider).
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
     required this.line,
-    this.asset = 'assets/mascot/toni-still.jpg',
-    this.size = 120,
+    this.asset = '',
+    this.size = 132,
     this.headline,
     this.actionLabel,
     this.onAction,
+    this.pose = 'hero',
   });
   final String line;
+  /// Ignored since the rider replaced the photo; kept so old call sites compile.
   final String asset;
   final double size;
   final String? headline;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final String pose;
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(Tokens.r28),
-      child: Stack(
+    return SurfaceCard(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          AspectRatio(aspectRatio: 16 / 10, child: Image.asset(asset, fit: BoxFit.cover)),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [Colors.transparent, c.ink.withValues(alpha: 0.55), c.ink.withValues(alpha: 0.96)], stops: const [0.25, 0.6, 1], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (headline != null) ...[Text(headline!, style: AppText.headline(Tokens.textPrimary)), const SizedBox(height: 8)],
-                Text(line, style: AppText.bodyText(Tokens.textSecondary, size: 15)),
-                if (actionLabel != null) ...[
-                  const SizedBox(height: 16),
-                  PrimaryButton(label: actionLabel!, onPressed: onAction, height: 52, expand: false, glow: false),
-                ],
-              ],
-            ),
-          ),
+          Center(child: Rider(pose: pose, size: size)),
+          const SizedBox(height: 16),
+          if (headline != null) ...[Text(headline!, style: AppText.headline(c.textPrimary)), const SizedBox(height: 8)],
+          RiderLine(line),
+          if (actionLabel != null) ...[
+            const SizedBox(height: 18),
+            PrimaryButton(label: actionLabel!, onPressed: onAction, height: 52, glow: false),
+          ],
         ],
       ),
     );

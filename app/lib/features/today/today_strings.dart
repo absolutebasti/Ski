@@ -30,9 +30,37 @@ class TodayStrings {
   String get pbLongest => l.pick(de: 'Längste', en: 'Longest');
   String get startHint => l.pick(de: 'Läuft weiter, auch wenn das Display gesperrt ist.', en: 'Keeps running with the screen locked.');
   String get emptyLine => l.pick(
-        de: 'Noch kein Skitag. Ein Tipp auf Tag starten, und ich zähl mit.',
-        en: 'No ski day yet. One tap on start day and I will count along.',
+        de: 'Noch kein Skitag. Ein Tipp auf Tag starten genügt.',
+        en: 'No ski day yet. One tap on start day is all it takes.',
       );
+
+  // --- season card ---------------------------------------------------------
+  String get shareSeason => l.pick(de: 'Saison teilen', en: 'Share season');
+  String get goal => l.pick(de: 'Ziel', en: 'Goal');
+  String get editGoal => l.pick(de: 'Saisonziel ändern', en: 'Change season goal');
+  String get goalTitle => l.pick(de: 'Saisonziel', en: 'Season goal');
+  String get goalBody => l.pick(
+        de: 'Höhenmeter, die du diese Saison schaffen willst. Die Saisonkarte zeigt den Fortschritt.',
+        en: 'Vertical metres you want to reach this season. The season card shows your progress.',
+      );
+  String get goalSave => l.pick(de: 'Speichern', en: 'Save');
+  String get goalNone => l.pick(de: 'Kein Ziel', en: 'No goal');
+  String get goalLess => l.pick(de: 'Weniger', en: 'Less');
+  String get goalMore => l.pick(de: 'Mehr', en: 'More');
+
+  // --- live duel line ------------------------------------------------------
+  String get duel => l.pick(de: 'Duell', en: 'Duel');
+
+  /// 'Duell: Platz 2 · Lena +120 hm' — own place and the gap to the leader.
+  String duelBehind({required int place, required String leader, required String hm}) =>
+      '$duel: ${l.pick(de: 'Platz', en: 'Place')} $place · $leader +$hm $unitHm';
+
+  /// 'Duell: Platz 1 · 120 hm vor Paul' — leading, gap to the runner-up.
+  String duelAhead({required String runnerUp, required String hm}) =>
+      '$duel: ${l.pick(de: 'Platz', en: 'Place')} 1 · $hm $unitHm ${l.pick(de: 'vor', en: 'ahead of')} $runnerUp';
+
+  /// 'Duell: Platz 1' — alone on the board so far.
+  String get duelAlone => '$duel: ${l.pick(de: 'Platz', en: 'Place')} 1';
 
   // --- live ----------------------------------------------------------------
   String get recording => l.pick(de: 'Aufnahme läuft', en: 'Recording');

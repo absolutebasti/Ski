@@ -228,14 +228,32 @@ class ThumbnailRenderer {
 
   /// Writes `thumbs/<dayId>.png` under the app documents dir (or [dir]) and
   /// returns the absolute path.
-  static Future<String> render(DayDetail detail, {Directory? dir, Color? ground, Color? route, Color? lift}) async {
+  static Future<String> render(DayDetail detail, {Directory? dir, Color? ground, Color? route, Color? lift, String suffix = ''}) async {
     final root = dir ?? await getApplicationDocumentsDirectory();
     final thumbs = Directory('${root.path}/thumbs');
     if (!thumbs.existsSync()) thumbs.createSync(recursive: true);
-    final file = File('${thumbs.path}/${detail.day.id}.png');
+    final file = File('${thumbs.path}/${detail.day.id}$suffix.png');
     await file.writeAsBytes(await renderPng(detail, ground: ground, route: route, lift: lift), flush: true);
     return file.path;
   }
+
+  /// Light-theme colours for the second thumbnail (AppColors.light has no context at End).
+  static const Color lightGround = Color(0xFFEDEAE2);
+  static const Color lightRoute = Color(0xFF8B6C1F);
+  static const Color lightLift = Color(0xFF9AA0A6);
+
+  /// Writes `<id>.png` (graphite, the stored path) and `<id>_light.png`; the
+  /// day card picks the light file when the light theme is active.
+  static Future<String> renderBoth(DayDetail detail, {Directory? dir}) async {
+    final dark = await render(detail, dir: dir);
+    try {
+      await render(detail, dir: dir, ground: lightGround, route: lightRoute, lift: lightLift, suffix: '_light');
+    } catch (_) {}
+    return dark;
+  }
+
+  /// Path of the light variant next to a stored dark thumbnail.
+  static String lightPathFor(String darkPath) => darkPath.replaceFirst(RegExp(r'\.png$'), '_light.png');
 }
 
 /// Same drawing as the PNG, live in a list card (for days without a file yet).

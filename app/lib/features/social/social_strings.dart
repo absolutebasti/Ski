@@ -27,6 +27,39 @@ class SocialStrings {
         LeaderboardScope.all => l.pick(de: 'Alle', en: 'All'),
       };
   String get friends => l.pick(de: 'Freunde', en: 'Friends');
+
+  /// The one Gebiet chip that opens the resort picker: 'Gebiet: Kitzbühel'.
+  String resortChip(String resortName) => '${scope(LeaderboardScope.resort)}: $resortName';
+
+  /// Accessibility label of the Freunde header button; [pending] incoming
+  /// requests are read out ('Freunde, 2 Anfragen').
+  String friendsButton(int pending) => pending <= 0
+      ? friends
+      : '$friends, ${l.pick(de: pending == 1 ? '1 Anfrage' : '$pending Anfragen', en: pending == 1 ? '1 request' : '$pending requests')}';
+
+  /// The share glyph on the own-rank strip.
+  String get shareRank => l.pick(de: 'Platz teilen', en: 'Share rank');
+
+  /// Period label on the rank share card for month/week boards; null for the
+  /// season (the card renders 'Saison 26/27' itself). 'Januar 2026' / 'KW 03'.
+  String? sharePeriodLabel(LeaderboardPeriod p, String wireKey) => switch (p) {
+        LeaderboardPeriod.season => null,
+        LeaderboardPeriod.month => _monthLabel(wireKey),
+        LeaderboardPeriod.week => l.pick(de: 'KW ${_weekOf(wireKey)}', en: 'Week ${_weekOf(wireKey)}'),
+      };
+
+  String _monthLabel(String key) {
+    final parts = key.split('-');
+    final y = int.tryParse(parts.first);
+    final m = parts.length > 1 ? int.tryParse(parts[1]) : null;
+    if (y == null || m == null) return key;
+    return DateFormat.yMMMM(l.code).format(DateTime(y, m));
+  }
+
+  static String _weekOf(String key) {
+    final i = key.indexOf('W');
+    return i < 0 ? key : key.substring(i + 1);
+  }
   String get you => l.pick(de: 'Du', en: 'You');
   String get rank => l.pick(de: 'Platz', en: 'Rank');
   String get retry => l.pick(de: 'Erneut versuchen', en: 'Try again');
@@ -163,9 +196,10 @@ class SocialStrings {
 
   // --- states --------------------------------------------------------------
   String get signedOutHeadline => l.pick(de: 'Hol dir Platz 1.', en: 'Go for first place.');
+  /// The headline already promises 'Platz 1' — the line names the opponent.
   String signedOutLine(String? resortName) => resortName == null
       ? l.pick(de: 'Melde dich an und fahr gegen alle anderen.', en: 'Sign in and race everyone else.')
-      : l.pick(de: 'Melde dich an und hol dir Platz 1 in $resortName.', en: 'Sign in and take first place in $resortName.');
+      : l.pick(de: 'Melde dich an und fahr gegen $resortName.', en: 'Sign in and race $resortName.');
   /// Opens the Konto sheet, which holds the actual Sign in with Apple button.
   String get signIn => l.pick(de: 'Anmelden', en: 'Sign in');
 

@@ -5,6 +5,7 @@ import 'package:slopetrack/core/core.dart';
 import 'package:slopetrack/core/settings.dart';
 import 'package:slopetrack/features/recording/live_state_provider.dart';
 import 'package:slopetrack/features/social/duel/duel.dart';
+import 'package:slopetrack/features/social/social_models.dart' show today;
 import 'package:slopetrack/features/social/social_api.dart';
 
 import '../../../support/pump.dart';
@@ -17,11 +18,12 @@ const _stats900 = DayStats(dropM: 900, runCount: 5, skiDistanceM: 7000, maxSpeed
 
 Segment _run(String id) => Segment(id: id, dayId: 'day-live', kind: SegmentKind.run, idx: 0, runNumber: 1, startTs: kTs, endTs: kTs + 300000, dropM: 200);
 
-Future<ProviderContainer> _pump(WidgetTester tester, FakeDuelApi api) async {
+Future<ProviderContainer> _pump(WidgetTester tester, FakeDuelApi api, {DateTime Function()? clock}) async {
   await pumpApp(
     tester,
     const LiveDuelSyncHost(child: Scaffold(body: Text('host'))),
     overrides: [
+      liveDuelClockProvider.overrideWithValue(clock ?? () => DateTime(2026, 1, 15)),
       ...screenOverrides(settings: const Settings(onboardingDone: true, lastResortId: 'kitzbuehel'), resorts: kResorts),
       ...duelOverrides(api: api),
     ],
@@ -88,7 +90,8 @@ void main() {
 
   testWidgets('a duel joined mid-recording starts the uploader', (tester) async {
     final api = FakeDuelApi(userId: 'u1');
-    final c = await _pump(tester, api);
+    // The joined duel is created for the real 'today' by the fake.
+    final c = await _pump(tester, api, clock: today);
     await c.read(myDuelProvider.future);
     c.read(isRecordingProvider.notifier).set(true);
     c.read(liveStateNotifierProvider.notifier).set(const LiveState(stats: _stats500));

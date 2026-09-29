@@ -114,6 +114,10 @@ class ProfileSeries {
     return (min: min, max: max, interval: interval);
   }
 
+  /// Tick interval for a clock-time x-axis: three labels at ¼, ½ and ¾ of the
+  /// day (the edges stay unlabelled).
+  double get clockInterval => math.max(1.0, durationS) / 4;
+
   /// Tick interval for the time axis (seconds) yielding roughly 4–6 labels.
   double get timeInterval {
     const candidates = [60.0, 300.0, 600.0, 900.0, 1800.0, 3600.0, 7200.0];

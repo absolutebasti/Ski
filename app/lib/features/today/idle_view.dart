@@ -11,13 +11,12 @@ import '../../core/settings.dart';
 import '../../data/db/providers.dart';
 import '../../data/resorts/resort_repository.dart';
 import '../../data/weather/weather_provider.dart';
-import '../../data/weather/wmo.dart';
 import '../../platform/permission_service.dart';
 import '../achievements/achievements.dart';
 import '../days/day_card.dart';
 import '../recording/recording_controller.dart';
 import '../settings/settings_providers.dart';
-import '../weather/weather_line.dart';
+import '../weather/conditions_strip.dart';
 import 'season_card.dart';
 import 'today_strings.dart';
 
@@ -74,8 +73,7 @@ class IdleView extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, 24),
             children: [
               if (resort != null) ...[
-                _ConditionsStrip(resort: resort),
-                const SizedBox(height: Tokens.cardGap),
+                _StripWithGap(resort: resort),
               ],
               if (days.isEmpty) ...[
                 const SizedBox(height: 8),
@@ -124,28 +122,17 @@ extension<T> on T {
   }
 }
 
-/// Bedingungen: weather glyph, WeatherLine, right-aligned caption.
-class _ConditionsStrip extends ConsumerWidget {
-  const _ConditionsStrip({required this.resort});
+/// Conditions strip plus its card gap — both vanish together when the strip
+/// has nothing to say (no snapshot, or warm and snowless).
+class _StripWithGap extends ConsumerWidget {
+  const _StripWithGap({required this.resort});
   final Resort resort;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = AppColors.of(context);
-    final l = AppLocale.of(context);
     final w = ref.watch(weatherProvider(resort)).asData?.value;
-    return SurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Icon(wmoIcon(wmoBucket(w?.wmoCode)), size: 22, color: c.ice),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(WeatherLine.format(resort, w, de: l.isGerman), style: AppText.bodyText(c.textPrimary, size: 16, weight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-        ],
-      ),
-    );
+    if (!ConditionsStrip.shouldShow(w)) return const SizedBox.shrink();
+    return Padding(padding: const EdgeInsets.only(bottom: Tokens.cardGap), child: ConditionsStripBody(weather: w!));
   }
 }
 

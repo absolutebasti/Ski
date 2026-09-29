@@ -86,6 +86,8 @@ void main() {
     });
   });
 
+  final readoutDot = find.byWidgetPredicate((w) => w is Text && w.data == ' · ' && w.style?.fontSize == 13);
+
   group('AltitudeProfile', () {
     testWidgets('builds a LineChart from > 500 synthetic points', (tester) async {
       await pumpApp(tester, Padding(padding: const EdgeInsets.all(20), child: AltitudeProfile(points: detail.points, segments: detail.segments, onScrub: (_) {})));
@@ -124,15 +126,17 @@ void main() {
       expect(cursor.single.strokeWidth, 1, reason: '1 px ice cursor');
       expect(cursor.single.color, AppColors.dark.ice);
       // floating glass readout: '11:42 · 1.980 m'
-      expect(find.text(Fmt.timeOfDay(ts, locale: 'de')), findsOneWidget);
+      // The x-axis shows clock times too, so pick the 15 pt readout numeral.
+      expect(find.byWidgetPredicate((w) => w is Text && w.data == Fmt.timeOfDay(ts, locale: 'de') && w.style?.fontSize == 15), findsOneWidget);
       expect(find.text('·'), findsNothing);
-      expect(find.text(' · '), findsOneWidget);
+      // The legend row uses ' · ' at 10 pt; the readout's separator is 13 pt.
+      expect(readoutDot, findsOneWidget);
       expect(find.text('m'), findsOneWidget);
       await g.up();
       await tester.pump();
       expect(seen.last, isNull);
       expect(tester.widget<LineChart>(chart).data.extraLinesData.verticalLines, isEmpty);
-      expect(find.text(' · '), findsNothing);
+      expect(readoutDot, findsNothing);
     });
   });
 }

@@ -77,6 +77,7 @@ class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
               : await api.createDuel(name: ss.duelDefaultName, day: today(), resortId: null));
       invalidateDuels(ref);
       ref.invalidate(groupBoardProvider(duel.id));
+      if (mounted) showToast(context, s.challengeToast(rider.displayName));
       await ref.read(riderShareProvider)(text: s.challengeText(rider.displayName, duel.code), subject: s.challengeSubject);
     } on SocialError catch (e) {
       if (mounted) showToast(context, ss.error(e.kind));
@@ -205,7 +206,7 @@ class _Profile extends ConsumerWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                AvatarCircle(name: rider.displayName, size: 64),
+                AvatarCircle(name: rider.displayName, size: 64, avatarUrl: rider.avatarUrl),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -269,7 +270,11 @@ class _Profile extends ConsumerWidget {
               const SizedBox(height: 10),
               SecondaryButton(key: const ValueKey('rider-unblock'), label: ms.unblock, height: 48, onPressed: busy ? null : onUnblock),
             ],
-            if (onChallenge != null) PrimaryButton(label: s.challenge, height: 52, glow: false, glyph: Glyph.podium, onPressed: busy ? null : onChallenge),
+            if (onChallenge != null) ...[
+              PrimaryButton(label: s.challenge, height: 52, glow: false, glyph: Glyph.podium, onPressed: busy ? null : onChallenge),
+              const SizedBox(height: 8),
+              Text(s.challengeCaption, key: const ValueKey('rider-challenge-caption'), textAlign: TextAlign.center, style: AppText.caption(c.textTertiary, size: 12)),
+            ],
             if (onAddFriend != null) ...[
               const SizedBox(height: 10),
               SecondaryButton(label: s.addFriend, height: 48, onPressed: busy ? null : onAddFriend),

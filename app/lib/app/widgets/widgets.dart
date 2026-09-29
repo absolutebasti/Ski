@@ -5,7 +5,6 @@ export 'chips.dart';
 export 'empty_state.dart';
 export 'glyphs.dart';
 export 'header.dart';
-export 'mascot_card.dart';
 export 'numbers.dart';
 export 'sheet.dart';
 export 'sparkline.dart';

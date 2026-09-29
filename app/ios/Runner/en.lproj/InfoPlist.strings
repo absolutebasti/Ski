@@ -1,0 +1,10 @@
+/* SlopeTrack — permission prompts (English). Keys mirror Info.plist. */
+
+"NSLocationWhenInUseUsageDescription" = "SlopeTrack uses your location to record runs, vertical and speed.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "Only this keeps recording while the iPhone is locked in your jacket.";
+/* Purpose key of NSLocationTemporaryUsageDescriptionDictionary */
+"Tracking" = "Without precise location, runs cannot be detected.";
+"NSMotionUsageDescription" = "The barometer makes vertical metres accurate.";
+"NSPhotoLibraryUsageDescription" = "Pick a photo from your library as your profile picture.";
+"NSCameraUsageDescription" = "SlopeTrack does not take photos; the photo picker component requires this entry.";
+"NSMicrophoneUsageDescription" = "SlopeTrack does not record audio; the photo picker component requires this entry.";

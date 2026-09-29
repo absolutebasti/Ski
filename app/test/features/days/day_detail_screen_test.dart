@@ -77,7 +77,8 @@ void main() {
     expect(find.text('SKI-KM'), findsOneWidget);
     expect(find.text('LIFT-KM'), findsOneWidget);
     expect(find.text('AUFSTIEG'), findsOneWidget);
-    expect(find.text('Ø SPEED'), findsOneWidget);
+    expect(find.text('Ø TEMPO'), findsOneWidget);
+    expect(find.text('Ø SPEED'), findsNothing);
     expect(find.text('HOCH/TIEF'), findsOneWidget);
     expect(find.text('LIFTE'), findsOneWidget);
 
@@ -92,6 +93,46 @@ void main() {
     }
     expect(find.text('Teilen'), findsOneWidget);
     expect(find.text('Löschen'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ZEIT legend minutes add up to the header total (16:10 / 18:40 / 3:10)', (tester) async {
+    useTallSurface(tester);
+    final base = syntheticDayDetail();
+    final stats = base.day.stats.copyWith(
+      elapsedMs: 38 * 60000,
+      skiMs: 16 * 60000 + 10000,
+      liftMs: 18 * 60000 + 40000,
+      pauseMs: 3 * 60000 + 10000,
+      signalLossMs: 0,
+      otherMs: 0,
+    );
+    final detail = DayDetail(
+      day: DayRecord(
+        id: base.day.id,
+        startedAt: base.day.startedAt,
+        endedAt: base.day.endedAt,
+        status: base.day.status,
+        resortId: base.day.resortId,
+        resortName: base.day.resortName,
+        lastFixAt: base.day.lastFixAt,
+        stats: stats,
+      ),
+      segments: base.segments,
+      points: base.points,
+    );
+    await pumpApp(tester, const DayDetailScreen(dayId: _dayId, tilesEnabled: false), overrides: overrides(detail));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('38 min'), findsOneWidget);
+    final texts = tester.widgetList<RichText>(find.descendant(of: find.byType(StackedTimeBar), matching: find.byType(RichText)));
+    final minutes = [
+      for (final t in texts)
+        if (RegExp(r'^(\d+) min').firstMatch(t.text.toPlainText()) case final m?) int.parse(m.group(1)!),
+    ];
+    expect(minutes, [16, 18, 4], reason: 'the pause takes the remainder so the legend sums to the header');
+    expect(minutes.fold<int>(0, (a, b) => a + b), 38);
     expect(tester.takeException(), isNull);
   });
 

@@ -250,6 +250,7 @@ class LeaderboardRow extends StatelessWidget {
 /// 'Du · Platz 14 von 250 · 12.480 hm' — L2 glass strip pinned above the tab
 /// bar. [rank] null = 'Du bist noch nicht gewertet'. [onJump] shows 'Zu mir
 /// springen' (the own rank is outside the fetched window), [onTop] 'Nach oben'.
+/// [onShare] adds the share glyph on the right (rank card) — only with a rank.
 class OwnRankStrip extends StatelessWidget {
   const OwnRankStrip({
     super.key,
@@ -260,6 +261,7 @@ class OwnRankStrip extends StatelessWidget {
     this.bottomPadding = 0,
     this.onJump,
     this.onTop,
+    this.onShare,
   });
 
   final MyRank? rank;
@@ -269,6 +271,7 @@ class OwnRankStrip extends StatelessWidget {
   final double bottomPadding;
   final VoidCallback? onJump;
   final VoidCallback? onTop;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -322,6 +325,24 @@ class OwnRankStrip extends StatelessWidget {
                       if (unit != null) ...[const SizedBox(width: 4), Text(unit, style: AppText.unit(c.textTertiary, size: 11))],
                     ],
                   ),
+                if (r != null && onShare != null) ...[
+                  const SizedBox(width: 10),
+                  Semantics(
+                    button: true,
+                    label: s.shareRank,
+                    child: Pressable(
+                      onTap: onShare,
+                      child: Container(
+                        key: const ValueKey('own-rank-share'),
+                        width: 32,
+                        height: 32,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color: c.glassFill, shape: BoxShape.circle, border: Border.all(color: c.glassStroke, width: c.hairlineWidth)),
+                        child: GlyphIcon(Glyph.share, size: 16, color: c.textPrimary),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

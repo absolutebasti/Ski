@@ -95,10 +95,11 @@ class _MedalCard extends StatelessWidget {
     final s = AchievementsStrings.of(context);
     final d = def;
     final title = d == null ? id : s.medalTitle(d);
-    final threshold = d == null ? null : s.threshold(d);
+    // Caption = the medal's hint ('3 Skitage in Folge'), never a bare '3'.
+    final caption = d == null ? null : s.medalHint(d);
     final overline = solid ? c.onAccent.withValues(alpha: 0.72) : c.textTertiary;
     final fg = solid ? c.onAccent : c.textPrimary;
-    final numeral = solid ? c.onAccent : c.accent;
+    final captionColor = solid ? c.onAccent.withValues(alpha: 0.82) : c.textSecondary;
     final row = Row(
       children: [
         TierRing(tier: d?.tier ?? MedalTier.gold, size: 32, onInk: solid),
@@ -109,22 +110,15 @@ class _MedalCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(s.newMedal.overline, style: AppText.label(overline)),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.title(fg)),
+              if (caption != null) ...[
+                const SizedBox(height: 1),
+                Text(caption, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.caption(captionColor, size: 12)),
+              ],
             ],
           ),
         ),
-        if (threshold != null) ...[
-          const SizedBox(width: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(threshold.$1, style: AppText.numS(numeral)),
-              if (threshold.$2 != null) ...[const SizedBox(width: 4), Text(threshold.$2!, style: AppText.unit(overline, size: 11))],
-            ],
-          ),
-        ],
       ],
     );
     const padding = EdgeInsets.symmetric(horizontal: 18);

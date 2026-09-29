@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../map/thumbnail_renderer.dart';
 import '../../app/l10n/app_locale.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
@@ -94,6 +95,17 @@ class DayThumb extends StatefulWidget {
 class _DayThumbState extends State<DayThumb> {
   late bool _exists = _check();
 
+  /// Light theme: prefer `<id>_light.png` when the recorder wrote one.
+  String _themedPath(BuildContext context, String path) {
+    if (AppColors.of(context).isDark) return path;
+    final light = ThumbnailRenderer.lightPathFor(path);
+    try {
+      return File(light).existsSync() ? light : path;
+    } on FileSystemException {
+      return path;
+    }
+  }
+
   bool _check() {
     final p = widget.path;
     if (p == null || p.isEmpty) return false;
@@ -120,7 +132,7 @@ class _DayThumbState extends State<DayThumb> {
       clipBehavior: Clip.antiAlias,
       decoration: ShapeDecoration(color: c.routeGround, shape: Squircle.border(Tokens.r10, side: c.hairline, width: c.hairlineWidth)),
       child: _exists
-          ? Image.file(File(widget.path!), fit: BoxFit.cover, errorBuilder: (context, error, stack) => const ContourPattern())
+          ? Image.file(File(_themedPath(context, widget.path!)), fit: BoxFit.cover, errorBuilder: (context, error, stack) => const ContourPattern())
           : const ContourPattern(),
     );
   }

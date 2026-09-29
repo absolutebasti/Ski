@@ -6,7 +6,7 @@ Evidence-based audit of the merged state (main = PR #4, 258 tests green). Owner:
 
 | # | Gap | Why it blocks | Owner | Effort | Ref |
 |---|---|---|---|---|---|
-| 1 | No Apple access on this Mac: no Apple ID for team 5GDU97KSQU in Xcode and no App Store Connect API key; no App Store Connect app record | Archive signs, but export/upload is impossible | founder | S | tools/testflight.sh, docs/APP-STORE.md |
+| 1 | No App Store Connect app record for `de.torchtechnology.slopetrack` yet. Signing is ready: Apple Distribution certificate for team 5GDU97KSQU is on this Mac and `tools/testflight.sh` signs the archive | Upload needs the record: create it in App Store Connect, then run `tools/testflight.sh --upload` with the signed-in Xcode account (or an ASC API key via `ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_PATH`) | founder | S | tools/testflight.sh, docs/APP-STORE.md |
 | 2 | ~~Name~~ decided 2026-09-24: **SlopeTrack** (renamed in code, bundle id de.torchtechnology.slopetrack). Residual risk: CH mark "SLOPE TRACK" (SUVA, cl. 9), proximity to "Slopes". Register slopetrack.app and file the word mark | — | founder + legal | S | docs/NAMING.md |
 | 3 | Nothing proven on a real device: background continuity with the screen locked, kill → resume, watchdog relaunch, barometer fusion, battery per hour, car auto-end | The whole value proposition is untested outside the simulator (`Location is off` even in the simulator screenshots) | device-qa | M | docs/QA.md (14 checks) |
 | 4 | Sign in with Apple never exercised end-to-end: 0 users, 0 profiles, 0 days in the Supabase project; the Apple client secret Supabase needs is a JWT that expires after ≤ 6 months and must be renewed | First real sign-in may fail; sync is untested against the live project | founder + device-qa | S | supabase project svzmmpzevmpodcelzvit › Auth › Apple |
@@ -19,7 +19,7 @@ Evidence-based audit of the merged state (main = PR #4, 258 tests green). Owner:
 | # | Gap | Why | Owner | Effort | Ref |
 |---|---|---|---|---|---|
 | 8 | ~~Account deletion~~ **Closed 2026-09-27 (v2 deployed):** Edge Function drains tracks/<uid> and avatars/<uid> page by page, returns 500 and keeps the user on any storage error, then deletes the auth user; client falls back to row deletion offline; the `auth.users` entry stays (`auth_service.dart` TODO). Apple 5.1.1(v) requires full deletion for apps with sign-in | Review rejection risk | backend | M | Edge Function with service role |
-| 9 | Privacy policy is not hosted (URL `dropline.torchtechnology.de/privacy` planned), no support URL/email, no Impressum (mandatory in DE for an app with a provider) | App Store Connect requires privacy URL + support URL; DE law requires Impressum | founder + legal | S | docs/PRIVACY.md, docs/APP-STORE.md |
+| 9 | ~~Privacy policy not hosted, no support URL, no Impressum~~ **Mostly closed 2026-09-28:** privacy, support, terms and imprint pages live at https://absolutebasti.github.io/Ski/ and linked from Settings; the imprint still needs the founder's address (mandatory in DE for an app with a provider) | App Store Connect requires privacy URL + support URL; DE law requires Impressum | founder + legal | S | docs/PRIVACY.md, docs/APP-STORE.md |
 | 10 | ~~profiles readable by everyone~~ **Closed 2026-09-27:** policy `profiles read own`; other riders only via security-definer RPCs (leaderboard, rider_profile, friends_*) display name and home resort of every user, including users who did not opt in to leaderboards | Privacy leak; GDPR minimisation | backend | S | supabase/migrations/0001 line 101 |
 | 11 | ~~No licences screen~~ **Closed 2026-09-24:** Einstellungen › Quellen & Lizenzen (+ package licences); map keeps its attribution overlay: OpenTopoMap + OpenSnowMap (OSM, ODbL/CC-BY-SA), Open-Meteo (CC-BY), Inter font (OFL) require visible credit; `showLicensePage` is not used | Licence breach; map providers may block tiles | code | S | features/settings |
 | 12 | VoiceOver: custom glyph buttons have almost no `Semantics` labels (2 in the whole widget library) | Accessibility rejection risk, unusable with VoiceOver | code | M | app/widgets/* |
@@ -49,7 +49,7 @@ Evidence-based audit of the merged state (main = PR #4, 258 tests green). Owner:
 
 ## Founder decisions
 1. Name: SlopeTrack decided (2026-09-24). Still needed: register slopetrack.app, file the DE/EU word mark.
-2. Apple access: Xcode sign-in with the team Apple ID, or an App Store Connect API key for `tools/testflight.sh`.
+2. Apple access: certificate present; create the App Store Connect app record, then `tools/testflight.sh --upload`.
 3. Hosting for privacy policy + Impressum + support page (one static page under torchtechnology.de is enough).
 4. Watch app in build 1 (delays by ~1–2 weeks and needs the watchOS SDK) or build 2. Recommendation: build 2.
 5. Resort coverage: 52 hand-picked resorts or an OpenSkiMap import (thousands, less curated). Recommendation: import for the picker, curated list for leaderboards.

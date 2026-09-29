@@ -148,6 +148,12 @@ class MedalTile extends ConsumerWidget {
   /// Height of the footer slot (date or progress rule).
   static const double footerHeight = 14;
 
+  /// Title size: fixed, so the four titles of a row never differ.
+  static const double titleSize = 11.5;
+
+  /// Title style (Inter 600 at [titleSize]).
+  static TextStyle titleStyle(Color color) => AppText.caption(color, size: titleSize).copyWith(fontWeight: FontWeight.w600, height: 1.2);
+
   Future<void> _share(BuildContext context, WidgetRef ref) async {
     final earnedAt = state.earnedAt;
     if (earnedAt == null) return;
@@ -170,6 +176,8 @@ class MedalTile extends ConsumerWidget {
     final s = AchievementsStrings.of(context);
     final def = state.def;
     final (value, unit) = s.threshold(def);
+    final title = s.medalTitle(def);
+    final thresholdLine = unit == null ? value : '$value $unit';
     final earnedAt = state.earnedAt;
     return Semantics(
       key: ValueKey('medal-${def.id}'),
@@ -184,33 +192,43 @@ class MedalTile extends ConsumerWidget {
             opacity: state.earned ? 1 : MedalsSheet.lockedOpacity,
             child: SurfaceCard(
               radius: Tokens.r14,
-              padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
+              padding: const EdgeInsets.fromLTRB(6, 12, 6, 10),
               child: Column(
                 children: [
                   TierRing(tier: def.tier, earned: state.earned, size: 34),
                   const SizedBox(height: 8),
+                  // Fixed 11.5 pt: every title in a row is the same size, a
+                  // long one ellipsises instead of shrinking.
                   SizedBox(
                     height: 16,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(s.medalTitle(def), maxLines: 1, softWrap: false, style: AppText.caption(c.textPrimary, size: 12)),
+                    width: double.infinity,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: titleStyle(c.textPrimary),
                     ),
                   ),
                   const SizedBox(height: 4),
+                  // Threshold + unit, unless it would only repeat the title.
                   SizedBox(
                     height: 16,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(value, style: AppText.numXs(c.textPrimary)),
-                          if (unit != null) ...[const SizedBox(width: 3), Text(unit, style: AppText.unit(c.textTertiary, size: 11))],
-                        ],
-                      ),
-                    ),
+                    child: thresholdLine == title
+                        ? null
+                        : FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(value, style: AppText.numXs(c.textPrimary)),
+                                if (unit != null) ...[const SizedBox(width: 3), Text(unit, style: AppText.unit(c.textTertiary, size: 11))],
+                              ],
+                            ),
+                          ),
                   ),
                   const Spacer(),
                   SizedBox(

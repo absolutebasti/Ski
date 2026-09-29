@@ -61,3 +61,8 @@ enabled = true
 verify_jwt = true
 import_map = ""
 entrypoint = "./functions/delete-account/index.ts"
+
+[functions.report-notify]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/report-notify/index.ts"

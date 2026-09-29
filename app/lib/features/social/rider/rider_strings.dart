@@ -52,6 +52,16 @@ class RiderStrings {
       );
   String get challengeSubject => l.pick(de: 'Tagesduell', en: 'Day duel');
 
+  /// Under 'Herausfordern': what the button does — the code goes out via the
+  /// share sheet, the rider joins with it (in-app invites: SOC-DUEL-INVITES).
+  String get challengeCaption => l.pick(
+        de: 'Schickt deinen Duell-Code über das Teilen-Menü.',
+        en: 'Sends your duel code via the share sheet.',
+      );
+
+  /// Toast right before the share sheet opens.
+  String challengeToast(String name) => l.pick(de: 'Duell-Code an $name senden', en: 'Send the duel code to $name');
+
   // --- states --------------------------------------------------------------
   String get privateHeadline => l.pick(de: 'Dieses Profil ist privat.', en: 'This profile is private.');
   String get privateLine => l.pick(

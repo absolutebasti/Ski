@@ -10,6 +10,7 @@ import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
 import '../map/map_sheet.dart';
 import '../recording/live_state_provider.dart';
+import 'duel_line.dart';
 import 'today_strings.dart';
 
 /// Heute while a day is running (docs/DESIGN.md §5 "Heute — live"): pure-black
@@ -81,6 +82,7 @@ class _LiveBody extends ConsumerWidget {
                     const SizedBox(height: 8),
                     Text(resortName!, style: AppText.caption(c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
+                  const DuelLine(),
                   const SizedBox(height: 18),
                   FittedBox(
                     fit: BoxFit.scaleDown,

@@ -23,6 +23,7 @@ import 'notifications_sheet.dart';
 import 'route_block.dart';
 import 'summary_skeleton.dart';
 import 'summary_strings.dart';
+import 'time_legend.dart';
 
 /// Full-screen route right after "Tag beenden" (docs/DESIGN.md §5
 /// "Tagesbilanz"): the route draws itself, the numbers count up, a record gets
@@ -225,11 +226,7 @@ class _Body extends StatelessWidget {
               _Gutter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 10),
-                  child: RankTeaser(
-                    seasonKey: seasonKeyFromMs(detail.day.startedAt),
-                    resortId: detail.day.resortId,
-                    resortName: detail.day.resortName,
-                  ),
+                  child: RankTeaser(seasonKey: seasonKeyFromMs(detail.day.startedAt), resortId: detail.day.resortId, resortName: detail.day.resortName),
                 ),
               ),
               const SizedBox(height: 20),
@@ -383,22 +380,27 @@ class RecordCard extends StatelessWidget {
         border: c.accent,
         radius: Tokens.r20,
         padding: const EdgeInsets.symmetric(horizontal: 18),
-        child: Row(
-          children: [
-            GlyphIcon(Glyph.crest, size: 22, color: c.onAccent),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(s.record.overline, style: AppText.label(c.onAccent.withValues(alpha: 0.72))),
-                  const SizedBox(height: 5),
-                  Text(lineFor(s, pbs), style: AppText.title(c.onAccent), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
+        // SurfaceCard lays its child out loosely (Stack): without the Align
+        // the row hugs the top of the 76 pt card.
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Row(
+            children: [
+              GlyphIcon(Glyph.crest, size: 22, color: c.onAccent),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(s.record.overline, style: AppText.label(c.onAccent.withValues(alpha: 0.72))),
+                    const SizedBox(height: 5),
+                    Text(lineFor(s, pbs), style: AppText.title(c.onAccent), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -457,18 +459,6 @@ class _BestRunCard extends StatelessWidget {
   }
 }
 
-/// Legend segments of the time card in whole minutes. The pause segment is
-/// the remainder (total − ski − lift − signal loss), so the legend minutes
-/// always add up to the header value.
-({int skiMs, int liftMs, int pauseMs, int signalLossMs}) timeLegendSegments(DayStats stats) {
-  int minutes(int ms) => ms ~/ 60000 * 60000;
-  final ski = minutes(stats.skiMs);
-  final lift = minutes(stats.liftMs);
-  final signal = minutes(stats.signalLossMs);
-  final rest = minutes(stats.elapsedMs) - ski - lift - signal;
-  return (skiMs: ski, liftMs: lift, pauseMs: rest < 0 ? 0 : rest, signalLossMs: signal);
-}
-
 /// Ski · Lift · Pause with the day's total on the header line ('38 min',
 /// '5h 12' — never a running clock).
 class _TimeCard extends StatelessWidget {
@@ -484,13 +474,7 @@ class _TimeCard extends StatelessWidget {
     return AppCard(
       header: s.timeOnSnow,
       trailing: Text(Fmt.durationCompact(stats.elapsedMs, locale: l.code), style: AppText.numXs(c.textPrimary)),
-      child: StackedTimeBar(
-        skiMs: seg.skiMs,
-        liftMs: seg.liftMs,
-        pauseMs: seg.pauseMs,
-        signalLossMs: seg.signalLossMs,
-        labels: s.timeBarLabels,
-      ),
+      child: StackedTimeBar(skiMs: seg.skiMs, liftMs: seg.liftMs, pauseMs: seg.pauseMs, signalLossMs: seg.signalLossMs, labels: s.timeBarLabels),
     );
   }
 }
