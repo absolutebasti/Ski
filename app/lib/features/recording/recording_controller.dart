@@ -353,7 +353,7 @@ class RecordingController extends Notifier<RecordingState> {
     try {
       final detail = await _repo.dayDetail(dayId);
       if (detail != null && detail.points.length >= 2) {
-        final path = await ThumbnailRenderer.render(detail);
+        final path = await ThumbnailRenderer.renderBoth(detail);
         await _repo.updateMapThumb(dayId, path);
       }
     } catch (_) {}

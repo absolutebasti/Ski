@@ -353,6 +353,7 @@ class _SyncCardState extends ConsumerState<SyncCard> {
     final s = AccountStrings.of(context);
     final l = AppLocale.of(context);
     final status = ref.watch(accountSyncStatusProvider).value ?? const SyncStatus();
+    if (status.needsSignIn) return s.reSignIn;
     return switch (status.state) {
       SyncState.syncing => s.syncing,
       SyncState.offline => s.syncOffline,

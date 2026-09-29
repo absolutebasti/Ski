@@ -46,6 +46,7 @@ class AccountStrings {
   String get syncing => l.pick(de: 'Wird synchronisiert …', en: 'Syncing …');
   String get syncOffline => l.pick(de: 'Offline — wird nachgeholt', en: 'Offline — will catch up');
   String get syncError => l.pick(de: 'Synchronisierung fehlgeschlagen', en: 'Sync failed');
+  String get reSignIn => l.pick(de: 'Anmeldung abgelaufen – bitte neu mit Apple anmelden', en: 'Session expired – please sign in with Apple again');
   String get neverSynced => l.pick(de: 'Noch nie synchronisiert', en: 'Never synced');
 
   /// 'Zuletzt synchronisiert 14:02 · 3 ausstehend'
