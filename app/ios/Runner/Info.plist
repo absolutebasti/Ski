@@ -64,17 +64,24 @@
 		<string>de</string>
 		<string>en</string>
 	</array>
+	<!-- Usage descriptions: English base values; DE/EN prompts come from de.lproj|en.lproj/InfoPlist.strings (same keys). -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>SlopeTrack zeichnet mit deinem Standort Abfahrten, Höhenmeter und Tempo auf. / SlopeTrack uses your location to record runs, vertical and speed.</string>
+	<string>SlopeTrack uses your location to record runs, vertical and speed.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Nur so läuft die Aufnahme weiter, wenn das iPhone gesperrt in der Jacke steckt. / Only this keeps recording while the iPhone is locked in your jacket.</string>
+	<string>Only this keeps recording while the iPhone is locked in your jacket.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>Tracking</key>
-		<string>Ohne genaue Position werden Abfahrten nicht erkannt. / Without precise location, runs cannot be detected.</string>
+		<string>Without precise location, runs cannot be detected.</string>
 	</dict>
 	<key>NSMotionUsageDescription</key>
-	<string>Der Luftdrucksensor macht Höhenmeter auf den Meter genau. / The barometer makes vertical metres accurate.</string>
+	<string>The barometer makes vertical metres accurate.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Pick a photo from your library as your profile picture.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SlopeTrack does not take photos; the photo picker component requires this entry.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SlopeTrack does not record audio; the photo picker component requires this entry.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

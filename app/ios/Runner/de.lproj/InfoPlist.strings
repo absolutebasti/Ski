@@ -1,0 +1,10 @@
+/* SlopeTrack — Berechtigungstexte (Deutsch). Keys spiegeln Info.plist; Basiswerte dort sind Englisch. */
+
+"NSLocationWhenInUseUsageDescription" = "SlopeTrack zeichnet mit deinem Standort Abfahrten, Höhenmeter und Tempo auf.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "Nur so läuft die Aufnahme weiter, wenn das iPhone gesperrt in der Jacke steckt.";
+/* Purpose key of NSLocationTemporaryUsageDescriptionDictionary */
+"Tracking" = "Ohne genaue Position werden Abfahrten nicht erkannt.";
+"NSMotionUsageDescription" = "Der Luftdrucksensor macht Höhenmeter auf den Meter genau.";
+"NSPhotoLibraryUsageDescription" = "Wähle ein Foto aus deiner Mediathek als Profilbild.";
+"NSCameraUsageDescription" = "SlopeTrack macht keine Fotos; der Eintrag ist für die Foto-Auswahl technisch erforderlich.";
+"NSMicrophoneUsageDescription" = "SlopeTrack nimmt keinen Ton auf; der Eintrag ist für die Foto-Auswahl technisch erforderlich.";
