@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
+import '../social/rider_name.dart';
 import '../social/social_controls.dart';
 import 'account_providers.dart';
 import 'account_strings.dart';
@@ -26,7 +27,7 @@ class AccountRow extends ConsumerWidget {
     final user = watchAuthUser(ref);
     final profile = ref.watch(profileProvider).value;
     final signedIn = user != null;
-    final name = profile?.displayName ?? user?.displayName ?? s.title;
+    final name = signedIn ? riderName(context, profile?.displayName ?? user.displayName) : s.title;
     final initial = signedIn ? (profile?.initial ?? _initialOf(name)) : null;
 
     return Pressable(

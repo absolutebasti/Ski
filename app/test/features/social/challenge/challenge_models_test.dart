@@ -60,9 +60,9 @@ void main() {
       expect(e.doneCount, 1);
     });
 
-    test('a nameless row falls back to Skifahrer and zero counts', () {
+    test('a nameless row keeps a null name and zero counts', () {
       final e = ChallengeBoardEntry.fromJson({'rank': 1, 'user_id': 'u2', 'value': 12.5});
-      expect(e.displayName, 'Skifahrer');
+      expect(e.displayName, isNull, reason: 'the UI localises the fallback (riderName)');
       expect(e.participants, 0);
       expect(e.doneCount, 0);
       expect(e.done, isFalse);

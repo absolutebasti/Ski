@@ -5,6 +5,7 @@ import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import 'country_card.dart';
 import 'rider/rider_sheet.dart';
+import 'rider_name.dart';
 import 'social_controls.dart';
 import 'social_models.dart';
 import 'social_strings.dart';
@@ -65,8 +66,9 @@ class _PodiumColumn extends StatelessWidget {
     final s = SocialStrings.of(context);
     final (value, unit) = s.value(metric, entry.value);
     final flag = entry.countryCode;
+    final name = riderName(context, entry.displayName);
     return Semantics(
-      label: s.rowLabel(entry.rank, own ? s.you : entry.displayName, metric, entry.value),
+      label: s.rowLabel(entry.rank, own ? s.you : name, metric, entry.value),
       button: true,
       container: true,
       excludeSemantics: true,
@@ -75,7 +77,7 @@ class _PodiumColumn extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AvatarCircle(name: entry.displayName, avatarUrl: entry.avatarUrl, size: first ? 64 : 48, ring: first, accent: first),
+            AvatarCircle(name: name, avatarUrl: entry.avatarUrl, size: first ? 64 : 48, ring: first, accent: first),
             const SizedBox(height: 10),
             _RankPlate(rank: entry.rank, first: first),
             const SizedBox(height: 10),
@@ -84,7 +86,7 @@ class _PodiumColumn extends StatelessWidget {
               children: [
                 Flexible(
                   child: Text(
-                    own ? s.you : entry.displayName,
+                    own ? s.you : name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
@@ -183,8 +185,9 @@ class LeaderboardRow extends StatelessWidget {
     final lead = leaderValue;
     final delta = lead == null ? '' : s.delta(metric, lead - entry.value);
     final flag = entry.countryCode;
+    final name = riderName(context, entry.displayName);
     return Semantics(
-      label: s.rowLabel(entry.rank, entry.displayName, metric, entry.value),
+      label: s.rowLabel(entry.rank, name, metric, entry.value),
       button: onTap != null,
       container: true,
       excludeSemantics: true,
@@ -197,7 +200,7 @@ class LeaderboardRow extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(width: 32, child: Text('${entry.rank}', style: AppText.numS(c.textTertiary).copyWith(fontSize: 18))),
-                AvatarCircle(name: entry.displayName, avatarUrl: entry.avatarUrl, size: 36, accent: own),
+                AvatarCircle(name: name, avatarUrl: entry.avatarUrl, size: 36, accent: own),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -208,7 +211,7 @@ class LeaderboardRow extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Text(
-                              entry.displayName,
+                              name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: AppText.bodyText(c.textPrimary, size: 16, weight: own ? FontWeight.w700 : FontWeight.w500),
@@ -291,7 +294,7 @@ class OwnRankStrip extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(Tokens.pad, 12, Tokens.pad, 12 + bottomPadding),
             child: Row(
               children: [
-                AvatarCircle(name: name, avatarUrl: avatarUrl, size: 32, accent: true),
+                AvatarCircle(name: riderName(context, name), avatarUrl: avatarUrl, size: 32, accent: true),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

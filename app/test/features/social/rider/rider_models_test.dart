@@ -35,7 +35,8 @@ void main() {
 
   test('missing columns fall back to zero / null', () {
     final p = RiderProfile.fromJson(const {'user_id': 'x'});
-    expect(p.displayName, 'Skifahrer');
+    expect(p.displayName, isNull, reason: 'the UI localises the fallback (riderName)');
+    expect(RiderProfile.fromJson(const {'user_id': 'x', 'display_name': ' \t'}).displayName, isNull);
     expect(p.countryCode, isNull);
     expect(p.lastDayMs, isNull);
     expect(p.seasonDropM, 0);

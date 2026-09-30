@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../data/supabase/supabase_client.dart';
 import '../../../data/sync/sync_api.dart';
+import '../social_models.dart' show parseDisplayName;
 
 /// Why a moderation call could not be carried out.
 enum ModerationErrorKind { offline, notSignedIn, failed }
@@ -39,7 +40,8 @@ enum ReportReason {
 
 /// One row of the `blocked_riders()` RPC (migration 0015): a rider the
 /// signed-in user has blocked, with the name and avatar the unblock list
-/// shows. [displayName] / [avatarUrl] are null when the rider has no profile.
+/// shows. [displayName] / [avatarUrl] are null when the rider has no profile
+/// (or a blank name); the page resolves the name via `riderName`.
 class BlockedRider {
   const BlockedRider({required this.userId, this.displayName, this.avatarUrl, this.blockedAt});
 
@@ -52,12 +54,11 @@ class BlockedRider {
   static BlockedRider? fromRow(Map<String, dynamic> row) {
     final id = row['user_id'];
     if (id is! String || id.isEmpty) return null;
-    final name = row['display_name'];
     final avatar = row['avatar_url'];
     final at = row['created_at'];
     return BlockedRider(
       userId: id,
-      displayName: name is String && name.trim().isNotEmpty ? name.trim() : null,
+      displayName: parseDisplayName(row['display_name']),
       avatarUrl: avatar is String && avatar.isNotEmpty ? avatar : null,
       blockedAt: at is String ? DateTime.tryParse(at) : null,
     );

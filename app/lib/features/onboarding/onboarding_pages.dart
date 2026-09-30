@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../social/rider_name.dart';
 import '../../app/l10n/app_locale.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
@@ -633,7 +634,7 @@ class ReadyPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _IconLine(leading: GlyphIcon(Glyph.check, size: 22, color: c.accent), title: s.p3SignedIn(user!.displayName), caption: s.p3Benefit),
+            _IconLine(leading: GlyphIcon(Glyph.check, size: 22, color: c.accent), title: s.p3SignedIn(riderName(context, user!.displayName)), caption: s.p3Benefit),
             const SizedBox(height: 12),
             const Hairline(),
             const SizedBox(height: 4),

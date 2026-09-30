@@ -8,6 +8,7 @@ import '../../../app/theme/tokens.dart';
 import '../../../app/theme/typography.dart';
 import '../../../app/widgets/widgets.dart';
 import '../../../data/sync/auth_service.dart';
+import '../rider_name.dart';
 import '../social_controls.dart';
 import '../social_models.dart';
 import 'friends_api.dart';
@@ -339,9 +340,10 @@ class _Identity extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final flag = flagEmoji(friend.countryCode);
+    final name = riderName(context, friend.displayName);
     return Row(
       children: [
-        AvatarCircle(name: friend.displayName, size: 36, avatarUrl: friend.avatarUrl),
+        AvatarCircle(name: name, size: 36, avatarUrl: friend.avatarUrl),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -349,7 +351,7 @@ class _Identity extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                flag.isEmpty ? friend.displayName : '${friend.displayName} $flag',
+                flag.isEmpty ? name : '$name $flag',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppText.bodyText(c.textPrimary, size: 16, weight: FontWeight.w500),

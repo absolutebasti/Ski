@@ -20,6 +20,7 @@ import '../social/friends/friends_providers.dart';
 import '../social/friends/friends_sheet.dart';
 import '../social/moderation/display_name_policy.dart';
 import '../social/moderation/name_rules.dart';
+import '../social/rider_name.dart';
 import '../social/social_controls.dart';
 import 'account_providers.dart';
 import 'account_strings.dart';
@@ -240,7 +241,7 @@ class _ProfilePageBodyState extends ConsumerState<ProfilePageBody> {
   Widget _buildSignedIn(BuildContext context, AuthUser user) {
     final s = AccountStrings.of(context);
     final profile = ref.watch(profileProvider).value;
-    final name = profile?.displayName ?? user.displayName;
+    final name = riderName(context, profile?.displayName ?? user.displayName);
     if (!_nameFocus.hasFocus && !_nameDirty && _seededName != name) {
       // Seed (or follow a remote change) while the user is not typing.
       _seededName = name;

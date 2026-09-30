@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/app/l10n/app_locale.dart';
 import 'package:slopetrack/data/sync/auth_service.dart';
-import 'package:slopetrack/features/account/account.dart';
 import 'package:slopetrack/features/settings/settings.dart';
 import 'package:slopetrack/features/social/moderation/moderation.dart';
 import 'package:slopetrack/features/social/rider/rider.dart';
@@ -31,10 +30,13 @@ List<Override> _overrides({required FakeModerationApi mod, FakeRiderApi? rider, 
       riderApiProvider.overrideWithValue(rider),
     ];
 
-Future<void> _pump(WidgetTester tester, List<Override> overrides) async {
-  await pumpApp(tester, const BlockedUsersPage(), overrides: overrides);
+Future<void> _pump(WidgetTester tester, List<Override> overrides, {Locale locale = const Locale('de')}) async {
+  await pumpApp(tester, const BlockedUsersPage(), overrides: overrides, locale: locale);
   await tester.pumpAndSettle();
 }
+
+/// riderName's fallback under de (SOC-NAME-FALLBACK).
+const _fallbackDe = 'Skifahrer';
 
 Future<void> _settleToast(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 4));
@@ -54,7 +56,7 @@ void main() {
     expect(find.text('Lena Bergmann'), findsOneWidget, reason: 'blocked_riders resolves names although rider_profile hides blocked pairs');
     final lenaAvatar = tester.widget<AvatarCircle>(find.descendant(of: find.byKey(const ValueKey('blocked-u2')), matching: find.byType(AvatarCircle)));
     expect(lenaAvatar.avatarUrl, 'https://example.invalid/lena.png');
-    expect(find.text(Profile.fallbackName), findsOneWidget, reason: 'u3 has no profile row');
+    expect(find.text(_fallbackDe), findsOneWidget, reason: 'u3 has no profile row');
     expect(rider.calls, ['u3'], reason: 'rider_profile only for the rider blocked_riders could not name');
     expect(find.byKey(const ValueKey('blocked-empty')), findsNothing);
     expect(find.text(_de.unblock), findsNWidgets(2));
@@ -78,7 +80,7 @@ void main() {
     await _pump(tester, _overrides(mod: mod, rider: FakeRiderApi(profiles: const {'u4': _max})));
     expect(find.byType(BlockedRow), findsNWidgets(2));
     expect(find.text('Max Huber'), findsOneWidget);
-    expect(find.text(Profile.fallbackName), findsOneWidget);
+    expect(find.text(_fallbackDe), findsOneWidget);
   });
 
   testWidgets('"Freigeben" calls the api and removes the row', (tester) async {
@@ -116,7 +118,14 @@ void main() {
     final mod = FakeModerationApi(userId: 'u1', blocked: const {'u2'});
     await _pump(tester, _overrides(mod: mod, rider: null));
     expect(find.byType(BlockedRow), findsOneWidget);
-    expect(find.text(Profile.fallbackName), findsOneWidget);
+    expect(find.text(_fallbackDe), findsOneWidget);
+  });
+
+  testWidgets('the fallback name follows the app language: Skier under en', (tester) async {
+    final mod = FakeModerationApi(userId: 'u1', blocked: const {'u2'}, riders: const {'u2': BlockedRider(userId: 'u2')});
+    await _pump(tester, _overrides(mod: mod, rider: null), locale: const Locale('en'));
+    expect(find.text('Skier'), findsOneWidget);
+    expect(find.text(_fallbackDe), findsNothing);
   });
 
   testWidgets('a failing unblock keeps the row and says so', (tester) async {

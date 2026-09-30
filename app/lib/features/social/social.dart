@@ -3,6 +3,7 @@ export 'duel_card.dart';
 export 'group_providers.dart';
 export 'leaderboard_providers.dart';
 export 'leaderboard_view.dart';
+export 'rider_name.dart';
 export 'social_api.dart';
 export 'social_controls.dart';
 export 'social_models.dart';

@@ -61,7 +61,9 @@ class ChallengeBoardEntry {
 
   final int rank;
   final String userId;
-  final String displayName;
+
+  /// As delivered, blank folded to null; render via `riderName`.
+  final String? displayName;
   final String? avatarUrl;
 
   /// ISO-3166 alpha-2, upper case; null when the rider never chose a team.
@@ -78,7 +80,7 @@ class ChallengeBoardEntry {
   factory ChallengeBoardEntry.fromJson(Map<String, Object?> j) => ChallengeBoardEntry(
         rank: _int(j['rank']),
         userId: (j['user_id'] as String?) ?? '',
-        displayName: (j['display_name'] as String?) ?? 'Skifahrer',
+        displayName: parseDisplayName(j['display_name']),
         avatarUrl: j['avatar_url'] as String?,
         countryCode: (j['country_code'] as String?)?.toUpperCase(),
         value: _double(j['value']),
