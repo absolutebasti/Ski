@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../achievements/achievement_models.dart';
 import '../../achievements/medal_catalog.dart';
+import '../social_models.dart' show parseDisplayName;
 
 /// One row of the `rider_profile` RPC (supabase/migrations/0008_rider_profile.sql):
 /// the public face of another rider — identity, this season's numbers and the
@@ -38,7 +39,9 @@ class RiderProfile {
   });
 
   final String userId;
-  final String displayName;
+
+  /// As delivered, blank folded to null; render via `riderName`.
+  final String? displayName;
   final String? avatarUrl;
 
   /// Team country (`profiles.country_code`, ISO-3166 alpha-2, upper case).
@@ -75,7 +78,7 @@ class RiderProfile {
 
   factory RiderProfile.fromJson(Map<String, Object?> j) => RiderProfile(
         userId: (j['user_id'] as String?) ?? '',
-        displayName: (j['display_name'] as String?) ?? 'Skifahrer',
+        displayName: parseDisplayName(j['display_name']),
         avatarUrl: j['avatar_url'] as String?,
         countryCode: (j['country_code'] as String?)?.toUpperCase(),
         homeResortId: j['home_resort_id'] as String?,

@@ -6,6 +6,7 @@ import '../../../app/theme/typography.dart';
 import '../../../app/widgets/widgets.dart';
 import '../leaderboard_providers.dart';
 import '../rider/rider_sheet.dart';
+import '../rider_name.dart';
 import '../social_api.dart';
 import '../social_controls.dart';
 import '../social_models.dart';
@@ -155,9 +156,10 @@ class ChallengeBoardRow extends StatelessWidget {
     final c = AppColors.of(context);
     final s = SocialStrings.of(context);
     final (value, unit) = s.value(metric, entry.value);
+    final name = riderName(context, entry.displayName);
     return Semantics(
       button: onTap != null,
-      label: '${entry.rank}. ${entry.displayName} · ${s.valueLine(metric, entry.value)}',
+      label: '${entry.rank}. $name · ${s.valueLine(metric, entry.value)}',
       child: Pressable(
         onTap: onTap,
         child: SizedBox(
@@ -168,14 +170,14 @@ class ChallengeBoardRow extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(width: 32, child: Text('${entry.rank}', style: AppText.numS(c.textTertiary).copyWith(fontSize: 18))),
-                AvatarCircle(name: entry.displayName, size: 36, accent: own, avatarUrl: entry.avatarUrl),
+                AvatarCircle(name: name, size: 36, accent: own, avatarUrl: entry.avatarUrl),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(entry.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.bodyText(c.textPrimary, size: 16, weight: own ? FontWeight.w700 : FontWeight.w500)),
+                      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.bodyText(c.textPrimary, size: 16, weight: own ? FontWeight.w700 : FontWeight.w500)),
                       if (own) Text(s.you, style: AppText.caption(c.accent, size: 12)),
                     ],
                   ),

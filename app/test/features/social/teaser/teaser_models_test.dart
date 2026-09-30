@@ -12,13 +12,13 @@ void main() {
       final e = TeaserEntry.fromJson(const {'rank': '2', 'display_name': '  ', 'avatar_url': '', 'value': 1200});
       expect(e.rank, 2);
       expect(e.value, 1200.0);
-      expect(e.displayName, isNotEmpty, reason: 'a blank name falls back to the server default');
+      expect(e.displayName, isNull, reason: 'a blank name stays null; the board row localises it (riderName)');
       expect(e.avatarUrl, isNull);
 
       final bare = TeaserEntry.fromJson(const {});
       expect(bare.rank, 0);
       expect(bare.value, 0);
-      expect(bare.displayName, isNotEmpty);
+      expect(bare.displayName, isNull);
       expect(bare.avatarUrl, isNull);
     });
 

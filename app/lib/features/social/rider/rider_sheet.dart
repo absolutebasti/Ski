@@ -17,6 +17,7 @@ import '../moderation/moderation_api.dart';
 import '../moderation/moderation_providers.dart';
 import '../moderation/moderation_strings.dart';
 import '../social_api.dart';
+import '../rider_name.dart';
 import '../social_controls.dart';
 import '../social_models.dart';
 import '../social_strings.dart';
@@ -70,6 +71,7 @@ class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
     final s = RiderStrings.of(context);
     final ss = SocialStrings.of(context);
     final ds = DuelStrings.of(context);
+    final name = riderName(context, rider.displayName);
     if (api == null) {
       showToast(context, ss.error(SocialErrorKind.offline));
       return;
@@ -84,18 +86,18 @@ class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
           await api.createDuel(name: ss.duelDefaultName, day: today(), tz: ref.read(deviceTimeZoneProvider), resortId: null);
       invalidateDuels(ref);
       if (!api.supportsInvites) {
-        if (mounted) showToast(context, s.challengeToast(rider.displayName));
-        await ref.read(riderShareProvider)(text: s.challengeText(rider.displayName, duel.code), subject: s.challengeSubject);
+        if (mounted) showToast(context, s.challengeToast(name));
+        await ref.read(riderShareProvider)(text: s.challengeText(name, duel.code), subject: s.challengeSubject);
         return;
       }
       await api.inviteToDuel(userId: rider.userId, groupId: duel.id);
       if (!mounted) return;
       setState(() => _invitedInto = duel);
-      showToast(context, ds.inviteSent(rider.displayName));
+      showToast(context, ds.inviteSent(name));
     } on SocialError catch (e) {
       if (!mounted) return;
       // The shared copy of alreadyMember is 'Du bist dabei' — wrong here.
-      showToast(context, e.kind == SocialErrorKind.alreadyMember ? ds.alreadyInDuel(rider.displayName) : ss.error(e.kind));
+      showToast(context, e.kind == SocialErrorKind.alreadyMember ? ds.alreadyInDuel(name) : ss.error(e.kind));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -225,10 +227,11 @@ class _Profile extends ConsumerWidget {
     final country = ss.countryName(rider.countryCode);
     final where = [if (country.isNotEmpty) country, ?resortName].join(' · ');
     final ms = ModerationStrings.of(context);
+    final name = riderName(context, rider.displayName);
     final hasActions = blocked || onChallenge != null || onAddFriend != null || onReport != null || onBlock != null;
 
     return Semantics(
-      label: s.profileOf(rider.displayName),
+      label: s.profileOf(name),
       container: true,
       child: SingleChildScrollView(
         padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
@@ -240,14 +243,14 @@ class _Profile extends ConsumerWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                AvatarCircle(name: rider.displayName, size: 64, avatarUrl: rider.avatarUrl),
+                AvatarCircle(name: name, size: 64, avatarUrl: rider.avatarUrl),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(rider.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.headline(c.textPrimary)),
+                      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.headline(c.textPrimary)),
                       const SizedBox(height: 6),
                       Row(
                         children: [

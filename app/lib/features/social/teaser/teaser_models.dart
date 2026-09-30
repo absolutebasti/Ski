@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import '../../account/profile_service.dart' show Profile;
 import '../social_models.dart';
 
 /// One row of the `public_board_teaser` RPC (migration 0016): the signed-out
@@ -11,20 +10,20 @@ class TeaserEntry {
   const TeaserEntry({required this.rank, required this.displayName, required this.value, this.avatarUrl});
 
   final int rank;
-  final String displayName;
+
+  /// As delivered, blank folded to null; the board row resolves it via
+  /// `riderName` (SOC-NAME-FALLBACK).
+  final String? displayName;
 
   /// Season points (`days.points`, docs/GAMIFICATION.md §1).
   final double value;
   final String? avatarUrl;
 
-  /// A blank name falls back to the server column default
-  /// ([Profile.fallbackName]); SOC-NAME-FALLBACK localises it later.
   factory TeaserEntry.fromJson(Map<String, Object?> j) {
-    final name = j['display_name'];
     final avatar = j['avatar_url'];
     return TeaserEntry(
       rank: _int(j['rank']),
-      displayName: name is String && name.trim().isNotEmpty ? name.trim() : Profile.fallbackName,
+      displayName: parseDisplayName(j['display_name']),
       value: _double(j['value']),
       avatarUrl: avatar is String && avatar.isNotEmpty ? avatar : null,
     );

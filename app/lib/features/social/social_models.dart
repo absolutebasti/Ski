@@ -263,7 +263,9 @@ class LeaderboardEntry {
 
   final int rank;
   final String userId;
-  final String displayName;
+
+  /// As delivered, blank folded to null; render via `riderName`.
+  final String? displayName;
   final String? avatarUrl;
 
   /// Participant count of the whole board (server window count); 0 = unknown.
@@ -285,7 +287,7 @@ class LeaderboardEntry {
   factory LeaderboardEntry.fromJson(Map<String, Object?> j) => LeaderboardEntry(
         rank: _int(j['rank']),
         userId: (j['user_id'] as String?) ?? '',
-        displayName: (j['display_name'] as String?) ?? 'Skifahrer',
+        displayName: parseDisplayName(j['display_name']),
         avatarUrl: j['avatar_url'] as String?,
         value: _double(j['value']),
         total: _int(j['total']),
@@ -363,6 +365,15 @@ String initialsOf(String displayName) {
 
 String _firstRune(String s) => s.isEmpty ? '' : String.fromCharCodes(s.runes.take(1));
 
+/// `display_name` as every model keeps it: trimmed, null when absent or
+/// blank. No fallback here — the UI resolves it per locale (`riderName`,
+/// rider_name.dart; SOC-NAME-FALLBACK).
+String? parseDisplayName(Object? raw) {
+  if (raw is! String) return null;
+  final name = raw.trim();
+  return name.isEmpty ? null : name;
+}
+
 /// A Tagesduell — one `groups` row.
 @immutable
 class DuelGroup {
@@ -419,6 +430,11 @@ class GroupMemberStats {
   });
 
   final String userId;
+
+  /// Trimmed name; '' when the rider has none — render via `riderName`,
+  /// which treats '' like null. Still a non-null String because the duel
+  /// widgets (another session) read it directly; flip to `String?` once they
+  /// call `riderName` (SOC-NAME-FALLBACK).
   final String displayName;
   final int runCount;
   final double dropM;
@@ -428,7 +444,7 @@ class GroupMemberStats {
 
   factory GroupMemberStats.fromJson(Map<String, Object?> j) => GroupMemberStats(
         userId: (j['user_id'] as String?) ?? '',
-        displayName: (j['display_name'] as String?) ?? 'Skifahrer',
+        displayName: parseDisplayName(j['display_name']) ?? '',
         runCount: _int(j['run_count']),
         dropM: _double(j['drop_m']),
         skiDistanceM: _double(j['ski_distance_m']),

@@ -52,9 +52,9 @@ void main() {
       expect(f.createdAt, isNotNull);
     });
 
-    test('falls back for an empty name and a bad country', () {
+    test('an empty name and a bad country become null', () {
       final f = Friend.fromJson({'user_id': 'u1', 'display_name': '', 'country_code': 'AUT', 'status': 'accepted'});
-      expect(f.displayName, 'Skifahrer');
+      expect(f.displayName, isNull, reason: 'the UI localises the fallback (riderName)');
       expect(f.countryCode, isNull);
       expect(f.isAccepted, isTrue);
     });

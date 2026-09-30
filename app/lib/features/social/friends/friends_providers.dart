@@ -23,7 +23,7 @@ final friendshipsProvider = FutureProvider<List<Friend>>((ref) async {
 /// Accepted friends, name order.
 final friendsProvider = Provider<AsyncValue<List<Friend>>>((ref) {
   return ref.watch(friendshipsProvider).whenData(
-        (rows) => rows.where((f) => f.isAccepted).toList()..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase())),
+        (rows) => rows.where((f) => f.isAccepted).toList()..sort((a, b) => (a.displayName ?? '').toLowerCase().compareTo((b.displayName ?? '').toLowerCase())),
       );
 });
 

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../social_models.dart' show parseDisplayName;
+
 /// State of a `friendships` row as the client sees it.
 enum FriendshipStatus {
   pending,
@@ -22,7 +24,9 @@ class Friend {
   });
 
   final String userId;
-  final String displayName;
+
+  /// As delivered, blank folded to null; render via `riderName`.
+  final String? displayName;
   final String? avatarUrl;
 
   /// Team country (ISO-3166 alpha-2, upper case) or null.
@@ -40,7 +44,7 @@ class Friend {
 
   factory Friend.fromJson(Map<String, Object?> j) => Friend(
         userId: (j['user_id'] as String?) ?? '',
-        displayName: ((j['display_name'] as String?)?.trim().isNotEmpty ?? false) ? (j['display_name'] as String).trim() : 'Skifahrer',
+        displayName: parseDisplayName(j['display_name']),
         avatarUrl: j['avatar_url'] as String?,
         countryCode: _country(j['country_code']),
         status: FriendshipStatus.fromWire(j['status'] as String?),

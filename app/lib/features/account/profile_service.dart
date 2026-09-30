@@ -27,11 +27,11 @@ class Profile {
     this.countryCode,
   });
 
-  /// Same default as the server column.
-  static const String fallbackName = 'Skifahrer';
-
   final String id;
-  final String displayName;
+
+  /// Trimmed `display_name`; null when absent or blank. The UI resolves the
+  /// fallback per locale via `riderName` (SOC-NAME-FALLBACK).
+  final String? displayName;
   final String? avatarUrl;
   final String? homeResortId;
 
@@ -44,9 +44,7 @@ class Profile {
 
   factory Profile.fromRow(Map<String, Object?> row) => Profile(
         id: row['id'] as String,
-        displayName: (row['display_name'] as String?)?.trim().isNotEmpty == true
-            ? (row['display_name'] as String).trim()
-            : fallbackName,
+        displayName: _nameOrNull(row['display_name']),
         avatarUrl: row['avatar_url'] as String?,
         homeResortId: row['home_resort_id'] as String?,
         shareLeaderboards: row['share_leaderboards'] as bool? ?? false,
@@ -59,10 +57,16 @@ class Profile {
     return c == null || c.length != 2 ? null : c;
   }
 
-  /// First letter for the avatar circle; '?' when the name is empty.
-  String get initial {
-    final t = displayName.trim();
-    return t.isEmpty ? '?' : t.substring(0, 1).toUpperCase();
+  /// First letter for the avatar circle; null without a name.
+  String? get initial {
+    final t = displayName?.trim() ?? '';
+    return t.isEmpty ? null : t.substring(0, 1).toUpperCase();
+  }
+
+  static String? _nameOrNull(Object? raw) {
+    if (raw is! String) return null;
+    final t = raw.trim();
+    return t.isEmpty ? null : t;
   }
 
   Profile copyWith({
@@ -170,7 +174,7 @@ class ProfileService {
     };
     if (patch.isEmpty) return _cached;
 
-    final base = _cached ?? Profile(id: uid, displayName: Profile.fallbackName);
+    final base = _cached ?? Profile(id: uid, displayName: null);
     final next = base.copyWith(
       displayName: name != null && name.isNotEmpty ? name : null,
       avatarUrl: avatarUrl,
@@ -232,10 +236,9 @@ class ProfileService {
 
   void dispose() => unawaited(_changes.close());
 
-  Profile _placeholder(String uid, String? fallbackName) {
-    final name = fallbackName?.trim();
-    return Profile(id: uid, displayName: name == null || name.isEmpty ? Profile.fallbackName : name);
-  }
+  /// The local stand-in before (or without) a row: the auth name when there
+  /// is one, else no name — the UI shows the localised fallback.
+  Profile _placeholder(String uid, String? fallbackName) => Profile(id: uid, displayName: Profile._nameOrNull(fallbackName));
 }
 
 /// Explicit types on both providers — inference would otherwise chase the

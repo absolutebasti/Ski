@@ -4,17 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
-import '../account/profile_service.dart';
 import '../social/moderation/moderation_api.dart';
 import '../social/moderation/moderation_providers.dart';
 import '../social/rider/rider_providers.dart';
+import '../social/rider_name.dart';
 import '../social/social_controls.dart';
 import 'settings_strings.dart';
 
 /// Einstellungen › Konto › 'Blockierte Nutzer' (SETTINGS-ACCOUNT-2): every id
 /// from [blockedIdsProvider] as a row with avatar and name (the
 /// `blocked_riders` RPC via [blockedRidersProvider], BE-15; `rider_profile` as
-/// fallback, [Profile.fallbackName] when neither knows the rider) and
+/// fallback, `riderName`'s 'Skifahrer' / 'Skier' when neither knows the rider) and
 /// a 'Freigeben' button that unblocks through [moderationServiceProvider] —
 /// which drops [blockedIdsProvider] and every board, so the row disappears.
 /// Empty: one line 'Niemand blockiert.'.
@@ -139,8 +139,7 @@ class _BlockedRowState extends ConsumerState<BlockedRow> {
     // rider_profile only as a fallback — and only after blocked_riders answered,
     // so a normal load costs one RPC for the whole list.
     final profile = riders.hasValue && rider?.displayName == null ? ref.watch(riderProfileProvider(widget.userId)).value : null;
-    final profileName = profile?.displayName.trim();
-    final name = rider?.displayName ?? (profileName != null && profileName.isNotEmpty ? profileName : Profile.fallbackName);
+    final name = riderName(context, rider?.displayName ?? profile?.displayName);
     final avatarUrl = rider?.avatarUrl ?? profile?.avatarUrl;
     return Padding(
       key: ValueKey('blocked-${widget.userId}'),

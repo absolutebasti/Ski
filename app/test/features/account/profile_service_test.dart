@@ -21,7 +21,9 @@ void main() {
 
   test('a missing row becomes a placeholder, an existing row is mapped', () async {
     final empty = FakeProfileApi(userId: 'u1');
-    expect((await ProfileService(api: empty).load(userId: 'u1'))?.displayName, Profile.fallbackName);
+    final placeholder = await ProfileService(api: empty).load(userId: 'u1');
+    expect(placeholder?.displayName, isNull, reason: 'no literal fallback in the model; the UI localises it (riderName)');
+    expect(placeholder?.initial, isNull);
 
     final api = FakeProfileApi(userId: 'u1', row: {
       'id': 'u1',
@@ -34,6 +36,13 @@ void main() {
     expect(profile?.homeResortId, 'kitzbuehel');
     expect(profile?.shareLeaderboards, isTrue);
     expect(profile?.initial, 'S');
+  });
+
+  test('a blank display_name or auth name is kept as null, a padded one is trimmed', () async {
+    expect(Profile.fromRow(const {'id': 'u1', 'display_name': '   '}).displayName, isNull);
+    expect(Profile.fromRow(const {'id': 'u1'}).displayName, isNull);
+    expect(Profile.fromRow(const {'id': 'u1', 'display_name': ' Lena '}).displayName, 'Lena');
+    expect((await ProfileService().load(userId: 'u1', fallbackName: '  '))?.displayName, isNull);
   });
 
   test('update sends only the touched columns and clears with an explicit null', () async {
