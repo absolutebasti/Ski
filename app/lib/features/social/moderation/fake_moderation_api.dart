@@ -3,13 +3,19 @@ import 'moderation_api.dart';
 /// In-memory [ModerationApi] for widget tests, previews and the demo mode.
 /// Every call is recorded so a test can assert what the sheets asked for.
 class FakeModerationApi implements ModerationApi {
-  FakeModerationApi({this.userId, Set<String> blocked = const {}, this.failWith}) : blocked = {...blocked};
+  FakeModerationApi({this.userId, Set<String> blocked = const {}, this.failWith, Map<String, BlockedRider> riders = const {}})
+      : blocked = {...blocked},
+        riders = {...riders};
 
   @override
   final String? userId;
 
   /// Current blocks of the signed-in user.
   final Set<String> blocked;
+
+  /// Name/avatar per blocked id for [blockedRiders]; an id without an entry
+  /// comes back as a bare [BlockedRider] (no profile row).
+  final Map<String, BlockedRider> riders;
 
   /// When set, every call throws it.
   ModerationError? failWith;
@@ -19,6 +25,7 @@ class FakeModerationApi implements ModerationApi {
   final List<String> blockCalls = [];
   final List<String> unblockCalls = [];
   int blockedIdsCalls = 0;
+  int blockedRidersCalls = 0;
 
   void _guard() {
     final f = failWith;
@@ -52,5 +59,15 @@ class FakeModerationApi implements ModerationApi {
     final f = failWith;
     if (f != null) throw f;
     return userId == null ? const {} : {...blocked};
+  }
+
+  /// Newest block first, like the RPC: the reverse of [blocked]'s insertion order.
+  @override
+  Future<List<BlockedRider>> blockedRiders() async {
+    blockedRidersCalls++;
+    final f = failWith;
+    if (f != null) throw f;
+    if (userId == null) return const [];
+    return [for (final id in blocked.toList().reversed) riders[id] ?? BlockedRider(userId: id)];
   }
 }

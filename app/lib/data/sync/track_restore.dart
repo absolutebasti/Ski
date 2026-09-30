@@ -31,7 +31,8 @@ class TrackRestoreService {
       final day = await repo.day(dayId);
       if (day == null || day.status == DayStatus.active) return false;
       if (await repo.pointCount(dayId) > 0) return false;
-      final path = await api.trackPathOf(dayId);
+      // The pulled row carries track_path (SYNC-2); older rows need the round-trip.
+      final path = await repo.trackPathOf(dayId) ?? await api.trackPathOf(dayId);
       return path != null && path.isNotEmpty;
     } on Object {
       return false;

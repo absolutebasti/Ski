@@ -71,7 +71,14 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (widget.icon != null) ...[Icon(widget.icon, size: 18, color: c.textPrimary), const SizedBox(width: 10)],
-                      Flexible(child: Text(widget.text, style: AppText.bodyText(c.textPrimary, size: 15, weight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      // Live region: VoiceOver announces the toast without moving focus.
+                      Flexible(
+                        child: Semantics(
+                          liveRegion: true,
+                          container: true,
+                          child: Text(widget.text, style: AppText.bodyText(c.textPrimary, size: 15, weight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
+                      ),
                     ],
                   ),
                 ),

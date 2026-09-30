@@ -26,6 +26,7 @@ class SurfaceCard extends StatelessWidget {
     this.fill,
     this.border,
     this.clip = Clip.antiAlias,
+    this.alignment,
   });
 
   final Widget child;
@@ -34,6 +35,8 @@ class SurfaceCard extends StatelessWidget {
   final Color? fill;
   final Color? border;
   final Clip clip;
+  /// Aligns [child] inside the padded card, which then fills its bounded constraints (like Container.alignment); null = no Align wrapper.
+  final AlignmentGeometry? alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +66,7 @@ class SurfaceCard extends StatelessWidget {
               ),
             ),
           ),
-          Padding(padding: padding, child: child),
+          Padding(padding: padding, child: alignment == null ? child : Align(alignment: alignment!, child: child)),
         ],
       ),
     );

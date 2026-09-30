@@ -4,13 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/app/brand.dart';
+import 'package:slopetrack/app/widgets/widgets.dart' show AppSwitch;
 import 'package:slopetrack/core/settings.dart';
 import 'package:slopetrack/data/db/database.dart';
 import 'package:slopetrack/data/db/days_repository.dart';
 import 'package:slopetrack/data/db/providers.dart';
+import 'package:slopetrack/data/sync/auth_service.dart';
 import 'package:slopetrack/features/account/account.dart';
-import 'package:slopetrack/features/settings/settings_providers.dart';
-import 'package:slopetrack/features/settings/settings_sheet.dart';
+import 'package:slopetrack/features/settings/settings.dart';
+import 'package:slopetrack/features/social/moderation/moderation.dart';
+import 'package:slopetrack/features/social/rider/rider.dart';
 import 'package:slopetrack/platform/permission_service.dart';
 import 'package:slopetrack/platform/providers.dart';
 
@@ -93,8 +96,14 @@ void main() {
     expect(find.text('ALLGEMEIN'), findsOneWidget);
     expect(find.text('Erscheinungsbild'), findsOneWidget);
     expect(find.text('Sprache'), findsOneWidget);
-    expect(find.text('Folgt der Sprache'), findsOneWidget);
+    expect(find.text('Einheiten'), findsNothing, reason: 'no units row until a units setting exists');
+    expect(find.text('Folgt der Sprache'), findsNothing);
+    expect(find.byIcon(Icons.straighten_rounded), findsNothing);
     expect(find.byType(AccountRow), findsOneWidget);
+    // Signed out: the Konto row reads 'Konto' + the caption of the page it opens.
+    expect(find.descendant(of: find.byType(AccountRow), matching: find.text('Konto')), findsOneWidget);
+    expect(find.text('Anmelden – Sichern, Ranglisten, Freunde'), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings-blocked')), findsNothing, reason: 'blocked riders only signed in');
     expect(find.text('Standortzugriff'), findsOneWidget);
     expect(find.text('Immer'), findsOneWidget);
     expect(find.text('Benachrichtigungen'), findsOneWidget);
@@ -139,15 +148,15 @@ void main() {
   testWidgets('the notification switch asks iOS and stores the answer', (tester) async {
     await openSheet(tester, overrides: settingsOverrides(notifier: TestSettings()));
 
-    await tester.ensureVisible(find.byType(Switch));
+    await tester.ensureVisible(find.byType(AppSwitch));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.byType(AppSwitch));
     await tester.pumpAndSettle();
     final settings = readSettings(tester);
     expect(settings.notificationsOptIn, isTrue);
     expect(settings.notificationsAsked, isTrue);
 
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.byType(AppSwitch));
     await tester.pumpAndSettle();
     expect(readSettings(tester).notificationsOptIn, isFalse);
   });
@@ -167,7 +176,24 @@ void main() {
     await tester.tap(find.byType(AccountRow));
     await tester.pumpAndSettle();
     expect(opened, 1);
-    expect(find.byType(AccountSheetBody), findsNothing);
+    expect(find.byType(ProfilePage), findsNothing);
+  });
+
+  testWidgets('signed in: the Konto section gains "Blockierte Nutzer", which opens the page', (tester) async {
+    await openSheet(tester, overrides: [
+      ...settingsOverrides(notifier: TestSettings()),
+      authStateProvider.overrideWith((ref) => Stream<AuthUser?>.value(const AuthUser(id: 'u1', displayName: 'Sebastian'))),
+      profileApiProvider.overrideWithValue(null),
+      moderationApiProvider.overrideWithValue(FakeModerationApi(userId: 'u1')),
+      riderApiProvider.overrideWithValue(null),
+    ]);
+    expect(find.text('Sebastian'), findsOneWidget);
+    expect(find.text('Blockierte Nutzer'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('settings-blocked')));
+    await tester.pumpAndSettle();
+    expect(find.byType(BlockedUsersPage), findsOneWidget);
+    expect(find.text('Niemand blockiert.'), findsOneWidget);
   });
 
   testWidgets('seven taps on the footer version unlock the diagnostics row', (tester) async {
@@ -246,7 +272,8 @@ void main() {
     await openSheet(tester, overrides: settingsOverrides(notifier: TestSettings()), locale: const Locale('en'));
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Appearance'), findsOneWidget);
-    expect(find.text('Follows the language'), findsOneWidget);
+    expect(find.text('Units'), findsNothing);
+    expect(find.text('Sign in – backup, leaderboards, friends'), findsOneWidget);
     expect(find.text('Delete all data'), findsOneWidget);
     expect(find.byType(AccountRow), findsOneWidget);
   });

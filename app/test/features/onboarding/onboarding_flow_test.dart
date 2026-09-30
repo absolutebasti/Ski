@@ -296,7 +296,7 @@ void main() {
     await _primary(tester); // sign in
     final sw = find.byKey(const ValueKey('onboarding-optin'));
     expect(sw, findsOneWidget);
-    expect(tester.widget<Switch>(sw).value, isTrue);
+    expect(tester.widget<AppSwitch>(sw).value, isTrue);
     await _primary(tester); // Los geht's
     expect(find.byType(RootShell), findsOneWidget);
     expect(api.patches, isNotEmpty);

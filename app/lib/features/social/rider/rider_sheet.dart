@@ -51,15 +51,25 @@ class RiderSheetBody extends ConsumerStatefulWidget {
 class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
   bool _busy = false;
 
+  /// The duel the rider was invited into during this sheet — switches the
+  /// caption and offers 'Code teilen'.
+  DuelGroup? _invitedInto;
+
   void _retry() => ref.invalidate(riderProfileProvider(widget.userId));
 
-  /// 'Herausfordern': today's duel (reused when one exists, else created with
-  /// resortId null — the Gebiet is informational only) and its code go to the
-  /// share sheet addressed to the rider.
+  /// 'Herausfordern' (SOC-DUEL-INVITES): today's duel — reused when one
+  /// exists, else created via `create_duel` with resortId null (the Gebiet is
+  /// informational only) — then `invite_to_duel` for the rider. The invite
+  /// shows up on the rider's Rangliste; the sheet then offers 'Code teilen'.
+  ///
+  /// An api without invites ([DuelApi.supportsInvites] false — only the
+  /// SocialApi adapter) keeps the older behaviour: the code goes straight to
+  /// the share sheet.
   Future<void> _challenge(RiderProfile rider) async {
-    final api = ref.read(socialApiProvider);
+    final api = ref.read(duelApiProvider);
     final s = RiderStrings.of(context);
     final ss = SocialStrings.of(context);
+    final ds = DuelStrings.of(context);
     if (api == null) {
       showToast(context, ss.error(SocialErrorKind.offline));
       return;
@@ -70,20 +80,31 @@ class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
     }
     setState(() => _busy = true);
     try {
-      final duelApi = ref.read(duelApiProvider);
       final duel = await api.myDuel(today()) ??
-          (duelApi != null
-              ? await duelApi.createDuel(name: ss.duelDefaultName, day: today(), tz: ref.read(deviceTimeZoneProvider), resortId: null)
-              : await api.createDuel(name: ss.duelDefaultName, day: today(), resortId: null));
+          await api.createDuel(name: ss.duelDefaultName, day: today(), tz: ref.read(deviceTimeZoneProvider), resortId: null);
       invalidateDuels(ref);
-      ref.invalidate(groupBoardProvider(duel.id));
-      if (mounted) showToast(context, s.challengeToast(rider.displayName));
-      await ref.read(riderShareProvider)(text: s.challengeText(rider.displayName, duel.code), subject: s.challengeSubject);
+      if (!api.supportsInvites) {
+        if (mounted) showToast(context, s.challengeToast(rider.displayName));
+        await ref.read(riderShareProvider)(text: s.challengeText(rider.displayName, duel.code), subject: s.challengeSubject);
+        return;
+      }
+      await api.inviteToDuel(userId: rider.userId, groupId: duel.id);
+      if (!mounted) return;
+      setState(() => _invitedInto = duel);
+      showToast(context, ds.inviteSent(rider.displayName));
     } on SocialError catch (e) {
-      if (mounted) showToast(context, ss.error(e.kind));
+      if (!mounted) return;
+      // The shared copy of alreadyMember is 'Du bist dabei' — wrong here.
+      showToast(context, e.kind == SocialErrorKind.alreadyMember ? ds.alreadyInDuel(rider.displayName) : ss.error(e.kind));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// 'Code teilen' after the invite: the one duel share text (code + link).
+  Future<void> _shareCode(DuelGroup duel) async {
+    final s = RiderStrings.of(context);
+    await ref.read(riderShareProvider)(text: DuelCardShare.text(SocialStrings.of(context), duel.code), subject: s.challengeSubject);
   }
 
   /// 'Blockierung aufheben' (SOC-MODERATION): the service drops the block and
@@ -115,8 +136,11 @@ class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
   @override
   Widget build(BuildContext context) {
     final s = RiderStrings.of(context);
+    final ds = DuelStrings.of(context);
     final profile = ref.watch(riderProfileProvider(widget.userId));
     final ownId = ref.watch(socialUserIdProvider);
+    final invites = ref.watch(duelApiProvider)?.supportsInvites ?? false;
+    final invitedInto = _invitedInto;
     final actions = ref.watch(riderActionsProvider);
     return profile.when(
       loading: () => const RiderSkeleton(),
@@ -140,6 +164,8 @@ class _RiderSheetBodyState extends ConsumerState<RiderSheetBody> {
           blocked: blocked,
           onUnblock: blocked ? () => _unblock(rider) : null,
           onChallenge: self || blocked ? null : () => _challenge(rider),
+          challengeCaption: !invites ? s.challengeCaption : (invitedInto == null ? ds.inviteCaption : ds.inviteSentCaption),
+          onShareCode: self || blocked || invitedInto == null ? null : () => _shareCode(invitedInto),
           // ---- actions slot ------------------------------------------------
           // Filled by later packages via [riderActionsProvider]:
           //   SOC-FRIENDS / SOC-RANGLISTE → addFriend ('Freund hinzufügen')
@@ -162,6 +188,8 @@ class _Profile extends ConsumerWidget {
     this.blocked = false,
     this.onUnblock,
     required this.onChallenge,
+    required this.challengeCaption,
+    this.onShareCode,
     required this.onAddFriend,
     required this.onReport,
     required this.onBlock,
@@ -174,6 +202,12 @@ class _Profile extends ConsumerWidget {
   final bool blocked;
   final VoidCallback? onUnblock;
   final VoidCallback? onChallenge;
+
+  /// Line under 'Herausfordern': what the tap does / that the invite is out.
+  final String challengeCaption;
+
+  /// 'Code teilen' — set once the in-app invite went out.
+  final VoidCallback? onShareCode;
   final VoidCallback? onAddFriend;
   final VoidCallback? onReport;
   final VoidCallback? onBlock;
@@ -268,24 +302,28 @@ class _Profile extends ConsumerWidget {
             if (blocked) ...[
               Row(children: [StateChip(key: const ValueKey('rider-blocked'), text: ms.blocked, tone: ChipTone.danger)]),
               const SizedBox(height: 10),
-              SecondaryButton(key: const ValueKey('rider-unblock'), label: ms.unblock, height: 48, onPressed: busy ? null : onUnblock),
+              SecondaryButton(key: const ValueKey('rider-unblock'), label: ms.unblock, height: Tokens.buttonMd, onPressed: busy ? null : onUnblock),
             ],
             if (onChallenge != null) ...[
-              PrimaryButton(label: s.challenge, height: 52, glow: false, glyph: Glyph.podium, onPressed: busy ? null : onChallenge),
+              PrimaryButton(label: s.challenge, height: Tokens.buttonMd, glow: false, glyph: Glyph.podium, onPressed: busy ? null : onChallenge),
               const SizedBox(height: 8),
-              Text(s.challengeCaption, key: const ValueKey('rider-challenge-caption'), textAlign: TextAlign.center, style: AppText.caption(c.textTertiary, size: 12)),
+              Text(challengeCaption, key: const ValueKey('rider-challenge-caption'), textAlign: TextAlign.center, style: AppText.caption(c.textTertiary, size: 12)),
+              if (onShareCode != null) ...[
+                const SizedBox(height: 10),
+                SecondaryButton(key: const ValueKey('rider-share-code'), label: DuelStrings.of(context).shareCode, glyph: Glyph.share, height: Tokens.buttonMd, onPressed: busy ? null : onShareCode),
+              ],
             ],
             if (onAddFriend != null) ...[
               const SizedBox(height: 10),
-              SecondaryButton(label: s.addFriend, height: 48, onPressed: busy ? null : onAddFriend),
+              SecondaryButton(label: s.addFriend, height: Tokens.buttonMd, onPressed: busy ? null : onAddFriend),
             ],
             if (onReport != null || onBlock != null) ...[
               const SizedBox(height: 10),
               Row(
                 children: [
-                  if (onReport != null) Expanded(child: SecondaryButton(label: s.report, height: 44, onPressed: busy ? null : onReport)),
+                  if (onReport != null) Expanded(child: SecondaryButton(label: s.report, height: Tokens.buttonMd, onPressed: busy ? null : onReport)),
                   if (onReport != null && onBlock != null) const SizedBox(width: 10),
-                  if (onBlock != null) Expanded(child: SecondaryButton(label: s.block, height: 44, danger: true, onPressed: busy ? null : onBlock)),
+                  if (onBlock != null) Expanded(child: SecondaryButton(label: s.block, height: Tokens.buttonMd, danger: true, onPressed: busy ? null : onBlock)),
                 ],
               ),
             ],

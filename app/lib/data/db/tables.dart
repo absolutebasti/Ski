@@ -53,6 +53,10 @@ class Days extends Table {
   IntColumn get syncedAt => integer().nullable()();
   /// `device_updated_at` of the remote row we last saw, ms epoch.
   IntColumn get remoteUpdatedAt => integer().nullable()();
+  /// Storage path of the uploaded track backup (schema v3, SYNC-2). Set after
+  /// the first successful upload (or taken from a pulled row); later pushes
+  /// send it inside the day upsert instead of uploading again.
+  TextColumn get trackPath => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

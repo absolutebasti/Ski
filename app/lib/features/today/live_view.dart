@@ -169,10 +169,12 @@ class _LiveBody extends ConsumerWidget {
               Semantics(
                 button: true,
                 label: s.map,
+                // Same 64 pt as the hold capsule beside it (a 56 circle next to
+                // a 64 capsule read as two different controls).
                 child: SecondaryButton(
                   label: '',
                   glyph: Glyph.map,
-                  height: Tokens.minTarget,
+                  height: Tokens.holdButton,
                   onPressed: () => MapSheet.show(context),
                 ),
               ),

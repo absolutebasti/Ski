@@ -10,6 +10,9 @@ import 'package:path_provider/path_provider.dart';
 import '../../app/theme/surfaces.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/core.dart';
+import '../../platform/map_snapshot.dart';
+import 'map_overlay.dart';
+import 'map_region.dart';
 import 'route_colors.dart';
 import 'track_geometry.dart';
 
@@ -238,9 +241,9 @@ class ThumbnailRenderer {
   }
 
   /// Light-theme colours for the second thumbnail (AppColors.light has no context at End).
-  static const Color lightGround = Color(0xFFEDEAE2);
-  static const Color lightRoute = Color(0xFF8B6C1F);
-  static const Color lightLift = Color(0xFF9AA0A6);
+  static const Color lightGround = RouteColors.lightGround;
+  static const Color lightRoute = RouteColors.lightRun;
+  static const Color lightLift = RouteColors.lightLift;
 
   /// Writes `<id>.png` (graphite, the stored path) and `<id>_light.png`; the
   /// day card picks the light file when the light theme is active.
@@ -253,7 +256,141 @@ class ThumbnailRenderer {
   }
 
   /// Path of the light variant next to a stored dark thumbnail.
-  static String lightPathFor(String darkPath) => darkPath.replaceFirst(RegExp(r'\.png$'), '_light.png');
+  static String lightPathFor(String darkPath) => darkPath.replaceFirst(_png, '_light.png');
+
+  // --------------------------------------------------------------- map images
+
+  // Day card: 2×, route drawn natively, rendered at exactly the card's size
+  // (MapCardGeometry: screen − 41 pt wide, 176 pt high at the default text
+  // size) so it is shown 1:1 with the Apple wordmark whole in the visible
+  // bottom-left corner. The route sits in the top band (MapCardGeometry.routeInset).
+
+  /// Tagesbilanz ground height (the route block is 300 pt high); the width is
+  /// the screen's, so the image is shown 1:1 with the Apple wordmark whole in
+  /// the bottom-left. No route: the block draws its animated route over it.
+  static const double heroHeight = 300;
+  static Size heroSizeFor(double screenWidth) => Size(screenWidth, heroHeight);
+  /// Same as RoutePainter.defaultInset: the route clears the date plate, which
+  /// sits above the wordmark strip. The route block projects through the
+  /// stored MapFrame, so any region lines up.
+  static const EdgeInsets heroInset = EdgeInsets.fromLTRB(34, 34, 34, 130);
+
+  static const double mapScale = 2;
+  static const double mapRouteWidth = 2.5;
+
+  static final RegExp _png = RegExp(r'\.png$');
+
+  /// `<id>_map.png` next to the stored `<id>.png`.
+  static String mapPathFor(String basePath) => basePath.replaceFirst(_png, '_map.png');
+
+  /// `<id>_hero.png` next to the stored `<id>.png`.
+  static String heroPathFor(String basePath) => basePath.replaceFirst(_png, '_hero.png');
+
+  /// `<id>_hero.json` — the region and size the hero image was rendered for.
+  static String heroFramePathFor(String basePath) => basePath.replaceFirst(_png, '_hero.json');
+
+  /// `<id>.png` for a `<id>_map.png` path.
+  static String basePathForMap(String mapPath) => mapPath.replaceFirst(RegExp(r'_map\.png$'), '.png');
+
+  /// The area the card image shows: the track's bounds padded 20 % (min
+  /// 1.5 km per axis), else the resort centre ± its radius (1–5 km, min
+  /// 1.5 km), else null.
+  static GeoBounds? mapBounds(DayDetail detail, {Resort? resort}) {
+    final track = MapGeo.trackBounds(detail.points);
+    if (track != null) return MapGeo.pad(track);
+    if (resort != null) return MapGeo.pad(MapGeo.resortBounds(resort), pad: 0);
+    return null;
+  }
+
+  /// Apple-Maps satellite images for [detail] via [source] (iOS MapKit):
+  /// `thumbs/<id>_map.png` for the day card (bounds from [mapBounds], route
+  /// simplified to ≤ 500 points and drawn natively) and, when the day has a
+  /// track, `thumbs/<id>_hero.png` + `_hero.json` for the Tagesbilanz ground
+  /// (bare imagery framed like RoutePainter). Returns the `_map.png` path, or
+  /// null when no card image came back (offline, not iOS, no track and no
+  /// resort) — the path PNGs from [renderBoth] stay the fallback and the
+  /// missing `_map.png` is the retry signal (see MapImages). Never throws.
+  ///
+  /// [cardSize] / [heroSize] default to this phone's card and hero geometry
+  /// (MapCardGeometry.current()).
+  static Future<String?> renderMap(
+    DayDetail detail, {
+    Resort? resort,
+    MapSnapshotSource source = const MethodChannelMapSnapshotSource(),
+    Directory? dir,
+    Size? cardSize,
+    Size? heroSize,
+  }) async {
+    try {
+      final bounds = mapBounds(detail, resort: resort);
+      if (bounds == null) return null;
+      if (cardSize == null || heroSize == null) {
+        final (screenWidth, textScaler) = MapCardGeometry.current();
+        cardSize ??= MapCardGeometry.imageSize(screenWidth: screenWidth, textScaler: textScaler);
+        heroSize ??= heroSizeFor(screenWidth);
+      }
+      final mapSize = cardSize;
+      final cardRegion = MapGeo.fit(bounds, mapSize, inset: MapCardGeometry.routeInset(mapSize));
+      final heroContent = MapGeo.trackBounds(detail.points, acceptedOnly: false);
+      final heroRegion = heroContent == null ? null : MapGeo.fit(MapGeo.pad(heroContent), heroSize, inset: heroInset);
+
+      MapSnapshotRequest request(MapRegion r, Size size, List<(double, double)> route) => MapSnapshotRequest(
+            lat: r.lat,
+            lon: r.lon,
+            latSpan: r.latSpan,
+            lonSpan: r.lonSpan,
+            width: size.width,
+            height: size.height,
+            scale: mapScale,
+            route: route,
+            routeColor: Tokens.champagne.toARGB32(),
+            routeWidth: mapRouteWidth,
+          );
+      final answers = await Future.wait([
+        _safe(source, request(cardRegion, mapSize, MapGeo.simplifiedRoute(detail.points))),
+        if (heroRegion != null) _safe(source, request(heroRegion, heroSize, const [])),
+      ]);
+      final card = answers.first;
+      final hero = answers.length > 1 ? answers[1] : null;
+      if (card == null) return null;
+
+      final root = dir ?? await getApplicationDocumentsDirectory();
+      final thumbs = Directory('${root.path}/thumbs');
+      if (!thumbs.existsSync()) thumbs.createSync(recursive: true);
+      final base = '${thumbs.path}/${detail.day.id}.png';
+      final mapPath = mapPathFor(base);
+      await File(mapPath).writeAsBytes(card, flush: true);
+      if (hero != null && heroRegion != null) {
+        await File(heroPathFor(base)).writeAsBytes(hero, flush: true);
+        await File(heroFramePathFor(base)).writeAsString(MapFrame(region: heroRegion, size: heroSize).encode(), flush: true);
+      }
+      return mapPath;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<Uint8List?> _safe(MapSnapshotSource source, MapSnapshotRequest r) async {
+    try {
+      final bytes = await source.snapshot(r);
+      return bytes == null || bytes.isEmpty ? null : bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// The stored hero frame for a day's `<id>.png`, when image and frame exist.
+  static MapFrame? heroFrameFor(String? basePath) {
+    if (basePath == null || basePath.isEmpty) return null;
+    try {
+      final img = File(heroPathFor(basePath));
+      final json = File(heroFramePathFor(basePath));
+      if (!img.existsSync() || !json.existsSync()) return null;
+      return MapFrame.decode(json.readAsStringSync());
+    } on FileSystemException {
+      return null;
+    }
+  }
 }
 
 /// Same drawing as the PNG, live in a list card (for days without a file yet).

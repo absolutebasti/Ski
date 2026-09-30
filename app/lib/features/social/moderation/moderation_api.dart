@@ -37,6 +37,43 @@ enum ReportReason {
   }
 }
 
+/// One row of the `blocked_riders()` RPC (migration 0015): a rider the
+/// signed-in user has blocked, with the name and avatar the unblock list
+/// shows. [displayName] / [avatarUrl] are null when the rider has no profile.
+class BlockedRider {
+  const BlockedRider({required this.userId, this.displayName, this.avatarUrl, this.blockedAt});
+
+  final String userId;
+  final String? displayName;
+  final String? avatarUrl;
+  final DateTime? blockedAt;
+
+  /// Null for a row without a `user_id`.
+  static BlockedRider? fromRow(Map<String, dynamic> row) {
+    final id = row['user_id'];
+    if (id is! String || id.isEmpty) return null;
+    final name = row['display_name'];
+    final avatar = row['avatar_url'];
+    final at = row['created_at'];
+    return BlockedRider(
+      userId: id,
+      displayName: name is String && name.trim().isNotEmpty ? name.trim() : null,
+      avatarUrl: avatar is String && avatar.isNotEmpty ? avatar : null,
+      blockedAt: at is String ? DateTime.tryParse(at) : null,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is BlockedRider && other.userId == userId && other.displayName == displayName && other.avatarUrl == avatarUrl && other.blockedAt == blockedAt;
+
+  @override
+  int get hashCode => Object.hash(userId, displayName, avatarUrl, blockedAt);
+
+  @override
+  String toString() => 'BlockedRider($userId, $displayName)';
+}
+
 /// Every remote call of Melden / Blockieren, behind an interface so the sheets
 /// are testable without Supabase ([FakeModerationApi] in fake_moderation_api.dart).
 ///
@@ -59,6 +96,11 @@ abstract class ModerationApi {
 
   /// Ids the signed-in user has blocked; empty while signed out.
   Future<Set<String>> blockedIds();
+
+  /// The blocked riders with name and avatar, newest block first (RPC
+  /// `blocked_riders`, migration 0015 — `rider_profile` hides blocked pairs
+  /// and `profiles` is own-row). Empty while signed out.
+  Future<List<BlockedRider>> blockedRiders();
 }
 
 /// Supabase implementation; 10 s timeout, network failures become
@@ -104,6 +146,17 @@ class SupabaseModerationApi implements ModerationApi {
           for (final r in rows)
             if (r['blocked_id'] is String) r['blocked_id'] as String,
         };
+      });
+
+  @override
+  Future<List<BlockedRider>> blockedRiders() => _guard(() async {
+        if (userId == null) return const <BlockedRider>[];
+        final rows = await _client.rpc<dynamic>('blocked_riders');
+        if (rows is! List) return const <BlockedRider>[];
+        return [
+          for (final r in rows)
+            if (r is Map) ?BlockedRider.fromRow(Map<String, dynamic>.from(r)),
+        ];
       });
 
   String _requireUser() {

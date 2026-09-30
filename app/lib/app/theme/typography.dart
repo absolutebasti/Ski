@@ -43,8 +43,29 @@ class AppText {
   /// The overline: 11 pt, +0.10 em, uppercase (callers pass uppercase text).
   static TextStyle label(Color c, {double size = 11}) =>
       TextStyle(fontFamily: body, fontSize: size, fontWeight: FontWeight.w700, letterSpacing: size * 0.10, height: 1.1, color: c);
-  static TextStyle button(Color c, {double size = 17}) =>
-      TextStyle(fontFamily: body, fontSize: size, fontWeight: FontWeight.w700, height: 1.0, letterSpacing: size * 0.01, color: c);
+  /// Control label. `leadingDistribution.even` splits Inter's negative
+  /// leading at height 1.0 evenly, which puts the cap height on the optical
+  /// centre of a capsule (proportional leading sat it ~1 pt high).
+  static TextStyle button(Color c, {double size = 17}) => TextStyle(
+        fontFamily: body,
+        fontSize: size,
+        fontWeight: FontWeight.w700,
+        height: 1.0,
+        leadingDistribution: TextLeadingDistribution.even,
+        letterSpacing: size * 0.01,
+        color: c,
+      );
+  /// Sentence-case pill text (chips, recording pill). The +0.10 em overline
+  /// tracking is reserved for UPPERCASE labels; on mixed case it reads spaced out.
+  static TextStyle chip(Color c, {double size = 13, FontWeight weight = FontWeight.w600}) => TextStyle(
+        fontFamily: body,
+        fontSize: size,
+        fontWeight: weight,
+        height: 1.0,
+        leadingDistribution: TextLeadingDistribution.even,
+        letterSpacing: size * 0.01,
+        color: c,
+      );
 
   // ---- Legacy names (v1 call sites) ----
   static TextStyle hero(Color c, {double size = 88}) => _num(c, size, height: 0.9, track: -0.04);

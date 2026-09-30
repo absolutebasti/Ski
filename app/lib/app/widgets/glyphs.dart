@@ -3,7 +3,48 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// The app's own 24 pt glyph set (stroke 1.75, round caps, 24 grid).
-enum Glyph { chevron, slalom, chairlift, gauge, flake, crest, calendar, podium, play, stop, map, gear, share, trash, chevronRight, back, close, locate }
+enum Glyph {
+  chevron,
+  slalom,
+  chairlift,
+  gauge,
+  flake,
+  crest,
+  calendar,
+  podium,
+  play,
+  stop,
+  map,
+  gear,
+  share,
+  trash,
+  chevronRight,
+  back,
+  close,
+  locate,
+  /// Two riders side by side (Freunde, Duell).
+  friends,
+  /// Disc with eight rays (Bergwetter, Erscheinungsbild hell).
+  sun,
+  /// Tick (erledigt, erlaubt).
+  check,
+  /// Magnifier (Gebiets- und Fahrersuche).
+  search,
+  /// One rider bust (Konto, Profil).
+  person,
+  /// Bell (Mitteilungen).
+  bell,
+  /// Padlock (privat, gesperrt).
+  lock,
+  /// Battery with a charge bar (Akku-Prognose, Stromsparmodus).
+  battery,
+  /// Walking figure (Bewegung & Fitness, zu Fuss).
+  walk,
+  /// Two bars; filled like [play] and [stop].
+  pause,
+  /// Satellite with signal arcs (GPS-Qualität).
+  satellite,
+}
 
 class GlyphIcon extends StatelessWidget {
   const GlyphIcon(this.glyph, {super.key, this.size = 24, this.color, this.strokeWidth});
@@ -164,6 +205,91 @@ class GlyphPainter extends CustomPainter {
         canvas.drawLine(o(12, 18), o(12, 21.5), p);
         canvas.drawLine(o(2.5, 12), o(6, 12), p);
         canvas.drawLine(o(18, 12), o(21.5, 12), p);
+      case Glyph.friends: // two riders side by side, the right one half a step behind
+        canvas.drawCircle(o(9, 8), 3.25 * s, p);
+        path.moveTo(2.5 * s, 19.5 * s);
+        path.quadraticBezierTo(2.5 * s, 14.5 * s, 9 * s, 14.5 * s);
+        path.quadraticBezierTo(15.5 * s, 14.5 * s, 15.5 * s, 19.5 * s);
+        canvas.drawPath(path, p);
+        canvas.drawArc(Rect.fromCircle(center: o(16, 8.5), radius: 2.75 * s), -math.pi * 0.62, math.pi * 1.24, false, p);
+        final behind = Path()
+          ..moveTo(17.5 * s, 14.6 * s)
+          ..quadraticBezierTo(21.5 * s, 15.4 * s, 21.5 * s, 19.5 * s);
+        canvas.drawPath(behind, p);
+      case Glyph.sun: // disc with eight rays
+        canvas.drawCircle(o(12, 12), 4 * s, p);
+        for (var i = 0; i < 8; i++) {
+          final a = i * math.pi / 4;
+          canvas.drawLine(Offset(12 * s + 7 * s * math.cos(a), 12 * s + 7 * s * math.sin(a)), Offset(12 * s + 9.5 * s * math.cos(a), 12 * s + 9.5 * s * math.sin(a)), p);
+        }
+      case Glyph.check:
+        path.moveTo(5 * s, 12.5 * s);
+        path.lineTo(10 * s, 17.5 * s);
+        path.lineTo(19 * s, 7 * s);
+        canvas.drawPath(path, p);
+      case Glyph.search:
+        canvas.drawCircle(o(10.5, 10.5), 6 * s, p);
+        canvas.drawLine(o(15, 15), o(20, 20), p);
+      case Glyph.person:
+        canvas.drawCircle(o(12, 8), 3.5 * s, p);
+        path.moveTo(5 * s, 20 * s);
+        path.quadraticBezierTo(5 * s, 14.5 * s, 12 * s, 14.5 * s);
+        path.quadraticBezierTo(19 * s, 14.5 * s, 19 * s, 20 * s);
+        canvas.drawPath(path, p);
+      case Glyph.bell:
+        path.moveTo(6 * s, 17 * s);
+        path.lineTo(6 * s, 11 * s);
+        path.cubicTo(6 * s, 3.5 * s, 18 * s, 3.5 * s, 18 * s, 11 * s);
+        path.lineTo(18 * s, 17 * s);
+        canvas.drawPath(path, p);
+        canvas.drawLine(o(4, 17), o(20, 17), p);
+        canvas.drawLine(o(12, 3), o(12, 5.2), p);
+        final clapper = Path()
+          ..moveTo(10 * s, 19.8 * s)
+          ..quadraticBezierTo(12 * s, 21.8 * s, 14 * s, 19.8 * s);
+        canvas.drawPath(clapper, p);
+      case Glyph.lock:
+        canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(5 * s, 10.5 * s, 14 * s, 10 * s), Radius.circular(2.5 * s)), p);
+        path.moveTo(8 * s, 10.5 * s);
+        path.lineTo(8 * s, 8 * s);
+        path.cubicTo(8 * s, 2.7 * s, 16 * s, 2.7 * s, 16 * s, 8 * s);
+        path.lineTo(16 * s, 10.5 * s);
+        canvas.drawPath(path, p);
+        canvas.drawCircle(o(12, 15.5), 1.4 * s, fill);
+      case Glyph.battery: // body, terminal nub, charge bar
+        canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(2.5 * s, 7.5 * s, 16.5 * s, 9 * s), Radius.circular(2.5 * s)), p);
+        canvas.drawLine(o(21.5, 10.5), o(21.5, 13.5), p);
+        canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(5 * s, 10 * s, 7.5 * s, 4 * s), Radius.circular(1 * s)), fill);
+      case Glyph.walk: // walking figure, mid-stride
+        canvas.drawCircle(o(13.5, 4.5), 1.9 * s, p);
+        canvas.drawLine(o(12.5, 8.5), o(11.5, 14), p);
+        path.moveTo(11.5 * s, 14 * s);
+        path.lineTo(14.5 * s, 17 * s);
+        path.lineTo(15.5 * s, 21 * s);
+        path.moveTo(11.5 * s, 14 * s);
+        path.lineTo(10 * s, 17.5 * s);
+        path.lineTo(7.5 * s, 21 * s);
+        path.moveTo(8 * s, 13 * s);
+        path.lineTo(9 * s, 10.5 * s);
+        path.lineTo(12.5 * s, 8.5 * s);
+        path.lineTo(15 * s, 11.5 * s);
+        path.lineTo(17.5 * s, 12.5 * s);
+        canvas.drawPath(path, p);
+      case Glyph.pause:
+        canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(6.5 * s, 5.5 * s, 4 * s, 13 * s), Radius.circular(1.25 * s)), fill);
+        canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(13.5 * s, 5.5 * s, 4 * s, 13 * s), Radius.circular(1.25 * s)), fill);
+      case Glyph.satellite: // body with two panels on the diagonal, signal arcs bottom-right
+        canvas.save();
+        canvas.translate(10.5 * s, 10.5 * s);
+        canvas.rotate(-math.pi / 4);
+        canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(-2.5 * s, -2.5 * s, 5 * s, 5 * s), Radius.circular(1 * s)), p);
+        canvas.drawRect(Rect.fromLTWH(-9.5 * s, -2 * s, 5 * s, 4 * s), p);
+        canvas.drawRect(Rect.fromLTWH(4.5 * s, -2 * s, 5 * s, 4 * s), p);
+        canvas.drawLine(o(-4.5, 0), o(-2.5, 0), p);
+        canvas.drawLine(o(2.5, 0), o(4.5, 0), p);
+        canvas.restore();
+        canvas.drawArc(Rect.fromCircle(center: o(10.5, 10.5), radius: 7.5 * s), math.pi / 4 - 0.5, 1.0, false, p);
+        canvas.drawArc(Rect.fromCircle(center: o(10.5, 10.5), radius: 11 * s), math.pi / 4 - 0.4, 0.8, false, p);
     }
   }
 

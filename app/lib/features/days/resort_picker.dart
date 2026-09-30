@@ -154,7 +154,7 @@ class _Row extends StatelessWidget {
                 ],
               ),
             ),
-            if (selected) GlyphIcon(Glyph.crest, size: 16, color: c.accent) else GlyphIcon(Glyph.chevronRight, size: 16, color: c.textTertiary),
+            if (selected) GlyphIcon(Glyph.crest, size: 16, color: c.accent) else const RowChevron(),
           ],
         ),
       ),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -26,6 +27,34 @@ class SyncNeedsSignIn implements Exception {
   String toString() => 'SyncNeedsSignIn: $message';
 }
 
+/// Keyset position for [SyncApi.fetchDays]: the `(updated_at, id)` of the last
+/// row of the previous page. `updatedAt` is the server's own string so the
+/// comparison is exact (Postgres keeps microseconds, the ms cursor does not).
+@immutable
+class PageKey {
+  const PageKey({required this.updatedAt, required this.id});
+
+  final String updatedAt;
+  final String id;
+
+  /// The key after [row], null when the row has no id.
+  static PageKey? of(Map<String, Object?> row) {
+    final id = row['id'] as String?;
+    final updatedAt = row['updated_at'];
+    if (id == null || updatedAt == null) return null;
+    return PageKey(updatedAt: updatedAt is DateTime ? updatedAt.toIso8601String() : '$updatedAt', id: id);
+  }
+
+  @override
+  bool operator ==(Object other) => other is PageKey && other.updatedAt == updatedAt && other.id == id;
+
+  @override
+  int get hashCode => Object.hash(updatedAt, id);
+
+  @override
+  String toString() => 'PageKey($updatedAt, $id)';
+}
+
 /// Every remote call of WP-14 goes through this interface so the sync loop can
 /// be tested without a Supabase client.
 abstract class SyncApi {
@@ -35,10 +64,13 @@ abstract class SyncApi {
   /// Inserts or updates one `days` row (snake_case keys, server column names).
   Future<void> upsertDay(Map<String, Object?> row);
 
-  /// One page of own `days` rows with `updated_at > sinceMs` (all rows when
-  /// null), tombstones included, ordered by `updated_at, id`. The caller keeps
-  /// paging while a page is full.
-  Future<List<Map<String, Object?>>> fetchDays({int? sinceMs, int offset = 0, int limit = 500});
+  /// One page of own `days` rows, tombstones included, ordered by
+  /// `(updated_at, id)`. The first page takes `updated_at > sinceMs` (all rows
+  /// when null); every further page passes the [after] key of the previous
+  /// page's last row (keyset paging, SYNC-2) so a row that changes mid-pull
+  /// can never shift another row out of the window. The caller keeps paging
+  /// while a page is full.
+  Future<List<Map<String, Object?>>> fetchDays({int? sinceMs, PageKey? after, int limit = 500});
 
   /// Uploads the gzip track backup, returns the storage path.
   Future<String> uploadTrack(String dayId, List<int> gzipBytes);
@@ -81,14 +113,27 @@ class SupabaseSyncApi implements SyncApi {
       _guard(() => _client.from('days').upsert(row, onConflict: 'id'));
 
   @override
-  Future<List<Map<String, Object?>>> fetchDays({int? sinceMs, int offset = 0, int limit = 500}) => _guard(() async {
+  Future<List<Map<String, Object?>>> fetchDays({int? sinceMs, PageKey? after, int limit = 500}) => _guard(() async {
         var query = _client.from('days').select();
-        if (sinceMs != null) {
+        if (after != null) {
+          query = query.or(keysetFilter(after));
+        } else if (sinceMs != null) {
           query = query.gt('updated_at', DateTime.fromMillisecondsSinceEpoch(sinceMs, isUtc: true).toIso8601String());
         }
-        final rows = await query.order('updated_at', ascending: true).order('id', ascending: true).range(offset, offset + limit - 1);
+        final rows = await query.order('updated_at', ascending: true).order('id', ascending: true).limit(limit);
         return [for (final r in rows) Map<String, Object?>.from(r)];
       });
+
+  /// PostgREST `or=` body for `(updated_at, id) > (after.updatedAt, after.id)`.
+  /// Values are double-quoted: timestamps carry '.', ':' and '+', which are
+  /// reserved in the filter grammar.
+  static String keysetFilter(PageKey after) {
+    final ts = _quote(after.updatedAt);
+    final id = _quote(after.id);
+    return 'updated_at.gt.$ts,and(updated_at.eq.$ts,id.gt.$id)';
+  }
+
+  static String _quote(String v) => '"${v.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"';
 
   @override
   Future<String> uploadTrack(String dayId, List<int> gzipBytes) => _guard(() async {

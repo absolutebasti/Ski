@@ -133,7 +133,7 @@ class _ChallengeBoardSheetBodyState extends ConsumerState<ChallengeBoardSheetBod
         // ---- leave --------------------------------------------------------
         if (joined && !ended) ...[
           const SizedBox(height: Tokens.sectionGap),
-          SecondaryButton(key: const ValueKey('challenge-leave'), label: cs.leave, height: 48, danger: true, onPressed: _busy ? null : _leave),
+          SecondaryButton(key: const ValueKey('challenge-leave'), label: cs.leave, height: Tokens.buttonMd, danger: true, onPressed: _busy ? null : _leave),
         ],
       ],
     );

@@ -150,11 +150,11 @@ class _ChallengeCardState extends ConsumerState<ChallengeCard> {
               children: [
                 StateChip(text: s.challengeIn, tone: ChipTone.accent, icon: Icons.check_rounded),
                 const Spacer(),
-                SecondaryButton(key: const ValueKey('challenge-board'), label: cs.openBoard, glyph: Glyph.podium, height: 44, onPressed: _openBoard),
+                SecondaryButton(key: const ValueKey('challenge-board'), label: cs.openBoard, glyph: Glyph.podium, height: Tokens.buttonSm, onPressed: _openBoard),
               ],
             )
           else
-            PrimaryButton(key: const ValueKey('challenge-join'), label: s.challengeJoin, height: 52, glow: false, onPressed: _busy ? null : _join),
+            PrimaryButton(key: const ValueKey('challenge-join'), label: s.challengeJoin, height: Tokens.buttonMd, glow: false, onPressed: _busy ? null : _join),
         ],
       ),
     );

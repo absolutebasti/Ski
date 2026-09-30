@@ -24,24 +24,33 @@ select u.id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authentic
 from t_ids u where u.k in ('anna','bernd','chris');
 insert into public.profiles (id, display_name, share_leaderboards, country_code) values
   (pg_temp.id('anna'), 'Anna', true, 'DE'), (pg_temp.id('bernd'), 'Bernd', true, 'AT'), (pg_temp.id('chris'), 'Chris', false, 'DE');
--- Bernd: finished day 2026-01-15 in kitzbuehel. Group bound to 'ischgl' → must be ignored.
+-- All fixtures hang off the duel day D = current_date - 1 (yesterday, server clock = UTC):
+--  * D lies inside the 0015 live_days window (current_date ± 1), so no constraint is lifted;
+--  * every started_at is ≤ now() + 1 day (0006 days_started_not_future) — the latest one,
+--    D 20:00 Denver, is at most 03:00 UTC of today.
+-- No ALTER TABLE / DISABLE TRIGGER: the file takes no table lock beyond ordinary row writes.
+create function pg_temp.d() returns date language sql stable as $$ select current_date - 1; $$;
+create function pg_temp.at(p_time time, p_tz text) returns timestamptz language sql stable as $$
+  select (pg_temp.d() + p_time) at time zone p_tz;
+$$;
+-- Bernd: finished day D in kitzbuehel. Group bound to 'ischgl' → must be ignored.
 insert into public.days (id, user_id, started_at, ended_at, resort_id, resort_name, season_key, country_code, run_count, drop_m, ski_distance_m, max_speed_ms, ski_ms, elapsed_ms, device_updated_at)
-values (gen_random_uuid(), pg_temp.id('bernd'), '2026-01-15 09:30+01', '2026-01-15 15:30+01', 'kitzbuehel', 'Kitzbühel', '2025/26', 'AT', 12, 4000, 30000, 20, 4000000, 21600000, now());
+values (gen_random_uuid(), pg_temp.id('bernd'), pg_temp.at('09:30', 'Europe/Vienna'), pg_temp.at('15:30', 'Europe/Vienna'), 'kitzbuehel', 'Kitzbühel', '2025/26', 'AT', 12, 4000, 30000, 20, 4000000, 21600000, now());
 insert into public.groups (id, code, name, day, resort_id, created_by, max_members)
-values (pg_temp.id('duel'), 'TST009', 'Testduell', '2026-01-15', 'ischgl', pg_temp.id('anna'), 3),
-       (pg_temp.id('duel2'), 'TST010', 'Älteres Duell', '2026-01-10', null, pg_temp.id('anna'), 3);
+values (pg_temp.id('duel'), 'TST009', 'Testduell', pg_temp.d(), 'ischgl', pg_temp.id('anna'), 3),
+       (pg_temp.id('duel2'), 'TST010', 'Älteres Duell', pg_temp.d() - 5, null, pg_temp.id('anna'), 3);
 insert into public.groups (id, code, name, day, resort_id, created_by, max_members, tz)
-values (pg_temp.id('duelco'), 'TST011', 'Colorado', '2026-01-15', null, pg_temp.id('anna'), 3, 'America/Denver');
+values (pg_temp.id('duelco'), 'TST011', 'Colorado', pg_temp.d(), null, pg_temp.id('anna'), 3, 'America/Denver');
 insert into public.group_members (group_id, user_id) values
   (pg_temp.id('duel'), pg_temp.id('anna')), (pg_temp.id('duel'), pg_temp.id('bernd')),
   (pg_temp.id('duel2'), pg_temp.id('anna')), (pg_temp.id('duel2'), pg_temp.id('bernd')),
   (pg_temp.id('duelco'), pg_temp.id('anna')), (pg_temp.id('duelco'), pg_temp.id('bernd'));
--- Anna: live row only.
+-- Anna: live row only (updated_at is overwritten by the server clock).
 insert into public.live_days (user_id, day, resort_id, drop_m, run_count, ski_distance_m, max_speed_ms, updated_at)
-values (pg_temp.id('anna'), '2026-01-15', 'kitzbuehel', 1200, 5, 9000, 15, '2000-01-01');
--- Bernd's Colorado day: 2026-01-15 20:00 Denver = 2026-01-16 04:00 Vienna.
+values (pg_temp.id('anna'), pg_temp.d(), 'kitzbuehel', 1200, 5, 9000, 15, '2000-01-01');
+-- Bernd's Colorado day: D 20:00 Denver = D+1 03:00–05:00 Vienna (DST offsets) → not on D in Vienna.
 insert into public.days (id, user_id, started_at, ended_at, resort_id, resort_name, season_key, country_code, run_count, drop_m, ski_distance_m, max_speed_ms, ski_ms, elapsed_ms, device_updated_at)
-values (gen_random_uuid(), pg_temp.id('bernd'), '2026-01-15 20:00-07', '2026-01-15 23:00-07', 'aspen', 'Aspen', '2025/26', 'US', 3, 777, 5000, 14, 1000000, 10800000, now());
+values (gen_random_uuid(), pg_temp.id('bernd'), pg_temp.at('20:00', 'America/Denver'), pg_temp.at('23:00', 'America/Denver'), 'aspen', 'Aspen', '2025/26', 'US', 3, 777, 5000, 14, 1000000, 10800000, now());
 
 -- T1 live row for Anna, finished for Bernd; then Anna's finished day wins.
 do $$
@@ -57,7 +66,7 @@ begin
   if r.drop_m <> 4000 or r.is_live then raise exception 'T1: bernd finished row wrong: %', r; end if;
   reset role;
   insert into public.days (id, user_id, started_at, ended_at, resort_id, resort_name, season_key, country_code, run_count, drop_m, ski_distance_m, max_speed_ms, ski_ms, elapsed_ms, device_updated_at)
-  values (gen_random_uuid(), pg_temp.id('anna'), '2026-01-15 09:00+01', '2026-01-15 15:00+01', 'kitzbuehel', 'Kitzbühel', '2025/26', 'AT', 10, 3000, 20000, 18, 3600000, 21600000, now());
+  values (gen_random_uuid(), pg_temp.id('anna'), pg_temp.at('09:00', 'Europe/Vienna'), pg_temp.at('15:00', 'Europe/Vienna'), 'kitzbuehel', 'Kitzbühel', '2025/26', 'AT', 10, 3000, 20000, 18, 3600000, 21600000, now());
   perform pg_temp.login(pg_temp.id('anna'));
   select * into r from public.group_board(pg_temp.id('duel')) where user_id = pg_temp.id('anna');
   if r.drop_m <> 3000 or r.is_live then raise exception 'T1: finished day must win: %', r; end if;
@@ -94,7 +103,7 @@ begin
   select count(*) into n from public.my_duels(20) where code like 'TST0%';
   if n <> 3 then raise exception 'T4: expected 3 duels, got %', n; end if;
   select day into first_day from public.my_duels(20) where code like 'TST0%' limit 1;
-  if first_day <> '2026-01-15' then raise exception 'T4: newest first, got %', first_day; end if;
+  if first_day <> pg_temp.d() then raise exception 'T4: newest first, got %', first_day; end if;
   select * into r from public.my_duels(20) where code = 'TST009';
   if r.member_count <> 2 or jsonb_array_length(r.board) <> 2 or r.tz <> 'Europe/Vienna' then raise exception 'T4: row wrong: %', r; end if;
   if (r.board->0->>'user_id')::uuid <> pg_temp.id('bernd') then raise exception 'T4: board must be sorted by drop_m desc: %', r.board; end if;
@@ -107,19 +116,36 @@ begin
   perform pg_temp.pass('T4 my_duels newest first with board + member_count');
 end $$;
 
--- T5 live_days RLS: own upsert ok, foreign insert denied, group partner reads, stranger does not.
+-- T5 live_days RLS: own upsert ok, foreign insert/update denied, group partner reads, stranger does not.
+--    now() is frozen for the whole transaction, so the row's server-stamped updated_at is always
+--    "0 s ago": the second upsert takes the UPDATE path and hits the 0015 20 s throttle (P0005) —
+--    which also proves the "update own" policy let it through. The new value is written by
+--    delete + insert (own-row policies) instead of backdating updated_at with the trigger disabled.
 do $$
 declare n int; ok boolean := false;
 begin
   perform pg_temp.login(pg_temp.id('bernd'));
-  insert into public.live_days (user_id, day, drop_m, run_count) values (pg_temp.id('bernd'), '2026-01-15', 100, 1)
+  insert into public.live_days (user_id, day, drop_m, run_count) values (pg_temp.id('bernd'), pg_temp.d(), 100, 1)
     on conflict (user_id) do update set day = excluded.day, drop_m = excluded.drop_m, run_count = excluded.run_count;
-  insert into public.live_days (user_id, day, drop_m, run_count) values (pg_temp.id('bernd'), '2026-01-15', 200, 2)
+  begin
+    insert into public.live_days (user_id, day, drop_m, run_count) values (pg_temp.id('bernd'), pg_temp.d(), 150, 2)
+      on conflict (user_id) do update set day = excluded.day, drop_m = excluded.drop_m, run_count = excluded.run_count;
+  exception when sqlstate 'P0005' then ok := true;
+  end;
+  if not ok then raise exception 'T5: a second upsert within 20 s must hit the update throttle'; end if;
+  select count(*) into n from public.live_days where user_id = pg_temp.id('bernd') and drop_m = 100;
+  if n <> 1 then raise exception 'T5: throttled upsert must leave the row unchanged'; end if;
+  delete from public.live_days where user_id = pg_temp.id('bernd');
+  insert into public.live_days (user_id, day, drop_m, run_count) values (pg_temp.id('bernd'), pg_temp.d(), 200, 2)
     on conflict (user_id) do update set day = excluded.day, drop_m = excluded.drop_m, run_count = excluded.run_count;
   select count(*) into n from public.live_days where user_id = pg_temp.id('bernd') and drop_m = 200;
   if n <> 1 then raise exception 'T5: own upsert failed'; end if;
+  update public.live_days set drop_m = 1 where user_id = pg_temp.id('anna');
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'T5: update of a partner''s live row must touch nothing, got %', n; end if;
+  ok := false;
   begin
-    insert into public.live_days (user_id, day, drop_m) values (pg_temp.id('chris'), '2026-01-15', 5);
+    insert into public.live_days (user_id, day, drop_m) values (pg_temp.id('chris'), pg_temp.d(), 5);
   exception when insufficient_privilege then ok := true;
   end;
   if not ok then raise exception 'T5: insert for another user must be denied'; end if;

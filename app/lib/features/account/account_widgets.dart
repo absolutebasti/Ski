@@ -9,22 +9,28 @@ import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
+import '../../core/settings.dart';
 import '../../data/resorts/resort_repository.dart';
 import '../../data/sync/sync_service.dart';
+import '../achievements/achievements_providers.dart';
+import '../achievements/achievements_strings.dart';
+import '../achievements/ui/level_ring.dart';
+import '../achievements/ui/medals_sheet.dart';
+import '../achievements/ui/streak_chip.dart';
+import '../today/season_goal_sheet.dart';
 import 'account_providers.dart';
 import 'account_strings.dart';
 import 'profile_service.dart';
 
-/// Pieces the Konto sheet and the profile page share, so the two never drift:
-/// the Apple button, the signed-out body, the confirmations, the sync card,
+/// Building blocks of the profile page: the Apple button, the signed-out
+/// body, the level and season-goal cards, the confirmations, the sync card,
 /// the opt-in card, the home-resort card and the sign-out / delete buttons.
-/// Test keys stay `account-*` in both hosts.
+/// Test keys stay `account-*` / `profile-*`.
 
 // ---------------------------------------------------------------- Apple button
 
-/// Apple's capsule in the onboarding look: ink in dark, white in light, hairline
-/// border, Apple glyph. Mirrors `AppleSignInButton` in features/onboarding,
-/// which stays untouched.
+/// The shared [AppleButton] (ink in dark, white in light, hairline border,
+/// Apple glyph) under the account test key.
 class AccountAppleButton extends StatelessWidget {
   const AccountAppleButton({super.key, required this.label, this.onTap, this.height = 60});
 
@@ -33,41 +39,25 @@ class AccountAppleButton extends StatelessWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    final enabled = onTap != null;
-    final fg = enabled ? c.textPrimary : c.textQuaternary;
-    return Pressable(
-      onTap: onTap,
-      child: Container(
-        key: const ValueKey('account-apple'),
-        height: height,
-        decoration: BoxDecoration(
-          color: c.isDark ? c.ink : c.surface,
-          borderRadius: BorderRadius.circular(height / 2),
-          border: Border.all(color: c.hairlineStrong, width: 1),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.apple, color: fg, size: 24),
-            const SizedBox(width: 10),
-            Text(label, style: AppText.button(fg)),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      KeyedSubtree(key: const ValueKey('account-apple'), child: AppleButton(label: label, onPressed: onTap, height: height));
 }
 
 // -------------------------------------------------------------- signed out
 
-/// Rider, one sentence, the Apple button, failure / unavailable lines.
+/// The signed-out profile page (SETTINGS-ACCOUNT-2): rider line, the three
+/// benefits, the Apple button, 'Ohne Konto weiter', then the device-computed
+/// level card and the season goal — the page is as full without a Konto as
+/// with one. Test keys: `account-signed-out`, `account-apple`,
+/// `account-continue`, `account-benefit-*`, `profile-level`, `profile-season-goal`.
 class AccountSignedOutBody extends StatelessWidget {
-  const AccountSignedOutBody({super.key, required this.onSignIn, this.failed = false, this.available = true});
+  const AccountSignedOutBody({super.key, required this.onSignIn, this.onContinue, this.failed = false, this.available = true});
 
   /// Null = busy or no backend → button disabled.
   final VoidCallback? onSignIn;
+
+  /// 'Ohne Konto weiter' — the host pops the page. Null hides the button.
+  final VoidCallback? onContinue;
   final bool failed;
   final bool available;
 
@@ -80,10 +70,32 @@ class AccountSignedOutBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: 4),
-        const Center(child: Rider(pose: 'look', size: 132)),
-        const SizedBox(height: 12),
-        Text(s.signedOutLine, textAlign: TextAlign.center, style: AppText.bodyText(c.textSecondary, size: 15)),
+        // Rider beside his line, not above it: the benefits, both buttons and
+        // the level card fit the first screen of a 390 × 844 iPhone.
+        AppCard(
+          child: Row(
+            children: [
+              const ExcludeSemantics(child: Rider(pose: 'look', size: 84)),
+              const SizedBox(width: 14),
+              Expanded(child: RiderLine(s.signedOutLine)),
+            ],
+          ),
+        ),
+        AccountSection(s.sectionBenefits),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _BenefitRow(key: const ValueKey('account-benefit-backup'), icon: Icons.cloud_done_outlined, title: s.benefitBackup, hint: s.benefitBackupHint),
+              const Hairline(inset: 54),
+              _BenefitRow(key: const ValueKey('account-benefit-boards'), glyph: Glyph.podium, title: s.benefitBoards, hint: s.benefitBoardsHint),
+              const Hairline(inset: 54),
+              _BenefitRow(key: const ValueKey('account-benefit-friends'), icon: Icons.people_outline_rounded, title: s.benefitFriends, hint: s.benefitFriendsHint),
+            ],
+          ),
+        ),
         const SizedBox(height: 20),
         AccountAppleButton(label: s.signInWithApple, onTap: available ? onSignIn : null),
         if (failed) ...[
@@ -94,8 +106,188 @@ class AccountSignedOutBody extends StatelessWidget {
           const SizedBox(height: 12),
           Text(s.unavailable, textAlign: TextAlign.center, style: AppText.caption(c.textTertiary)),
         ],
+        if (onContinue != null) ...[
+          const SizedBox(height: 10),
+          SecondaryButton(key: const ValueKey('account-continue'), label: s.continueWithout, onPressed: onContinue),
+        ],
+        AccountSection(s.sectionLevel),
+        const ProfileLevelCard(),
         const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(s.deviceLevelHint, style: AppText.caption(c.textTertiary)),
+        ),
+        AccountSection(s.sectionSeason),
+        const SeasonGoalCard(),
       ],
+    );
+  }
+}
+
+/// One benefit line: 22 pt icon tertiary, title 16, caption 13.5.
+class _BenefitRow extends StatelessWidget {
+  const _BenefitRow({super.key, required this.title, required this.hint, this.icon, this.glyph});
+  final String title;
+  final String hint;
+  final IconData? icon;
+  final Glyph? glyph;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: Tokens.minTarget - 24),
+        child: Row(
+          children: [
+            if (glyph != null) GlyphIcon(glyph!, size: 22, color: c.accent) else Icon(icon, size: 22, color: c.accent),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: AppText.bodyStrong(c.textPrimary)),
+                  const SizedBox(height: 2),
+                  Text(hint, style: AppText.caption(c.textSecondary)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------------------- level
+
+/// Level ring, level line, points, streak chip and the medal count from the
+/// device engine ([achievementsProvider]) — the same card signed in and out;
+/// tapping opens the Medaillen sheet.
+class ProfileLevelCard extends ConsumerWidget {
+  const ProfileLevelCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final a = ref.watch(achievementsProvider);
+    final c = AppColors.of(context);
+    final l = AppLocale.of(context);
+    final s = AchievementsStrings.of(context);
+    final nextAt = a.level.nextAtM;
+    final nextLine = nextAt == null ? s.topLevel : s.nextLevelShort((nextAt - a.level.distanceM).clamp(0, double.infinity), a.level.index + 1);
+    return Semantics(
+      label: s.openMedals,
+      child: AppCard(
+        onTap: () => MedalsSheet.show(context),
+        child: Row(
+          key: const ValueKey('profile-level'),
+          children: [
+            LevelRing(level: a.level, size: 64),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(s.levelLine(a.level).overline, style: AppText.label(c.textSecondary)),
+                  const SizedBox(height: 4),
+                  Text(nextLine, style: AppText.caption(c.textSecondary, size: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 10),
+                  // Points left, streak right; on a narrow card (iPhone width, five
+                  // digit points, large type) the chip drops to its own line
+                  // instead of overflowing.
+                  SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.end,
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(Fmt.metres(a.points.toDouble(), locale: l.code), style: AppText.numS(c.accent)),
+                            const SizedBox(width: 6),
+                            Text(s.points, style: AppText.unit(c.textTertiary, size: 12)),
+                          ],
+                        ),
+                        StreakChip(streak: a.streak, compact: true),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(s.medalCount(a.earned.length, a.medals.length), key: const ValueKey('profile-medals'), style: AppText.bodyStrong(c.textPrimary, size: 15)),
+                      ),
+                      const RowChevron(),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------------- season goal
+
+/// 'Saisonziel' row: the current goal ('25.000 hm' or 'Kein Ziel') and a
+/// chevron; tapping opens [SeasonGoalSheet] from features/today, which writes
+/// `settings.setSeasonGoal` (0 = no goal).
+class SeasonGoalCard extends ConsumerWidget {
+  const SeasonGoalCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
+    final l = AppLocale.of(context);
+    final s = AccountStrings.of(context);
+    final hm = ref.watch(settingsProvider.select((st) => st.seasonGoalHm));
+    return AppCard(
+      onTap: () => SeasonGoalSheet.show(context),
+      child: Row(
+        key: const ValueKey('profile-season-goal'),
+        children: [
+          Icon(Icons.flag_outlined, size: 22, color: c.textTertiary),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(s.seasonGoal, style: AppText.bodyStrong(c.textPrimary)),
+                const SizedBox(height: 2),
+                Text(s.seasonGoalHint, style: AppText.caption(c.textSecondary)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          if (hm <= 0)
+            Text(s.seasonGoalNone, key: const ValueKey('profile-season-goal-value'), style: AppText.bodyText(c.textSecondary, size: 16))
+          else
+            Row(
+              key: const ValueKey('profile-season-goal-value'),
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(Fmt.metres(hm.toDouble(), locale: l.code), style: AppText.numS(c.accent)),
+                const SizedBox(width: 4),
+                Text(s.unitHm, style: AppText.unit(c.textTertiary, size: 12)),
+              ],
+            ),
+          const SizedBox(width: 8),
+          const RowChevron(),
+        ],
+      ),
     );
   }
 }
@@ -126,7 +318,9 @@ Future<void> accountSignOut(WidgetRef ref) async {
 }
 
 /// Two confirmations (tap, then hold) and the deletion. Returns null when the
-/// user backed out, true when deleted, false when the backend refused.
+/// user backed out, true when deleted, false when the backend refused or was
+/// unreachable — then nothing was deleted, the session and the cached profile
+/// stay as they are.
 Future<bool?> accountDeleteWithConfirm(BuildContext context, WidgetRef ref) async {
   final s = AccountStrings.of(context);
   final first = await _confirm(context, title: s.deleteTitle, body: s.deleteBody, action: s.delete);
@@ -134,7 +328,8 @@ Future<bool?> accountDeleteWithConfirm(BuildContext context, WidgetRef ref) asyn
   final second = await _confirmHold(context, title: s.deleteConfirmTitle, body: s.deleteConfirmBody, action: s.holdToDelete);
   if (!second) return null;
   try {
-    await ref.read(accountDeleteProvider)();
+    final deleted = await ref.read(accountDeleteProvider)();
+    if (!deleted) return false;
     ref.read(profileServiceProvider).clear();
     ref.invalidate(profileProvider);
     return true;
@@ -205,10 +400,9 @@ class _ConfirmBody extends StatelessWidget {
         action,
         const SizedBox(height: 10),
         Center(
-          child: SecondaryButton(
+          child: GhostButton(
             key: const ValueKey('account-confirm-cancel'),
             label: cancel,
-            height: 48,
             onPressed: () => Navigator.of(context).pop(false),
           ),
         ),
@@ -274,7 +468,7 @@ class HomeResortCard extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          GlyphIcon(Glyph.chevronRight, size: 16, color: c.textTertiary),
+          const RowChevron(),
         ],
       ),
     );
@@ -310,7 +504,7 @@ class ShareOptInCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Switch(
+          AppSwitch(
             key: const ValueKey('account-share-switch'),
             value: value,
             onChanged: onChanged == null
@@ -357,6 +551,7 @@ class _SyncCardState extends ConsumerState<SyncCard> {
     return switch (status.state) {
       SyncState.syncing => s.syncing,
       SyncState.offline => s.syncOffline,
+      SyncState.throttled => s.syncThrottled,
       SyncState.error => s.syncError,
       SyncState.idle => status.lastSyncAt == null
           ? (status.pending == 0 ? s.neverSynced : '${s.neverSynced} · ${s.pendingCount(status.pending)}')
@@ -379,7 +574,7 @@ class _SyncCardState extends ConsumerState<SyncCard> {
             key: const ValueKey('account-sync-now'),
             label: s.syncNow,
             icon: Icons.sync_rounded,
-            height: 48,
+            height: Tokens.buttonMd,
             onPressed: _busy ? null : _syncNow,
           ),
         ],

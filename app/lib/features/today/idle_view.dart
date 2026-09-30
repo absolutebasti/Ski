@@ -79,13 +79,15 @@ class IdleView extends ConsumerWidget {
                 const SizedBox(height: 8),
                 EmptyState(headline: s.emptyHeadline, line: s.emptyLine),
               ] else ...[
+                // Founder 2026-09-30: records first — above the season card and 'Zuletzt'.
+                if (bests != null && (bests.topSpeedMs != null || bests.biggestDayDropM != null || bests.longestRunDropM != null)) ...[
+                  SectionLabel(s.records, padding: const EdgeInsets.fromLTRB(0, 0, 0, 10)),
+                  _PbStrip(bests: bests),
+                  const SizedBox(height: Tokens.sectionGap),
+                ],
                 if (season != null) SeasonCard(totals: season, days: seasonDays, previous: previous, goalHm: ref.watch(settingsProvider).seasonGoalHm, streak: ref.watch(achievementsProvider).streak),
                 SectionLabel(s.lastDay, padding: const EdgeInsets.fromLTRB(0, Tokens.sectionGap, 0, 10)),
                 DayCard(day: days.first, onTap: () => AppNav.openDay(context, days.first.id)),
-                if (bests != null && (bests.topSpeedMs != null || bests.biggestDayDropM != null || bests.longestRunDropM != null)) ...[
-                  SectionLabel(s.records, padding: const EdgeInsets.fromLTRB(0, 16, 0, 10)),
-                  _PbStrip(bests: bests),
-                ],
               ],
             ],
           ),
@@ -191,7 +193,7 @@ class _StartBlockedCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(body, style: AppText.bodyText(c.textSecondary, size: 15)),
           const SizedBox(height: 12),
-          Row(children: [Expanded(child: SecondaryButton(label: action, onPressed: onTap, height: 48))]),
+          Row(children: [Expanded(child: SecondaryButton(label: action, onPressed: onTap, height: Tokens.buttonMd))]),
         ],
       ),
     );

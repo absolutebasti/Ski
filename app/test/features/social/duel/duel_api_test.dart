@@ -165,4 +165,79 @@ void main() {
     await api.createDuel(name: 'x', day: DateTime(2026, 1, 15), tz: 'Europe/Vienna');
     expect(social.created, ['x']);
   });
+
+  group('invites (0017)', () {
+    test('already_member and invite_not_found map before the shared mapping', () {
+      final member = SupabaseDuelApi.mapError(const PostgrestException(message: 'already_member', code: '23505'));
+      expect(member.kind, SocialErrorKind.alreadyMember);
+      final gone = SupabaseDuelApi.mapError(const PostgrestException(message: 'invite_not_found', code: 'P0002'));
+      expect(gone.kind, SocialErrorKind.riderNotFound);
+      expect(gone.detail, inviteNotFound);
+      expect(SupabaseDuelApi.mapError(const PostgrestException(message: 'duel_full', code: 'P0003')).kind, SocialErrorKind.duelFull);
+      expect(SupabaseDuelApi.mapError(const PostgrestException(message: 'rider_not_found', code: 'P0002')).detail, isNull);
+    });
+
+    test('DuelInvite.fromJson tolerates string counts and missing optionals', () {
+      final invite = DuelInvite.fromJson({'id': 'i', 'from_user': 'u9', 'group_id': 'g', 'code': 'PQRS23', 'day': '2026-01-15', 'member_count': '3', 'max_members': '3'});
+      expect(invite.fromName, '');
+      expect(invite.fromAvatarUrl, isNull);
+      expect(invite.memberCount, 3);
+      expect(invite.group.maxMembers, 3);
+      expect(invite.full, isTrue);
+      expect(invite.tz, 'Europe/Vienna');
+      final bare = DuelInvite.fromJson({'id': 'i', 'from_user': 'u9', 'group_id': 'g', 'day': '2026-01-15'});
+      expect(bare.memberCount, 1);
+      expect(bare.group.maxMembers, 3);
+      expect(bare.full, isFalse);
+    });
+
+    test('the fake models the server: invite guards, accept joins, decline drops, a failed accept keeps the invite', () async {
+      final api = FakeDuelApi(userId: 'u1');
+      await expectLater(api.inviteToDuel(userId: 'u9', groupId: 'g1'), throwsA(isA<SocialError>().having((e) => e.kind, 'kind', SocialErrorKind.notAMember)));
+      final g = await api.createDuel(name: 'Crew', day: DateTime(2026, 1, 15), tz: 'Europe/Vienna');
+      await expectLater(api.inviteToDuel(userId: 'u1', groupId: g.id), throwsA(isA<SocialError>().having((e) => e.kind, 'kind', SocialErrorKind.riderNotFound)));
+      final sent = await api.inviteToDuel(userId: 'u9', groupId: g.id);
+      expect(sent.group, g);
+      expect(api.invited.last, ('u9', g.id));
+
+      final other = FakeDuelApi(userId: 'u9', invites: [duelInvite(), duelInvite(id: 'inv-full', memberCount: 3)]);
+      expect(await other.myInvites(), hasLength(2));
+      await expectLater(other.respondInvite('inv-full', accept: true), throwsA(isA<SocialError>().having((e) => e.kind, 'kind', SocialErrorKind.duelFull)));
+      expect(other.invites, hasLength(2), reason: 'a failed accept leaves the invite pending');
+      expect(await other.respondInvite('inv-full', accept: false), isNull);
+      final joined = await other.respondInvite('inv-1', accept: true);
+      expect(joined?.id, 'g-lena');
+      expect(await other.myDuel(DateTime(2026, 1, 15)), joined);
+      expect(other.board.map((m) => m.userId), containsAll(['u9']));
+      expect(await other.myInvites(), isEmpty);
+      await expectLater(
+        other.respondInvite('inv-1', accept: true),
+        throwsA(isA<SocialError>().having((e) => e.detail, 'detail', inviteNotFound)),
+      );
+      expect(await FakeDuelApi(invites: [duelInvite()]).myInvites(), isEmpty, reason: 'signed out');
+    });
+
+    test('the SocialApi adapter has no invites: flag off, empty list, invite throws', () async {
+      final api = SocialApiDuelAdapter(FakeSocialApi(userId: 'u1'));
+      expect(api.supportsInvites, isFalse);
+      expect(await api.myInvites(), isEmpty);
+      await expectLater(api.inviteToDuel(userId: 'u9', groupId: 'g1'), throwsA(isA<SocialError>()));
+      await expectLater(api.respondInvite('i', accept: true), throwsA(isA<SocialError>()));
+    });
+
+    test('invite copy in both languages', () {
+      const de = DuelStrings(AppLocale(Locale('de')));
+      const en = DuelStrings(AppLocale(Locale('en')));
+      expect(de.inviteFrom('Lena'), 'Duell-Einladung von Lena');
+      expect(en.inviteFrom('Lena'), 'Duel invite from Lena');
+      expect(de.inviteFrom(''), 'Duell-Einladung');
+      expect(de.inviteSent('Lena'), 'Einladung an Lena gesendet');
+      expect(en.inviteSent('Lena'), 'Invite sent to Lena');
+      expect(de.accept, 'Annehmen');
+      expect(de.decline, 'Ablehnen');
+      expect(de.moreInvites(1), '+ 1 weitere Einladung');
+      expect(de.moreInvites(3), '+ 3 weitere Einladungen');
+      expect(en.moreInvites(1), '+ 1 more invite');
+    });
+  });
 }

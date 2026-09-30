@@ -44,7 +44,7 @@ class EmptyState extends StatelessWidget {
           RiderLine(line),
           if (actionLabel != null) ...[
             const SizedBox(height: 18),
-            PrimaryButton(label: actionLabel!, onPressed: onAction, height: 52, glow: false),
+            PrimaryButton(label: actionLabel!, onPressed: onAction, height: Tokens.buttonMd, glow: false),
           ],
         ],
       ),

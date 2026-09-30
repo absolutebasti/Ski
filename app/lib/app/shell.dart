@@ -37,7 +37,7 @@ class _RootShellState extends ConsumerState<RootShell> {
         case 'settings':
           SettingsSheet.show(context);
         case 'account':
-          AccountSheet.show(context);
+          ProfilePage.open(context);
         case 'medals':
           MedalsSheet.show(context);
         case 'profile':

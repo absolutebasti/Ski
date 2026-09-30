@@ -59,6 +59,36 @@ void main() {
     expect(row.syncedAt, isNotNull);
   });
 
+  test('markSynced only clears entries up to the pushed one', () async {
+    await seedFinishedDay(repo);
+    final pushed = (await repo.outbox()).single.id;
+    expect(await repo.latestOutboxId('d1'), pushed);
+    // an edit lands while the push is on its way
+    await repo.updateResort('d1', 'skiwelt', 'SkiWelt');
+    final newer = (await repo.outbox()).single.id;
+    expect(newer, greaterThan(pushed), reason: 'ids are never reused');
+
+    await repo.markSynced('d1', 1700000000000, upToOutboxId: pushed);
+    expect((await repo.outbox()).single.id, newer);
+    await repo.markSynced('d1', 1700000000001, upToOutboxId: newer);
+    expect(await repo.outbox(), isEmpty);
+    expect(await repo.latestOutboxId('d1'), isNull);
+  });
+
+  test('setTrackPath is not an edit and respects ifUpdatedAt', () async {
+    await seedFinishedDay(repo);
+    await repo.markSynced('d1', 1);
+    final before = await (db.select(db.days)..where((d) => d.id.equals('d1'))).getSingle();
+    await repo.setTrackPath('d1', 'u1/d1.json.gz', ifUpdatedAt: before.updatedAt - 1);
+    expect(await repo.trackPathOf('d1'), isNull, reason: 'the day changed since the upload started');
+    await repo.setTrackPath('d1', 'u1/d1.json.gz', ifUpdatedAt: before.updatedAt);
+    expect(await repo.trackPathOf('d1'), 'u1/d1.json.gz');
+    final after = await (db.select(db.days)..where((d) => d.id.equals('d1'))).getSingle();
+    expect(after.updatedAt, before.updatedAt);
+    expect(await repo.outbox(), isEmpty);
+    expect(await repo.trackPathOf('missing'), isNull);
+  });
+
   test('bumpAttempt counts failures, stores the error and resetAttempts clears it', () async {
     await seedFinishedDay(repo);
     final entry = (await repo.outbox()).single;

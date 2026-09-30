@@ -91,16 +91,16 @@ class _RecoveryCardState extends ConsumerState<RecoveryCard> {
             child: SecondaryButton(
               label: s.finishAndSave,
               icon: Icons.save_alt_rounded,
-              height: 48,
+              height: Tokens.buttonMd,
               onPressed: _busy ? null : _finish,
             ),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: SecondaryButton(label: s.resume, height: 48, onPressed: _busy ? null : _resume)),
+              Expanded(child: SecondaryButton(label: s.resume, height: Tokens.buttonMd, onPressed: _busy ? null : _resume)),
               const SizedBox(width: 8),
-              Expanded(child: SecondaryButton(label: s.discard, height: 48, danger: true, onPressed: _busy ? null : _discard)),
+              Expanded(child: SecondaryButton(label: s.discard, height: Tokens.buttonMd, danger: true, onPressed: _busy ? null : _discard)),
             ],
           ),
         ],

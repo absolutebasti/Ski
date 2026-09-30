@@ -67,7 +67,7 @@ class DuelHistoryList extends ConsumerWidget {
                         style: AppText.bodyText(c.textSecondary, size: 15),
                       ),
                     ),
-                    GlyphIcon(Glyph.chevronRight, size: 16, color: c.textTertiary),
+                    const RowChevron(),
                   ],
                 ),
               ),

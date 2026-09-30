@@ -13,5 +13,6 @@ final achievementsProvider = Provider<Achievements>((ref) {
   return computeAchievements(
     days,
     countryOf: (id) => id == null ? null : resorts?.byId(id)?.country,
+    canonicalId: resorts?.canonicalId,
   );
 });

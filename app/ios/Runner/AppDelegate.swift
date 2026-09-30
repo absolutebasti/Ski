@@ -17,6 +17,7 @@ import UIKit
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "TrackingWatchdog") {
       TrackingWatchdog.shared.register(with: registrar.messenger())
+      MapSnapshot.shared.register(with: registrar.messenger())
     }
   }
 }

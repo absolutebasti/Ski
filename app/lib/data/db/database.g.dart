@@ -492,6 +492,17 @@ class $DaysTable extends Days with TableInfo<$DaysTable, DayRow> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _trackPathMeta = const VerificationMeta(
+    'trackPath',
+  );
+  @override
+  late final GeneratedColumn<String> trackPath = GeneratedColumn<String>(
+    'track_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -536,6 +547,7 @@ class $DaysTable extends Days with TableInfo<$DaysTable, DayRow> {
     deletedAt,
     syncedAt,
     remoteUpdatedAt,
+    trackPath,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -868,6 +880,12 @@ class $DaysTable extends Days with TableInfo<$DaysTable, DayRow> {
         ),
       );
     }
+    if (data.containsKey('track_path')) {
+      context.handle(
+        _trackPathMeta,
+        trackPath.isAcceptableOrUnknown(data['track_path']!, _trackPathMeta),
+      );
+    }
     return context;
   }
 
@@ -1045,6 +1063,10 @@ class $DaysTable extends Days with TableInfo<$DaysTable, DayRow> {
         DriftSqlType.int,
         data['${effectivePrefix}remote_updated_at'],
       ),
+      trackPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}track_path'],
+      ),
     );
   }
 
@@ -1101,6 +1123,11 @@ class DayRow extends DataClass implements Insertable<DayRow> {
 
   /// `device_updated_at` of the remote row we last saw, ms epoch.
   final int? remoteUpdatedAt;
+
+  /// Storage path of the uploaded track backup (schema v3, SYNC-2). Set after
+  /// the first successful upload (or taken from a pulled row); later pushes
+  /// send it inside the day upsert instead of uploading again.
+  final String? trackPath;
   const DayRow({
     required this.id,
     required this.startedAt,
@@ -1144,6 +1171,7 @@ class DayRow extends DataClass implements Insertable<DayRow> {
     this.deletedAt,
     this.syncedAt,
     this.remoteUpdatedAt,
+    this.trackPath,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1219,6 +1247,9 @@ class DayRow extends DataClass implements Insertable<DayRow> {
     }
     if (!nullToAbsent || remoteUpdatedAt != null) {
       map['remote_updated_at'] = Variable<int>(remoteUpdatedAt);
+    }
+    if (!nullToAbsent || trackPath != null) {
+      map['track_path'] = Variable<String>(trackPath);
     }
     return map;
   }
@@ -1297,6 +1328,9 @@ class DayRow extends DataClass implements Insertable<DayRow> {
       remoteUpdatedAt: remoteUpdatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(remoteUpdatedAt),
+      trackPath: trackPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trackPath),
     );
   }
 
@@ -1352,6 +1386,7 @@ class DayRow extends DataClass implements Insertable<DayRow> {
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       syncedAt: serializer.fromJson<int?>(json['syncedAt']),
       remoteUpdatedAt: serializer.fromJson<int?>(json['remoteUpdatedAt']),
+      trackPath: serializer.fromJson<String?>(json['trackPath']),
     );
   }
   @override
@@ -1400,6 +1435,7 @@ class DayRow extends DataClass implements Insertable<DayRow> {
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'syncedAt': serializer.toJson<int?>(syncedAt),
       'remoteUpdatedAt': serializer.toJson<int?>(remoteUpdatedAt),
+      'trackPath': serializer.toJson<String?>(trackPath),
     };
   }
 
@@ -1446,6 +1482,7 @@ class DayRow extends DataClass implements Insertable<DayRow> {
     Value<int?> deletedAt = const Value.absent(),
     Value<int?> syncedAt = const Value.absent(),
     Value<int?> remoteUpdatedAt = const Value.absent(),
+    Value<String?> trackPath = const Value.absent(),
   }) => DayRow(
     id: id ?? this.id,
     startedAt: startedAt ?? this.startedAt,
@@ -1499,6 +1536,7 @@ class DayRow extends DataClass implements Insertable<DayRow> {
     remoteUpdatedAt: remoteUpdatedAt.present
         ? remoteUpdatedAt.value
         : this.remoteUpdatedAt,
+    trackPath: trackPath.present ? trackPath.value : this.trackPath,
   );
   DayRow copyWithCompanion(DaysCompanion data) {
     return DayRow(
@@ -1586,6 +1624,7 @@ class DayRow extends DataClass implements Insertable<DayRow> {
       remoteUpdatedAt: data.remoteUpdatedAt.present
           ? data.remoteUpdatedAt.value
           : this.remoteUpdatedAt,
+      trackPath: data.trackPath.present ? data.trackPath.value : this.trackPath,
     );
   }
 
@@ -1633,7 +1672,8 @@ class DayRow extends DataClass implements Insertable<DayRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncedAt: $syncedAt, ')
-          ..write('remoteUpdatedAt: $remoteUpdatedAt')
+          ..write('remoteUpdatedAt: $remoteUpdatedAt, ')
+          ..write('trackPath: $trackPath')
           ..write(')'))
         .toString();
   }
@@ -1682,6 +1722,7 @@ class DayRow extends DataClass implements Insertable<DayRow> {
     deletedAt,
     syncedAt,
     remoteUpdatedAt,
+    trackPath,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1728,7 +1769,8 @@ class DayRow extends DataClass implements Insertable<DayRow> {
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.syncedAt == this.syncedAt &&
-          other.remoteUpdatedAt == this.remoteUpdatedAt);
+          other.remoteUpdatedAt == this.remoteUpdatedAt &&
+          other.trackPath == this.trackPath);
 }
 
 class DaysCompanion extends UpdateCompanion<DayRow> {
@@ -1774,6 +1816,7 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
   final Value<int?> deletedAt;
   final Value<int?> syncedAt;
   final Value<int?> remoteUpdatedAt;
+  final Value<String?> trackPath;
   final Value<int> rowid;
   const DaysCompanion({
     this.id = const Value.absent(),
@@ -1818,6 +1861,7 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
     this.deletedAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
     this.remoteUpdatedAt = const Value.absent(),
+    this.trackPath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DaysCompanion.insert({
@@ -1863,6 +1907,7 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
     this.deletedAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
     this.remoteUpdatedAt = const Value.absent(),
+    this.trackPath = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        startedAt = Value(startedAt),
@@ -1912,6 +1957,7 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
     Expression<int>? deletedAt,
     Expression<int>? syncedAt,
     Expression<int>? remoteUpdatedAt,
+    Expression<String>? trackPath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1958,6 +2004,7 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (syncedAt != null) 'synced_at': syncedAt,
       if (remoteUpdatedAt != null) 'remote_updated_at': remoteUpdatedAt,
+      if (trackPath != null) 'track_path': trackPath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2005,6 +2052,7 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
     Value<int?>? deletedAt,
     Value<int?>? syncedAt,
     Value<int?>? remoteUpdatedAt,
+    Value<String?>? trackPath,
     Value<int>? rowid,
   }) {
     return DaysCompanion(
@@ -2050,6 +2098,7 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
       deletedAt: deletedAt ?? this.deletedAt,
       syncedAt: syncedAt ?? this.syncedAt,
       remoteUpdatedAt: remoteUpdatedAt ?? this.remoteUpdatedAt,
+      trackPath: trackPath ?? this.trackPath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2185,6 +2234,9 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
     if (remoteUpdatedAt.present) {
       map['remote_updated_at'] = Variable<int>(remoteUpdatedAt.value);
     }
+    if (trackPath.present) {
+      map['track_path'] = Variable<String>(trackPath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2236,6 +2288,7 @@ class DaysCompanion extends UpdateCompanion<DayRow> {
           ..write('deletedAt: $deletedAt, ')
           ..write('syncedAt: $syncedAt, ')
           ..write('remoteUpdatedAt: $remoteUpdatedAt, ')
+          ..write('trackPath: $trackPath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4916,6 +4969,7 @@ typedef $$DaysTableCreateCompanionBuilder =
       Value<int?> deletedAt,
       Value<int?> syncedAt,
       Value<int?> remoteUpdatedAt,
+      Value<String?> trackPath,
       Value<int> rowid,
     });
 typedef $$DaysTableUpdateCompanionBuilder =
@@ -4962,6 +5016,7 @@ typedef $$DaysTableUpdateCompanionBuilder =
       Value<int?> deletedAt,
       Value<int?> syncedAt,
       Value<int?> remoteUpdatedAt,
+      Value<String?> trackPath,
       Value<int> rowid,
     });
 
@@ -5180,6 +5235,11 @@ class $$DaysTableFilterComposer extends Composer<_$AppDatabase, $DaysTable> {
 
   ColumnFilters<int> get remoteUpdatedAt => $composableBuilder(
     column: $table.remoteUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get trackPath => $composableBuilder(
+    column: $table.trackPath,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5401,6 +5461,11 @@ class $$DaysTableOrderingComposer extends Composer<_$AppDatabase, $DaysTable> {
     column: $table.remoteUpdatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get trackPath => $composableBuilder(
+    column: $table.trackPath,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DaysTableAnnotationComposer
@@ -5579,6 +5644,9 @@ class $$DaysTableAnnotationComposer
     column: $table.remoteUpdatedAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get trackPath =>
+      $composableBuilder(column: $table.trackPath, builder: (column) => column);
 }
 
 class $$DaysTableTableManager
@@ -5651,6 +5719,7 @@ class $$DaysTableTableManager
                 Value<int?> deletedAt = const Value.absent(),
                 Value<int?> syncedAt = const Value.absent(),
                 Value<int?> remoteUpdatedAt = const Value.absent(),
+                Value<String?> trackPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DaysCompanion(
                 id: id,
@@ -5695,6 +5764,7 @@ class $$DaysTableTableManager
                 deletedAt: deletedAt,
                 syncedAt: syncedAt,
                 remoteUpdatedAt: remoteUpdatedAt,
+                trackPath: trackPath,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -5741,6 +5811,7 @@ class $$DaysTableTableManager
                 Value<int?> deletedAt = const Value.absent(),
                 Value<int?> syncedAt = const Value.absent(),
                 Value<int?> remoteUpdatedAt = const Value.absent(),
+                Value<String?> trackPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DaysCompanion.insert(
                 id: id,
@@ -5785,6 +5856,7 @@ class $$DaysTableTableManager
                 deletedAt: deletedAt,
                 syncedAt: syncedAt,
                 remoteUpdatedAt: remoteUpdatedAt,
+                trackPath: trackPath,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

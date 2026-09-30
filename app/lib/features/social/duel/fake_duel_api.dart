@@ -13,13 +13,19 @@ class FakeDuelApi implements DuelApi {
     this.duel,
     this.board = const [],
     this.duels = const [],
+    List<DuelInvite> invites = const [],
     this.failWith,
+    this.inviteError,
+    this.respondError,
     this.gate,
     this.code = 'KMJ4F2',
-  });
+  }) : invites = [...invites];
 
   @override
   final String? userId;
+
+  @override
+  bool get supportsInvites => true;
 
   /// Answer of `myDuel`; set by `createDuel` / `joinDuel`, cleared by `leaveDuel`.
   DuelGroup? duel;
@@ -30,8 +36,21 @@ class FakeDuelApi implements DuelApi {
   /// Rows of `myDuels`, newest first.
   List<DuelSummary> duels;
 
+  /// Pending invites addressed to the user — the answer of `myInvites`.
+  /// `respondInvite` removes the answered one (a failed accept leaves it, as
+  /// the server does).
+  List<DuelInvite> invites;
+
   /// When set, every call throws it — used for the offline state.
   SocialError? failWith;
+
+  /// When set, only `inviteToDuel` throws it (duel_full, already_member, …)
+  /// while `myDuel` / `createDuel` keep working.
+  SocialError? inviteError;
+
+  /// When set, only `respondInvite` throws it and the invite stays pending —
+  /// the duel filled up or ended since the invite was fetched.
+  SocialError? respondError;
 
   /// When set, every call waits for it first — lets a test look at the
   /// loading state before completing the future.
@@ -53,6 +72,14 @@ class FakeDuelApi implements DuelApi {
   final List<LiveDayPayload> liveWrites = [];
   int myDuelsCalls = 0;
 
+  /// Every `inviteToDuel` call as (invited user, group).
+  final List<(String, String)> invited = [];
+
+  /// Every `respondInvite` call as (invite id, accept).
+  final List<(String, bool)> responses = [];
+  int myDuelCalls = 0;
+  int myInvitesCalls = 0;
+
   Future<void> _guard() async {
     final g = gate;
     if (g != null) await g.future;
@@ -69,6 +96,7 @@ class FakeDuelApi implements DuelApi {
   @override
   Future<DuelGroup?> myDuel(DateTime day) async {
     await _guard();
+    myDuelCalls++;
     return duel;
   }
 
@@ -131,5 +159,52 @@ class FakeDuelApi implements DuelApi {
     if (userId == null) return const [];
     myDuelsCalls++;
     return duels.take(limit).toList();
+  }
+
+  @override
+  Future<DuelInvite> inviteToDuel({required String userId, required String groupId}) async {
+    await _guard();
+    final uid = _requireUser();
+    invited.add((userId, groupId));
+    final e = inviteError;
+    if (e != null) throw e;
+    final group = duel;
+    if (group == null || group.id != groupId) throw const SocialError(SocialErrorKind.notAMember);
+    if (userId == uid) throw const SocialError(SocialErrorKind.riderNotFound);
+    if (board.any((m) => m.userId == userId)) throw const SocialError(SocialErrorKind.alreadyMember);
+    if (board.length >= group.maxMembers) throw const SocialError(SocialErrorKind.duelFull);
+    return DuelInvite(id: 'invite-${invited.length}', fromUserId: uid, fromName: '', group: group, memberCount: board.length);
+  }
+
+  @override
+  Future<DuelGroup?> respondInvite(String inviteId, {required bool accept}) async {
+    await _guard();
+    final uid = _requireUser();
+    responses.add((inviteId, accept));
+    final e = respondError;
+    if (e != null) throw e;
+    final i = invites.indexWhere((inv) => inv.id == inviteId);
+    if (i < 0) throw const SocialError(SocialErrorKind.riderNotFound, inviteNotFound);
+    final invite = invites[i];
+    if (!accept) {
+      invites.removeAt(i);
+      return null;
+    }
+    if (invite.full) throw const SocialError(SocialErrorKind.duelFull);
+    invites.removeAt(i);
+    duel = invite.group;
+    board = [
+      DuelMember(userId: invite.fromUserId, displayName: invite.fromName, avatarUrl: invite.fromAvatarUrl),
+      DuelMember(userId: uid, displayName: 'Du'),
+    ];
+    return invite.group;
+  }
+
+  @override
+  Future<List<DuelInvite>> myInvites() async {
+    await _guard();
+    if (userId == null) return const [];
+    myInvitesCalls++;
+    return [...invites];
   }
 }

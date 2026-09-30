@@ -333,12 +333,13 @@ begin
       'public.ensure_weekly_challenges(date)', 'private.board(text, text, text, text)']) sig
   where has_function_privilege('authenticated', to_regprocedure(sig), 'execute');
   if bad is not null then raise exception 'T8: helpers must not be client-callable: %', bad; end if;
-  -- Later migrations own their grants (0006+), but nobody may grant anon.
+  -- Later migrations own their grants (0006+); anon only gets 0016's public_board_teaser.
 
   select string_agg(p.proname, ', ' order by p.proname) into bad
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and p.prokind = 'f' and has_function_privilege('anon', p.oid, 'execute')
-    and p.prorettype <> 'trigger'::regtype;
+    and p.prorettype <> 'trigger'::regtype
+    and p.proname <> 'public_board_teaser'; -- 0016: the signed-out top-10 is the only anon RPC (no user_id in its rows)
   if bad is not null then raise exception 'T8: anon must have no grants, has: %', bad; end if;
 
   select string_agg(p.proname, ', ' order by p.proname) into bad

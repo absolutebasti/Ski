@@ -77,7 +77,7 @@ class DuelResultCard extends ConsumerWidget {
           ],
           if (duel.board.isEmpty) Text(s.duelWaiting, style: AppText.bodyText(c.textSecondary, size: 15)),
           const SizedBox(height: 14),
-          SecondaryButton(label: ds.share, glyph: Glyph.share, height: 48, onPressed: () => _share(context, ref)),
+          SecondaryButton(label: ds.share, glyph: Glyph.share, height: Tokens.buttonMd, onPressed: () => _share(context, ref)),
         ],
       ),
     );

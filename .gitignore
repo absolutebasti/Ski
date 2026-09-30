@@ -33,3 +33,6 @@ tools/data/cache/
 
 # golden diff output
 **/failures/
+
+# Supabase CLI artefact
+supabase/.branches/

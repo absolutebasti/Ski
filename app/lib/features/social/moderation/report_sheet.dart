@@ -77,13 +77,15 @@ class _ReportSheetBodyState extends ConsumerState<ReportSheetBody> {
         const SizedBox(height: 16),
         Wrap(
           spacing: 8,
-          runSpacing: 8,
+          runSpacing: 12, // 32 pt chips + 12 = the 44 pt hit areas stay apart
           children: [
             for (final r in ReportReason.values)
-              Pressable(
+              StateChip(
                 key: ValueKey('report-reason-${r.name}'),
+                text: s.reason(r),
+                tone: _reason == r ? ChipTone.accent : ChipTone.neutral,
+                selected: _reason == r,
                 onTap: _busy ? null : () => setState(() => _reason = r),
-                child: StateChip(text: s.reason(r), tone: _reason == r ? ChipTone.accent : ChipTone.neutral),
               ),
           ],
         ),
@@ -107,7 +109,7 @@ class _ReportSheetBodyState extends ConsumerState<ReportSheetBody> {
         const SizedBox(height: 12),
         Text(s.reportLine, style: AppText.caption(c.textTertiary, size: 12)),
         const SizedBox(height: 20),
-        PrimaryButton(key: const ValueKey('report-submit'), label: s.reportSubmit, height: 52, glow: false, onPressed: _reason == null || _busy ? null : _submit),
+        PrimaryButton(key: const ValueKey('report-submit'), label: s.reportSubmit, glow: false, onPressed: _reason == null || _busy ? null : _submit),
         SizedBox(height: MediaQuery.paddingOf(context).bottom),
       ],
     );

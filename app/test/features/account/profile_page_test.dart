@@ -19,6 +19,7 @@ import 'package:slopetrack/features/social/country_card.dart';
 import 'package:slopetrack/features/social/friends/friends.dart';
 import 'package:slopetrack/features/social/social_controls.dart';
 import 'package:slopetrack/features/social/social_models.dart';
+import 'package:slopetrack/features/today/season_goal_sheet.dart';
 
 import '../../support/pump.dart';
 import '../achievements/ui/achievements_fixtures.dart';
@@ -44,18 +45,23 @@ List<Override> _overrides({
   List<Uri>? opened,
   List<SeasonTotals>? seasons,
   bool available = true,
+  SignInAction? signIn,
+  DeleteAccountAction? delete,
+  SyncTrigger? sync,
+  Settings? settings,
+  SyncStatus syncStatus = const SyncStatus(),
 }) =>
     [
       accountAvailableProvider.overrideWithValue(available),
       authStateProvider.overrideWith((ref) => authStream ?? Stream<AuthUser?>.value(user)),
       profileApiProvider.overrideWithValue(api),
       resortRepositoryProvider.overrideWith((ref) async => ResortRepository(_resorts)),
-      accountSyncStatusProvider.overrideWith((ref) => Stream<SyncStatus>.value(const SyncStatus())),
-      accountSyncTriggerProvider.overrideWithValue(() async {}),
-      accountSignInProvider.overrideWithValue(() async => _user),
+      accountSyncStatusProvider.overrideWith((ref) => Stream<SyncStatus>.value(syncStatus)),
+      accountSyncTriggerProvider.overrideWithValue(sync ?? () async {}),
+      accountSignInProvider.overrideWithValue(signIn ?? () async => _user),
       accountSignOutProvider.overrideWithValue(signOut ?? () async {}),
-      accountDeleteProvider.overrideWithValue(() async {}),
-      settingsProvider.overrideWith(() => SettingsNotifier(null, initial: Settings(onboardingDone: true, countryCode: country))),
+      accountDeleteProvider.overrideWithValue(delete ?? () async => true),
+      settingsProvider.overrideWith(() => SettingsNotifier(null, initial: settings ?? Settings(onboardingDone: true, countryCode: country))),
       seasonTotalsProvider.overrideWith(
         (ref) => Stream.value(seasons ?? [SeasonTotals(seasonKey: _thisSeason, dayCount: 3, runCount: 21, dropM: 5717, skiDistanceM: 61000, maxSpeedMs: 69 / 3.6)]),
       ),
@@ -133,12 +139,196 @@ void main() {
     expect(find.byKey(const ValueKey('account-sign-out')), findsOneWidget);
   });
 
-  testWidgets('signed out: Rider line and the Apple button', (tester) async {
-    await _pumpPage(tester, _overrides(user: null));
+  testWidgets('signed out: rider line, three benefits, Apple button, "Ohne Konto weiter", level card and season goal', (tester) async {
+    var signIns = 0;
+    await _pumpPage(tester, _overrides(user: null, signIn: () async {
+      signIns++;
+      return null;
+    }));
     expect(find.byKey(const ValueKey('account-signed-out')), findsOneWidget);
+    expect(find.byKey(const ValueKey('profile-signed-in')), findsNothing);
+    expect(find.text(_de.signedOutLine), findsOneWidget);
+    // Three benefit rows in order.
+    expect(find.byKey(const ValueKey('account-benefit-backup')), findsOneWidget);
+    expect(find.byKey(const ValueKey('account-benefit-boards')), findsOneWidget);
+    expect(find.byKey(const ValueKey('account-benefit-friends')), findsOneWidget);
+    expect(find.text('Backup'), findsOneWidget);
+    expect(find.text('Ranglisten & Duelle'), findsOneWidget);
+    expect(find.text('Freunde'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('account-benefit-backup'))).dy,
+      lessThan(tester.getTopLeft(find.byKey(const ValueKey('account-benefit-boards'))).dy),
+    );
+    // Apple button and the secondary way out.
     expect(find.byKey(const ValueKey('account-apple')), findsOneWidget);
     expect(find.byIcon(Icons.apple), findsOneWidget);
-    expect(find.byKey(const ValueKey('profile-signed-in')), findsNothing);
+    expect(find.text(_de.signInWithApple), findsOneWidget);
+    expect(find.byKey(const ValueKey('account-continue')), findsOneWidget);
+    expect(find.text('Ohne Konto weiter'), findsOneWidget);
+    // Device-computed level card and the goal row fill the lower half.
+    await _scrollTo(tester, find.byKey(const ValueKey('profile-level')));
+    expect(find.byType(LevelRing), findsOneWidget);
+    expect(find.text('7 / 48 Medaillen'), findsOneWidget);
+    expect(find.text(_de.deviceLevelHint), findsOneWidget);
+    await _scrollTo(tester, find.byKey(const ValueKey('profile-season-goal')));
+    expect(find.text(_de.seasonGoal), findsOneWidget);
+    expect(find.text('20.000'), findsOneWidget, reason: 'default goal');
+    // No sign-in yet.
+    expect(signIns, 0);
+    await _scrollTo(tester, find.byKey(const ValueKey('account-apple')));
+    await tester.tap(find.byKey(const ValueKey('account-apple')));
+    await tester.pumpAndSettle();
+    expect(signIns, 1);
+    expect(find.text(_de.signInFailed), findsOneWidget, reason: 'null user = failed');
+  });
+
+  testWidgets('signed out without a backend: the Apple button is disabled and the page explains', (tester) async {
+    var signIns = 0;
+    await _pumpPage(tester, _overrides(user: null, available: false, signIn: () async {
+      signIns++;
+      return _user;
+    }));
+    expect(find.text(_de.unavailable), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('account-apple')));
+    await tester.pumpAndSettle();
+    expect(signIns, 0);
+    expect(find.byKey(const ValueKey('account-continue')), findsOneWidget, reason: 'the way out stays');
+  });
+
+  testWidgets('"Ohne Konto weiter" pops the page', (tester) async {
+    await pumpApp(
+      tester,
+      Builder(
+        builder: (context) => Scaffold(
+          body: Center(child: TextButton(onPressed: () => ProfilePage.open(context), child: const Text('open'))),
+        ),
+      ),
+      overrides: _overrides(user: null),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfilePage), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('account-continue')));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfilePage), findsNothing);
+    expect(find.text('open'), findsOneWidget);
+  });
+
+  testWidgets('the Apple button uses the onboarding look: ink fill in dark, hairline border', (tester) async {
+    await _pumpPage(tester, _overrides(user: null));
+    // The shared AppleButton (app/widgets/buttons.dart) under the account key.
+    final box = tester.widget<AnimatedContainer>(find.descendant(of: find.byKey(const ValueKey('account-apple')), matching: find.byType(AnimatedContainer)));
+    final deco = box.decoration! as BoxDecoration;
+    expect(deco.border, isNotNull);
+    expect(deco.color, const Color(0xFF07070A), reason: 'AppColors.ink in the dark theme');
+  });
+
+  testWidgets('Saisonziel row opens the goal sheet and persists 25.000', (tester) async {
+    await _pumpPage(tester, _overrides(api: _api()));
+    await _scrollTo(tester, find.byKey(const ValueKey('profile-season-goal')));
+    expect(find.text('20.000'), findsOneWidget);
+
+    await tester.tap(find.text(_de.seasonGoal));
+    await tester.pumpAndSettle();
+    expect(find.byType(SeasonGoalSheet), findsOneWidget);
+    expect(find.byKey(const ValueKey('season-goal-value')), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('season-goal-save')));
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(tester.element(find.byType(ProfilePageBody)));
+    expect(container.read(settingsProvider).seasonGoalHm, 25000);
+    expect(find.byType(SeasonGoalSheet), findsNothing);
+    expect(find.text('25.000'), findsOneWidget, reason: 'the row follows the setting');
+  });
+
+  testWidgets('"Kein Ziel" shows in the row when the goal is 0', (tester) async {
+    await _pumpPage(tester, _overrides(api: _api(), settings: const Settings(onboardingDone: true, countryCode: 'AT', seasonGoalHm: 0)));
+    await _scrollTo(tester, find.byKey(const ValueKey('profile-season-goal')));
+    expect(find.text(_de.seasonGoalNone), findsOneWidget);
+  });
+
+  testWidgets('"Jetzt synchronisieren" triggers a sync', (tester) async {
+    var syncs = 0;
+    await _pumpPage(tester, _overrides(api: _api(), sync: () async => syncs++));
+    await _scrollTo(tester, find.byKey(const ValueKey('account-sync-now')));
+    await tester.tap(find.byKey(const ValueKey('account-sync-now')));
+    await tester.pumpAndSettle();
+    expect(syncs, 1);
+  });
+
+  testWidgets('deleting the account needs both confirmations', (tester) async {
+    var deletes = 0;
+    await _pumpPage(tester, _overrides(api: _api(), delete: () async {
+      deletes++;
+      return true;
+    }));
+
+    await _scrollTo(tester, find.byKey(const ValueKey('account-delete')));
+    await tester.tap(find.byKey(const ValueKey('account-delete')));
+    await tester.pumpAndSettle();
+    expect(find.text(_de.deleteTitle), findsOneWidget);
+
+    // Backing out of the first sheet deletes nothing.
+    await tester.tap(find.byKey(const ValueKey('account-confirm-cancel')));
+    await tester.pumpAndSettle();
+    expect(deletes, 0);
+
+    await _scrollTo(tester, find.byKey(const ValueKey('account-delete')));
+    await tester.tap(find.byKey(const ValueKey('account-delete')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('account-delete-1')));
+    await tester.pumpAndSettle();
+    expect(find.text(_de.deleteConfirmTitle), findsOneWidget);
+    expect(deletes, 0, reason: 'the second confirmation is a hold');
+
+    final hold = find.byKey(const ValueKey('account-delete-2'));
+    final gesture = await tester.startGesture(tester.getCenter(hold));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(deletes, 1);
+    expect(find.text(_de.deletedToast), findsOneWidget);
+    await _settleToast(tester);
+  });
+
+  testWidgets('a failed deletion says so, keeps the profile and shows no "Konto gelöscht"', (tester) async {
+    var deletes = 0;
+    final api = _api();
+    await _pumpPage(tester, _overrides(api: api, delete: () async {
+      deletes++;
+      return false;
+    }));
+
+    await _scrollTo(tester, find.byKey(const ValueKey('account-delete')));
+    await tester.tap(find.byKey(const ValueKey('account-delete')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('account-delete-1')));
+    await tester.pumpAndSettle();
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('account-delete-2'))));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(deletes, 1);
+    expect(find.text('Löschen hat nicht geklappt, bitte später erneut'), findsOneWidget);
+    expect(find.text(_de.deletedToast), findsNothing);
+    expect(find.byKey(const ValueKey('profile-signed-in')), findsOneWidget, reason: 'the session stays');
+    final container = ProviderScope.containerOf(tester.element(find.byType(ProfilePageBody)));
+    expect(container.read(profileServiceProvider).cached?.displayName, 'Sebastian', reason: 'the cached profile is not dropped');
+    await _settleToast(tester);
+  });
+
+  testWidgets('a rate-limited sync reads "Sync pausiert, geht gleich weiter", never offline', (tester) async {
+    await _pumpPage(tester, _overrides(api: _api(), syncStatus: const SyncStatus(state: SyncState.throttled, pending: 2)));
+    await _scrollTo(tester, find.byKey(const ValueKey('account-sync-line')));
+    expect(tester.widget<Text>(find.byKey(const ValueKey('account-sync-line'))).data, 'Sync pausiert, geht gleich weiter');
+    expect(find.text(_de.syncOffline), findsNothing);
   });
 
   testWidgets('changing the team writes the setting and the profile; the flag updates', (tester) async {
@@ -269,7 +459,7 @@ void main() {
     expect(find.byType(FriendsSheetBody), findsNothing);
 
     await _scrollTo(tester, find.byKey(const ValueKey('profile-level')));
-    await tester.tap(find.byKey(const ValueKey('profile-level')));
+    await tester.tap(find.byType(LevelRing));
     await tester.pumpAndSettle();
     expect(find.byType(MedalsSheetBody), findsOneWidget);
   });

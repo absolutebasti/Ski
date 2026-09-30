@@ -26,14 +26,18 @@ final Provider<bool> accountAvailableProvider = Provider<bool>((ref) => ref.watc
 typedef SignInAction = Future<AuthUser?> Function();
 typedef AccountAction = Future<void> Function();
 
+/// Account deletion: true when the account is gone, false when the backend
+/// refused or was unreachable (nothing deleted, session intact).
+typedef DeleteAccountAction = Future<bool> Function();
+
 final Provider<SignInAction> accountSignInProvider =
     Provider<SignInAction>((ref) => ref.read(authServiceProvider).signInWithApple);
 
 final Provider<AccountAction> accountSignOutProvider =
     Provider<AccountAction>((ref) => ref.read(authServiceProvider).signOut);
 
-final Provider<AccountAction> accountDeleteProvider =
-    Provider<AccountAction>((ref) => ref.read(authServiceProvider).deleteAccount);
+final Provider<DeleteAccountAction> accountDeleteProvider =
+    Provider<DeleteAccountAction>((ref) => ref.read(authServiceProvider).deleteAccount);
 
 /// Opens a `mailto:` (support row on the profile page). Indirection so a
 /// widget test can capture the URI instead of hitting url_launcher.

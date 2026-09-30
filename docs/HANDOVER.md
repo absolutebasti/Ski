@@ -1,4 +1,4 @@
-# SlopeTrack — Handover (2026-09-29)
+# SlopeTrack — Handover (2026-09-30)
 
 ## What this is
 The ski-day tracker rebuilt from the 2025 PWA as a Flutter app (iOS first, Android builds, native Apple Watch companion). One tap records the whole day; runs, lifts and stops are detected automatically; tracking keeps running with the phone locked. Brand: **SlopeTrack**, bundle id `de.torchtechnology.slopetrack`, Team 5GDU97KSQU.
@@ -37,12 +37,17 @@ Audit → `docs/BACKLOG.md`; three agent waves + lead work: RPC security fix (le
 ## Also done 2026-09-29
 TestFlight blockers (TF-PLIST): photo/camera/microphone purpose strings for the image_picker static scan (ITMS-90683), English base values in Info.plist with DE/EN `InfoPlist.strings`, privacy manifest lists Photos or Videos, nutrition table + privacy policy mention the optional profile photo, Watch/heart-rate wording qualified as planned, `tools/testflight.sh` hardened (no stale archive, build failure aborts, CFBundleVersion assertion, empty-auth fix for bash 3.2).
 
+## Also done 2026-09-30 (backlog v2 wave 2a + founder feedback)
+Wave 2a on Opus (Fable's monthly limit stopped two runs; partial work was continued, not restarted): **Rangliste without login** (public top 10 via anon RPC `public_board_teaser`, locked duel/challenge previews, sign-in strip; 0016) · **duel invites in-app** (`duel_invites`, invite/respond/my_invites RPCs, `create_duel` RPC in the client, block check on accept; 0017) · **Konto/Einstellungen 2** (blocked users page fed by `blocked_riders()`, signed-out profile page with benefits + Apple button + 'Ohne Konto weiter', season goal row, units row removed, AccountSheet retired) · **sync 2** (honest account deletion `Future<bool>`, profile repair on start/auth/tick, `SyncState.throttled`, keyset paging, drift v3 `days.track_path`) · **backend limits** (0015: track_path-only updates free, live_days window ± 1 day + 20 s throttle, `join_group` on the group's tz, CI workflow for SQL + Deno tests) · **resorts deduplicated** (4.748 areas, 186 aliases, `resort_aliases` + canonicalising triggers, 0018; achievements count canonical ids) · **onboarding a11y** (P1 centred layout, reduce motion via `Tokens.reduced/motion`, 1.3× text-scale tests for four screens, WCAG contrast test — light tertiary token fixed) · **widget layer** (11 new glyphs, MetricStrip units, SurfaceCard alignment, semantics on sheets/tiles/bars/toasts/hold button, static pulses under reduced motion) · **founder feedback**: day cards and the Tagesbilanz hero show an **Apple Maps satellite image of the skied area** with the route (native `MKMapSnapshotter` via `ios/Runner/MapSnapshot.swift`, files `thumbs/<id>_map.png` / `_hero.png`, background render at End + retry once per session, attribution 'Karten: © Apple', path thumbnail stays as offline fallback) · **buttons polish pass** (inventory in `.context/plan/buttons-audit.md`) · review follow-ups (uploader respects the 20 s throttle, opt-in copy says name + avatar are public, privacy pages updated). SQL suite: 71 tests live across 12 files (`tools/supabase-test.sh --live`).
+
+**Lift detection** is being rebuilt in the parallel Conductor session "bern-fb" (cable-ride signature: station-to-station evidence, full-resolution straightness and gradient rigidity, speedAcc-derived constancy; `TrackingConfig.engineVersion` 1 → 2; docs/TRACKING.md) and lands in its own commit on top of this one, followed by `test/tracking/lift_scenarios_test.dart` + `docs/ENGINE.md` from this session. Top speed, Ø ski speed, ski km and drop only ever count run segments — that was already true; the rebuild makes descending gondola rides and fast lifts robust.
+
 ## Next steps, in order
-1. Founder: create the App Store Connect app record "SlopeTrack" (bundle id `de.torchtechnology.slopetrack`), then `tools/testflight.sh --upload` with the signed-in Xcode account (Apple Distribution 5GDU97KSQU present) or an ASC API key.
-2. Device QA (`docs/QA.md`): one locked-phone hour, one kill/resume, one mountain day → diagnostics bundle → engine fixture.
-3. TestFlight build 2: Watch app, Live Activity, `Gebiet` info card.
-4. Backend open items (`docs/BACKEND.md`): server-side participant count for `MyRank.total`, Edge Function so `deleteAccount` also removes the `auth.users` row, seed weekly challenges (table `challenges` is empty), rate limits.
-5. Founder decisions: name (see `docs/NAMING.md`), map provider, Watch target once the watchOS SDK is installed.
+1. Founder: create the App Store Connect app record "SlopeTrack" (bundle id `de.torchtechnology.slopetrack`), then `tools/testflight.sh --upload` with the signed-in Xcode account (Apple Distribution 5GDU97KSQU present) or an ASC API key. Vault secrets for `report-notify` (docs/BACKEND.md §Reports). Impressum address in `docs/imprint.html`. Domain slopetrack.app → GitHub Pages, then `customDomainLive = true`.
+2. Merge the lift-detection commit from session bern-fb (regenerates the share + day_thumb goldens), then lift_scenarios_test + docs/ENGINE.md.
+3. Device QA (`docs/QA.md`): one locked-phone hour, one kill/resume, one mountain day → diagnostics bundle → engine fixture; check the satellite thumbnails and permission prompts on the device.
+4. Remaining backlog v2 packages (`docs/BACKLOG-2.md`): SOC-NAME-FALLBACK, DEMO-SHOTS (signed-in demo fixtures + store screenshots with podium/duel), then SOC-SEASONS-COMPARE, NOTIF-LOCAL, LIVE-ACTIVITY, LATER-IMPORT-UNITS.
+5. Founder decisions: automatic silent recompute of stored days on an engine version change (recommended), map provider for the day detail (tiles), Watch target once the watchOS SDK is installed, app icon.
 
 ## Decisions still open
 - Name is SlopeTrack; register slopetrack.app and file the word mark (docs/NAMING.md).
@@ -51,6 +56,8 @@ TestFlight blockers (TF-PLIST): photo/camera/microphone purpose strings for the 
 - Map provider for the store release (Mapbox/MapTiler key); TestFlight uses OpenTopoMap + OpenSnowMap without a key.
 
 ## Known blockers / risks
+- Two Conductor sessions worked on the same worktree on 2026-09-30 and nearly overwrote each other's engine edits; run one session per worktree, or agree file ownership first (this session: everything except `lib/tracking`, `core/constants.dart`, `test/tracking`, `docs/TRACKING.md`). A full tree copy from before the overlap is in `.context/snapshot-20260930-095843` (gitignored).
+- Apple Maps snapshots carry the Apple wordmark; it is kept visible (never cropped) plus the 'Karten: © Apple' line — re-check against Apple's MapKit attribution terms before the store submission.
 - First upload: create the App Store Connect app record for `de.torchtechnology.slopetrack`, then run `tools/testflight.sh --upload` with the signed-in Xcode account (Apple Distribution certificate for 5GDU97KSQU is present on this Mac; an ASC API key via `ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_PATH` works too). The script deletes stale archives before the build and refuses to export when the archive's CFBundleVersion differs from `BUILD_NUMBER`.
 - `de.lproj/en.lproj/InfoPlist.strings` are referenced from `Runner.xcodeproj` as a variant group (2026-09-29) → permission prompts follow the device language.
 - Background continuity and battery can only be proven on a real device.

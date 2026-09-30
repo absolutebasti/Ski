@@ -1,3 +1,6 @@
+export 'map_images.dart';
+export 'map_overlay.dart';
+export 'map_region.dart';
 export 'map_sheet.dart';
 export 'map_strings.dart';
 export 'route_colors.dart';

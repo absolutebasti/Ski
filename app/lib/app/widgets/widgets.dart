@@ -2,6 +2,7 @@ export '../theme/surfaces.dart';
 export 'app_card.dart';
 export 'buttons.dart';
 export 'chips.dart';
+export 'controls.dart';
 export 'empty_state.dart';
 export 'glyphs.dart';
 export 'header.dart';

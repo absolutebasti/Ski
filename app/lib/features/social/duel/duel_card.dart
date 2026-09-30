@@ -10,7 +10,7 @@ import '../../../app/theme/tokens.dart';
 import '../../../app/theme/typography.dart';
 import '../../../app/widgets/widgets.dart';
 import '../../../core/core.dart';
-import '../invite/invite_links.dart';
+import '../invite/invite_strings.dart';
 import '../social_api.dart';
 import '../social_controls.dart';
 import '../social_models.dart';
@@ -31,9 +31,13 @@ import 'duel_strings.dart';
 /// optional name) and 'Code eingeben'. Past duels list underneath
 /// ([DuelHistoryList]).
 ///
-/// The board is refetched every [duelPollIntervalProvider] while the tab is
-/// visible and the app is in the foreground; override the provider with `null`
-/// to switch polling off (widget tests).
+/// A pending in-app invite (migration 0017, [duelInvitesProvider]) sits above
+/// the card: 'Duell-Einladung von Lena' with Annehmen / Ablehnen
+/// ([DuelInviteCard]).
+///
+/// Board and invites are refetched every [duelPollIntervalProvider] while the
+/// tab is visible and the app is in the foreground; override the provider
+/// with `null` to switch polling off (widget tests).
 class DuelCard extends ConsumerStatefulWidget {
   const DuelCard({super.key, this.resortId, this.ownUserId, this.now, this.showHistory = true});
 
@@ -92,6 +96,8 @@ class _DuelCardState extends ConsumerState<DuelCard> with WidgetsBindingObserver
   }
 
   void _refresh() {
+    // Invites matter most while there is no duel yet — always refetched.
+    ref.invalidate(duelInvitesProvider);
     final duel = ref.read(myDuelProvider).asData?.value;
     if (duel == null) return;
     ref.invalidate(groupBoardProvider(duel.id));
@@ -166,6 +172,30 @@ class _DuelCardState extends ConsumerState<DuelCard> with WidgetsBindingObserver
         if (mounted) showToast(context, s.duelLeft);
       });
 
+  /// Annehmen / Ablehnen. Accept joins the duel (join_group path) and the
+  /// card switches to its board; decline drops the invite. Whatever the
+  /// server says, the invites are refetched so the card matches it.
+  Future<void> _respond(DuelInvite invite, {required bool accept}) => _run((api) async {
+        final s = SocialStrings.of(context);
+        final ds = DuelStrings.of(context);
+        try {
+          final group = await api.respondInvite(invite.id, accept: accept);
+          if (group != null) {
+            unawaited(HapticFeedback.mediumImpact());
+            ref.invalidate(myDuelProvider);
+            ref.invalidate(myDuelsProvider);
+            ref.invalidate(groupBoardProvider(group.id));
+          }
+          ref.invalidate(duelInvitesProvider);
+          if (mounted) showToast(context, group != null ? s.duelJoined : ds.inviteDeclined);
+        } on SocialError catch (e) {
+          ref.invalidate(duelInvitesProvider);
+          // invite_not_found arrives as riderNotFound — say what it is.
+          if (e.kind != SocialErrorKind.riderNotFound) rethrow;
+          if (mounted) showToast(context, ds.inviteGone);
+        }
+      });
+
   Future<void> _share(DuelGroup duel) async {
     final s = SocialStrings.of(context);
     await SharePlus.instance.share(ShareParams(text: DuelCardShare.text(s, duel.code), subject: s.duel));
@@ -176,10 +206,14 @@ class _DuelCardState extends ConsumerState<DuelCard> with WidgetsBindingObserver
     final s = SocialStrings.of(context);
     final ds = DuelStrings.of(context);
     final duel = ref.watch(myDuelProvider).asData?.value;
+    // `.value` keeps the last list while a poll refetches — no flicker.
+    final invites = ref.watch(duelInvitesProvider).value ?? const <DuelInvite>[];
+    final invite = invites.isEmpty ? null : invites.first;
     final now = widget.now ?? DateTime.now();
     final Widget card;
     if (duel == null) {
-      card = _DuelIdle(busy: _busy, onCreate: _create, onJoin: _join);
+      // One champagne CTA at a time: with an invite on top, 'Annehmen' is it.
+      card = _DuelIdle(busy: _busy, quiet: invite != null, onCreate: _create, onJoin: _join);
     } else {
       final rows = ref.watch(groupBoardProvider(duel.id)).asData?.value ?? const <GroupMemberStats>[];
       final board = rows.map(DuelMember.from).toList();
@@ -208,22 +242,36 @@ class _DuelCardState extends ConsumerState<DuelCard> with WidgetsBindingObserver
             const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(child: SecondaryButton(label: s.duelShare, glyph: Glyph.share, height: 48, onPressed: _busy ? null : () => _share(duel))),
+                Expanded(child: SecondaryButton(label: s.duelShare, glyph: Glyph.share, height: Tokens.buttonMd, onPressed: _busy ? null : () => _share(duel))),
                 const SizedBox(width: 10),
-                SecondaryButton(label: s.duelLeave, height: 48, danger: true, onPressed: _busy ? null : () => _leave(duel)),
+                SecondaryButton(label: s.duelLeave, height: Tokens.buttonMd, danger: true, onPressed: _busy ? null : () => _leave(duel)),
               ],
             ),
           ],
         ),
       );
     }
-    if (!widget.showHistory) return card;
+    if (invite == null && !widget.showHistory) return card;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (invite != null) ...[
+          DuelInviteCard(
+            invite: invite,
+            more: invites.length - 1,
+            // One duel per day: a second one would fight over the card.
+            busyDay: duel != null && duel.day == invite.group.day,
+            highlight: duel == null,
+            busy: _busy,
+            now: now,
+            onAccept: () => _respond(invite, accept: true),
+            onDecline: () => _respond(invite, accept: false),
+          ),
+          const SizedBox(height: Tokens.cardGap),
+        ],
         card,
-        DuelHistoryList(ownUserId: widget.ownUserId, now: now),
+        if (widget.showHistory) DuelHistoryList(ownUserId: widget.ownUserId, now: now),
       ],
     );
   }
@@ -233,14 +281,119 @@ class _DuelCardState extends ConsumerState<DuelCard> with WidgetsBindingObserver
 class DuelCardShare {
   const DuelCardShare._();
 
-  /// 'Duell in SlopeTrack: Code KMJ4F2. … https://…/d/?c=KMJ4F2' — the
-  /// invite link from SOC-DEEPLINK so a tap lands in the app.
-  static String text(SocialStrings s, String code) => '${s.duelShareText(code)} ${InviteLinks.share(InviteKind.duel, code)}';
+  /// 'Duell in SlopeTrack: Code KMJ4F2. …' + the invite link on the next line
+  /// — [InviteStrings.duelShareText] is the single source (code, working
+  /// link, App Store line only once the store record is live).
+  static String text(SocialStrings s, String code) => InviteStrings(s.l).duelShareText(code);
+}
+
+/// A pending in-app invite: who asks, which duel, Annehmen / Ablehnen.
+///
+/// 'Annehmen' is off while the duel is full ([DuelInvite.full]) or the user
+/// already rides a duel that day ([busyDay]); a line says why. 'Ablehnen'
+/// always works.
+class DuelInviteCard extends StatelessWidget {
+  const DuelInviteCard({
+    super.key,
+    required this.invite,
+    required this.onAccept,
+    required this.onDecline,
+    required this.now,
+    this.more = 0,
+    this.busyDay = false,
+    this.highlight = true,
+    this.busy = false,
+  });
+
+  final DuelInvite invite;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
+
+  /// Clock for the day label of an invite that is not for today.
+  final DateTime now;
+
+  /// Further pending invites behind this one.
+  final int more;
+
+  /// The user is already in a duel on the invite's day.
+  final bool busyDay;
+
+  /// Champagne wash — off while a running duel card carries the accent.
+  final bool highlight;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final s = SocialStrings.of(context);
+    final ds = DuelStrings.of(context);
+    final group = invite.group;
+    final name = invite.fromName.trim();
+    final isToday = group.day == DateTime(now.year, now.month, now.day);
+    final meta = [
+      group.name.isEmpty ? s.duel : group.name,
+      if (!isToday) ds.dayLabel(group.day, now),
+      ds.members(invite.memberCount, group.maxMembers),
+    ].join(' · ');
+    final hint = invite.full ? ds.inviteFull : (busyDay ? ds.inviteBusyDay : null);
+    final canAccept = !busy && hint == null;
+    return AppCard(
+      key: ValueKey('duel-invite-${invite.id}'),
+      tone: highlight ? CardTone.accent : CardTone.plain,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              AvatarCircle(name: name.isEmpty ? s.duel : name, size: 40, avatarUrl: invite.fromAvatarUrl),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(ds.inviteFrom(name), maxLines: 2, overflow: TextOverflow.ellipsis, style: AppText.bodyText(c.textPrimary, size: 16, weight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(meta, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.caption(c.textSecondary, size: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (hint != null) ...[
+            const SizedBox(height: 10),
+            Text(hint, key: const ValueKey('duel-invite-hint'), style: AppText.caption(c.textSecondary, size: 12)),
+          ],
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: PrimaryButton(key: const ValueKey('duel-invite-accept'), label: ds.accept, height: Tokens.buttonMd, glow: false, onPressed: canAccept ? onAccept : null),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SecondaryButton(key: const ValueKey('duel-invite-decline'), label: ds.decline, height: Tokens.buttonMd, onPressed: busy ? null : onDecline),
+              ),
+            ],
+          ),
+          if (more > 0) ...[
+            const SizedBox(height: 10),
+            Text(ds.moreInvites(more), key: const ValueKey('duel-invite-more'), textAlign: TextAlign.center, style: AppText.caption(c.textTertiary, size: 12)),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _DuelIdle extends StatelessWidget {
-  const _DuelIdle({required this.busy, required this.onCreate, required this.onJoin});
+  const _DuelIdle({required this.busy, required this.onCreate, required this.onJoin, this.quiet = false});
   final bool busy;
+
+  /// An invite card sits on top: 'Duell starten' steps back to a secondary
+  /// button so only one champagne CTA is visible.
+  final bool quiet;
   final VoidCallback onCreate;
   final VoidCallback onJoin;
 
@@ -257,9 +410,13 @@ class _DuelIdle extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: PrimaryButton(label: s.duelStart, height: 52, glow: false, onPressed: busy ? null : onCreate)),
+              Expanded(
+                child: quiet
+                    ? SecondaryButton(label: s.duelStart, height: Tokens.buttonMd, onPressed: busy ? null : onCreate)
+                    : PrimaryButton(label: s.duelStart, height: Tokens.buttonMd, glow: false, onPressed: busy ? null : onCreate),
+              ),
               const SizedBox(width: 10),
-              Expanded(child: SecondaryButton(label: s.duelJoin, height: 52, onPressed: busy ? null : onJoin)),
+              Expanded(child: SecondaryButton(label: s.duelJoin, height: Tokens.buttonMd, onPressed: busy ? null : onJoin)),
             ],
           ),
         ],
@@ -438,7 +595,7 @@ class _DuelCreateSheetState extends State<DuelCreateSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          PrimaryButton(key: const ValueKey('duel-create-button'), label: ds.createAction, height: 52, glow: false, onPressed: _submit),
+          PrimaryButton(key: const ValueKey('duel-create-button'), label: ds.createAction, glow: false, onPressed: _submit),
           const SizedBox(height: 8),
         ],
       ),
@@ -497,7 +654,7 @@ class _JoinSheetState extends State<_JoinSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          PrimaryButton(label: s.duelJoin, height: 52, glow: false, onPressed: _submit),
+          PrimaryButton(label: s.duelJoin, glow: false, onPressed: _submit),
           const SizedBox(height: 8),
         ],
       ),

@@ -8,8 +8,9 @@ import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import 'social_models.dart';
 
-/// Text tabs with a champagne underline — never a Material TabBar
-/// (docs/DESIGN.md appendix: "text tabs with an underline in Rangliste").
+/// Saison · Monat · Woche: the shared [SegmentedPill] (docs/DESIGN.md §5
+/// Rangliste 2. — h 40 glass track, raised selected segment, 200 ms slide),
+/// never a Material TabBar. Selection clicks the selection haptic.
 class SocialSegmentTabs extends StatelessWidget {
   const SocialSegmentTabs({super.key, required this.labels, required this.index, required this.onSelect});
 
@@ -18,49 +19,11 @@ class SocialSegmentTabs extends StatelessWidget {
   final ValueChanged<int> onSelect;
 
   @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          children: [
-            for (final (i, label) in labels.indexed)
-              Expanded(
-                child: Semantics(
-                  selected: i == index,
-                  button: true,
-                  child: Pressable(
-                    onTap: () => selectWithHaptic(() => onSelect(i)),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Text(
-                            label,
-                            textAlign: TextAlign.center,
-                            style: AppText.bodyText(i == index ? c.textPrimary : c.textTertiary, size: 16, weight: i == index ? FontWeight.w700 : FontWeight.w500),
-                          ),
-                        ),
-                        AnimatedContainer(
-                          duration: Tokens.medium,
-                          curve: Curves.easeOutCubic,
-                          height: 2,
-                          color: i == index ? c.accent : Colors.transparent,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const Hairline(),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => SegmentedPill<int>(
+        options: [for (final (i, label) in labels.indexed) (i, label)],
+        value: index,
+        onChanged: onSelect,
+      );
 }
 
 /// h 32 pill that can be tapped: selected = accent wash, else glass.
@@ -74,21 +37,23 @@ class SocialFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return Semantics(
-      selected: selected,
-      button: true,
-      child: Pressable(
-        onTap: onTap,
-        child: Container(
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? c.accentWash : c.glassFill,
-            borderRadius: BorderRadius.circular(Tokens.rPill),
-            border: Border.all(color: selected ? Colors.transparent : c.hairline, width: c.hairlineWidth),
+    return HitSlop(
+      child: Semantics(
+        selected: selected,
+        button: true,
+        child: Pressable(
+          onTap: onTap,
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: selected ? c.accentWash : c.glassFill,
+              borderRadius: BorderRadius.circular(Tokens.rPill),
+              border: Border.all(color: selected ? Colors.transparent : c.hairline, width: c.hairlineWidth),
+            ),
+            child: Text(label, style: AppText.chip(selected ? c.accent : c.textSecondary)),
           ),
-          child: Text(label, style: AppText.label(selected ? c.accent : c.textSecondary, size: 12)),
         ),
       ),
     );
@@ -210,26 +175,28 @@ class SocialPickerChip extends StatelessWidget {
     final c = AppColors.of(context);
     return Align(
       alignment: Alignment.centerLeft,
-      child: Semantics(
-        button: true,
-        label: semanticsLabel,
-        child: Pressable(
-          onTap: onTap,
-          child: Container(
-            height: 32,
-            padding: const EdgeInsets.fromLTRB(12, 0, 8, 0),
-            decoration: BoxDecoration(
-              color: c.glassFill,
-              borderRadius: BorderRadius.circular(Tokens.rPill),
-              border: Border.all(color: c.hairline, width: c.hairlineWidth),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.label(c.textPrimary, size: 12))),
-                const SizedBox(width: 4),
-                GlyphIcon(Glyph.chevronRight, size: 12, color: c.textTertiary),
-              ],
+      child: HitSlop(
+        child: Semantics(
+          button: true,
+          label: semanticsLabel,
+          child: Pressable(
+            onTap: onTap,
+            child: Container(
+              height: 32,
+              padding: const EdgeInsets.fromLTRB(12, 0, 8, 0),
+              decoration: BoxDecoration(
+                color: c.glassFill,
+                borderRadius: BorderRadius.circular(Tokens.rPill),
+                border: Border.all(color: c.hairline, width: c.hairlineWidth),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.chip(c.textPrimary))),
+                  const SizedBox(width: 4),
+                  const RowChevron(inline: true),
+                ],
+              ),
             ),
           ),
         ),
@@ -257,9 +224,9 @@ class FriendsHeaderButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
+      child: Pressable(
         onTap: onTap,
+        semantics: false,
         child: SizedBox(
           width: 44,
           height: 44,
@@ -422,11 +389,11 @@ class SocialStateBlock extends StatelessWidget {
           RiderLine(line),
           if (actionLabel != null) ...[
             const SizedBox(height: 18),
-            PrimaryButton(label: actionLabel!, onPressed: onAction, height: 52, glow: false),
+            PrimaryButton(label: actionLabel!, onPressed: onAction, height: Tokens.buttonMd, glow: false),
           ],
           if (secondaryLabel != null) ...[
             const SizedBox(height: 10),
-            SecondaryButton(label: secondaryLabel!, onPressed: onSecondary, height: 48),
+            SecondaryButton(label: secondaryLabel!, onPressed: onSecondary, height: Tokens.buttonMd),
           ],
         ],
       ),

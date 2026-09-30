@@ -177,7 +177,7 @@ class _GoalLine extends StatelessWidget {
             ),
             Text('$pct %', style: AppText.numXs(frac >= 1 ? c.accent : c.textSecondary)),
             const SizedBox(width: 6),
-            GlyphIcon(Glyph.chevronRight, size: 12, color: c.textTertiary),
+            const RowChevron(inline: true),
           ],
         ),
         const SizedBox(height: 6),

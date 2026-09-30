@@ -208,9 +208,14 @@ void main() {
     expect(find.byType(LiveDot), findsNothing);
   });
 
-  test('the share text carries the code and the invite link', () {
-    final text = DuelCardShare.text(const SocialStrings(AppLocale(Locale('de'))), 'KMJ4F2');
-    expect(text, contains('KMJ4F2'));
-    expect(text, contains(InviteLinks.share(InviteKind.duel, 'KMJ4F2')));
+  test('the share text is InviteStrings.duelShareText — one source, code + link, no placeholder store id', () {
+    for (final locale in const [Locale('de'), Locale('en')]) {
+      final l = AppLocale(locale);
+      final text = DuelCardShare.text(SocialStrings(l), 'kmj4f2');
+      expect(text, InviteStrings(l).duelShareText('KMJ4F2'));
+      expect(text, contains('KMJ4F2'));
+      expect(text, contains(InviteLinks.share(InviteKind.duel, 'KMJ4F2')));
+      expect(text, isNot(contains('id0000000000')));
+    }
   });
 }

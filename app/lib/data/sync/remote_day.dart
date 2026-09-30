@@ -9,6 +9,15 @@ import '../db/database.dart';
 /// [countryCode] is the team the day counts for (migration 0004): the
 /// resort's country, or the rider's own country when the resort is unknown.
 /// Always written (null clears it) so a corrected resort travels too.
+///
+/// [deviceUpdatedAtMs] is the local row's `updatedAt` (SYNC-2): the moment of
+/// the last edit, not of the push, so two devices merge last-edit-wins even
+/// when one of them was offline for days.
+///
+/// `track_path` is sent when the backup is already uploaded ([trackPath],
+/// SYNC-2 — saves the second write) and cleared on a tombstone (the storage
+/// object goes with it); otherwise the key is absent and the server value
+/// stays.
 Map<String, Object?> dayRowToRemote(
   DayRow r, {
   required String userId,
@@ -44,7 +53,7 @@ Map<String, Object?> dayRowToRemote(
     'engine_version': r.engineVersion,
     'has_barometer': r.hasBarometer,
     'vehicle_flag': r.vehicleFlag,
-    'track_path': ?trackPath,
+    if (deleted) 'track_path': null else 'track_path': ?trackPath,
     'device_updated_at': _iso(deviceUpdatedAtMs),
     'deleted_at': _isoOrNull(deletedAt),
   };

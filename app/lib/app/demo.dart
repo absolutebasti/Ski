@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../core/settings.dart';
 import '../data/db/providers.dart';
+import '../features/map/map_images.dart';
 import '../features/map/thumbnail_renderer.dart';
 import '../platform/permission_service.dart';
 import '../tracking/synthetic.dart';
@@ -83,7 +84,7 @@ class Demo {
   static Future<void> _seed(ProviderContainer container) async {
     final repo = container.read(daysRepositoryProvider);
     if ((await repo.watchDays().first).isNotEmpty) return;
-    final resorts = [('kitzbuehel', 'Kitzbühel'), ('st-anton', 'St. Anton am Arlberg'), ('soelden', 'Sölden')];
+    final resorts = [('kitzbuehel', 'Kitzbühel'), ('st-anton', 'Ski Arlberg'), ('soelden', 'Sölden')];
     final now = DateTime.now();
     for (var i = 0; i < 3; i++) {
       // Consecutive days so the streak chip and the streak medal show up in demo mode.
@@ -106,8 +107,14 @@ class Demo {
       await repo.finishDay('demo-$i', endedAt: r.points.last.ts, stats: r.stats, segments: r.segments);
       try {
         final detail = await repo.dayDetail('demo-$i');
-        if (detail != null) await repo.updateMapThumb('demo-$i', await ThumbnailRenderer.renderBoth(detail));
-      } catch (_) {}
+        if (detail != null) {
+          await repo.updateMapThumb('demo-$i', await ThumbnailRenderer.renderBoth(detail));
+          // Satellite card + hero (needs network; null offline → path PNGs stay).
+          await container.read(mapImagesProvider).render('demo-$i');
+        }
+      } catch (e, st) {
+        debugPrint('demo: thumbnails for demo-$i failed: $e\n$st');
+      }
     }
     await container.read(settingsProvider.notifier).update((s) => s.copyWith(lastResortId: 'kitzbuehel'));
   }

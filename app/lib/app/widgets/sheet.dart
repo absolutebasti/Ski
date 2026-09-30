@@ -4,6 +4,7 @@ import '../theme/surfaces.dart';
 import '../theme/tokens.dart';
 import '../theme/typography.dart';
 import 'glyphs.dart';
+import 'header.dart';
 
 /// Modal bottom sheet: r28, glass, handle, optional header row with close.
 class AppSheet {
@@ -28,19 +29,24 @@ class AppSheet {
               child: Container(width: 36, height: 4, decoration: BoxDecoration(color: c.hairlineStrong, borderRadius: BorderRadius.circular(2))),
             ),
             if (title != null) ...[
+              // The 32 pt glass circle (spec) sits in a real 44 × 44 tap box;
+              // the padding gives back the 6 pt so the pixels stay where the
+              // 20 / 14 / 12 insets put them.
               Padding(
-                padding: const EdgeInsets.fromLTRB(Tokens.pad, 14, Tokens.pad, 12),
+                padding: const EdgeInsets.fromLTRB(Tokens.pad, 8, Tokens.pad - 6, 6),
                 child: Row(
                   children: [
                     Expanded(child: Text(title, style: AppText.headline(c.textPrimary))),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => Navigator.of(ctx).maybePop(),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(color: c.glassFill, shape: BoxShape.circle, border: Border.all(color: c.glassStroke, width: c.hairlineWidth)),
-                        child: Center(child: GlyphIcon(Glyph.close, size: 16, color: c.textPrimary)),
+                    const SizedBox(width: 6),
+                    SizedBox.square(
+                      dimension: Tokens.tapTarget,
+                      child: Center(
+                        child: HeaderButton(
+                          glyph: Glyph.close,
+                          size: 32,
+                          tooltip: MaterialLocalizations.of(ctx).closeButtonLabel,
+                          onTap: () => Navigator.of(ctx).maybePop(),
+                        ),
                       ),
                     ),
                   ],

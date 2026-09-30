@@ -261,13 +261,13 @@ class _CodeCard extends StatelessWidget {
                   key: const ValueKey('friends-share'),
                   label: s.share,
                   glyph: Glyph.share,
-                  height: 52,
+                  height: Tokens.buttonMd,
                   glow: false,
                   onPressed: busy ? null : onShare,
                 ),
               ),
               const SizedBox(width: 10),
-              SecondaryButton(key: const ValueKey('friends-copy'), label: s.copy, height: 52, onPressed: busy ? null : onCopy),
+              SecondaryButton(key: const ValueKey('friends-copy'), label: s.copy, height: Tokens.buttonMd, onPressed: busy ? null : onCopy),
             ],
           ),
         ],
@@ -291,7 +291,7 @@ class _CodeEntry extends StatelessWidget {
       children: [
         Expanded(
           child: Container(
-            height: 56,
+            height: Tokens.buttonMd,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: ShapeDecoration(color: c.surfaceRaised, shape: Squircle.border(Tokens.r14, side: c.hairline, width: c.hairlineWidth)),
             child: Center(
@@ -315,7 +315,7 @@ class _CodeEntry extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        SecondaryButton(key: const ValueKey('friends-add'), label: action, height: 56, onPressed: onSubmit),
+        SecondaryButton(key: const ValueKey('friends-add'), label: action, height: Tokens.buttonMd, onPressed: onSubmit),
       ],
     );
   }
@@ -388,7 +388,7 @@ class _RequestRow extends StatelessWidget {
                 child: PrimaryButton(
                   key: ValueKey('friends-accept-${friend.userId}'),
                   label: s.accept,
-                  height: 44,
+                  height: Tokens.buttonSm,
                   glow: false,
                   onPressed: busy ? null : onAccept,
                 ),
@@ -398,7 +398,7 @@ class _RequestRow extends StatelessWidget {
                 child: SecondaryButton(
                   key: ValueKey('friends-decline-${friend.userId}'),
                   label: s.decline,
-                  height: 44,
+                  height: Tokens.buttonSm,
                   onPressed: busy ? null : onDecline,
                 ),
               ),
@@ -426,7 +426,7 @@ class _SentRow extends StatelessWidget {
         children: [
           Expanded(child: _Identity(friend: friend, caption: s.waiting)),
           const SizedBox(width: 12),
-          SecondaryButton(key: ValueKey('friends-withdraw-${friend.userId}'), label: s.withdraw, height: 40, onPressed: busy ? null : onWithdraw),
+          SecondaryButton(key: ValueKey('friends-withdraw-${friend.userId}'), label: s.withdraw, height: Tokens.buttonSm, onPressed: busy ? null : onWithdraw),
         ],
       ),
     );
@@ -495,7 +495,7 @@ class _Line extends StatelessWidget {
         RiderLine(line),
         if (actionLabel != null) ...[
           const SizedBox(height: 18),
-          SecondaryButton(label: actionLabel!, height: 48, onPressed: onAction),
+          SecondaryButton(label: actionLabel!, height: Tokens.buttonMd, onPressed: onAction),
         ],
         const SizedBox(height: 8),
       ],

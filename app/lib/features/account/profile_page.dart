@@ -14,10 +14,6 @@ import '../../core/settings.dart';
 import '../../data/db/providers.dart';
 import '../../data/sync/auth_service.dart';
 import '../achievements/achievements_providers.dart';
-import '../achievements/achievements_strings.dart';
-import '../achievements/ui/level_ring.dart';
-import '../achievements/ui/medals_sheet.dart';
-import '../achievements/ui/streak_chip.dart';
 import '../onboarding/onboarding_countries.dart';
 import '../social/country_card.dart';
 import '../social/friends/friends_providers.dart';
@@ -34,9 +30,10 @@ import 'profile_service.dart';
 import 'resort_picker.dart';
 
 /// Eigenes Profil (PROFILE-PAGE): avatar, name, team, home resort, level and
-/// medals, season and lifetime numbers, friend code, opt-in, sync, support,
-/// sign out / delete. Signed out it shows the Apple button. Opened from the
-/// Einstellungen 'Konto' row via [ProfilePage.open].
+/// medals, season numbers and goal, friend code, opt-in, sync, support,
+/// sign out / delete. Signed out it is the one sign-in surface of the app:
+/// benefits, Apple button, 'Ohne Konto weiter', level and season goal.
+/// Opened from the Einstellungen 'Konto' row via [ProfilePage.open].
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -218,7 +215,7 @@ class _ProfilePageBodyState extends ConsumerState<ProfilePageBody> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (result == null) return;
-    showToast(context, result ? s.deletedToast : s.somethingWrong);
+    showToast(context, result ? s.deletedToast : s.deleteFailed);
   }
 
   // ------------------------------------------------------------------ build
@@ -231,6 +228,7 @@ class _ProfilePageBodyState extends ConsumerState<ProfilePageBody> {
         padding: const EdgeInsets.only(top: 16),
         child: AccountSignedOutBody(
           onSignIn: _busy ? null : _signIn,
+          onContinue: () => Navigator.of(context).maybePop(),
           failed: _signInFailed,
           available: ref.watch(accountAvailableProvider),
         ),
@@ -266,9 +264,11 @@ class _ProfilePageBodyState extends ConsumerState<ProfilePageBody> {
         accountCardGap,
         HomeResortCard(resortId: profile?.homeResortId, onTap: () => _pickResort(profile?.homeResortId)),
         AccountSection(s.sectionLevel),
-        const _LevelCard(),
+        const ProfileLevelCard(),
         AccountSection(s.sectionSeason),
         const _NumbersCard(),
+        accountCardGap,
+        const SeasonGoalCard(),
         AccountSection(s.sectionFriends),
         _FriendCodeCard(onFriends: () => FriendsSheet.show(context)),
         accountCardGap,
@@ -322,9 +322,9 @@ class _ProfilePageBodyState extends ConsumerState<ProfilePageBody> {
             ),
             if (_nameDirty) ...[
               const SizedBox(width: 8),
-              SecondaryButton(key: const ValueKey('profile-name-cancel'), label: s.cancel, height: 36, onPressed: _resetName),
+              SecondaryButton(key: const ValueKey('profile-name-cancel'), label: s.cancel, height: Tokens.buttonSm, onPressed: _resetName),
               const SizedBox(width: 8),
-              SecondaryButton(key: const ValueKey('profile-name-save'), label: s.save, height: 36, onPressed: _saveName),
+              SecondaryButton(key: const ValueKey('profile-name-save'), label: s.save, height: Tokens.buttonSm, onPressed: _saveName),
             ],
           ],
         ),
@@ -440,72 +440,10 @@ class _HeaderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              SecondaryButton(key: const ValueKey('profile-team-change'), label: s.changeTeam, height: 40, onPressed: onTeam),
+              SecondaryButton(key: const ValueKey('profile-team-change'), label: s.changeTeam, height: Tokens.buttonSm, onPressed: onTeam),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ----------------------------------------------------------------- level
-
-/// Level ring, level line, points, streak chip and the medal count; the card
-/// opens the Medaillen sheet.
-class _LevelCard extends ConsumerWidget {
-  const _LevelCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final a = ref.watch(achievementsProvider);
-    final c = AppColors.of(context);
-    final l = AppLocale.of(context);
-    final s = AchievementsStrings.of(context);
-    final nextAt = a.level.nextAtM;
-    final nextLine = nextAt == null ? s.topLevel : s.nextLevelShort((nextAt - a.level.distanceM).clamp(0, double.infinity), a.level.index + 1);
-    return Semantics(
-      label: s.openMedals,
-      child: AppCard(
-        onTap: () => MedalsSheet.show(context),
-        child: Row(
-          key: const ValueKey('profile-level'),
-          children: [
-            LevelRing(level: a.level, size: 64),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(s.levelLine(a.level).overline, style: AppText.label(c.textSecondary)),
-                  const SizedBox(height: 4),
-                  Text(nextLine, style: AppText.caption(c.textSecondary, size: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(Fmt.metres(a.points.toDouble(), locale: l.code), style: AppText.numS(c.accent)),
-                      const SizedBox(width: 6),
-                      Text(s.points, style: AppText.unit(c.textTertiary, size: 12)),
-                      const Spacer(),
-                      StreakChip(streak: a.streak, compact: true),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(s.medalCount(a.earned.length, a.medals.length), key: const ValueKey('profile-medals'), style: AppText.bodyStrong(c.textPrimary, size: 15)),
-                      ),
-                      GlyphIcon(Glyph.chevronRight, size: 16, color: c.textTertiary),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -660,7 +598,7 @@ class _FriendCodeCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 12),
-          SecondaryButton(key: const ValueKey('profile-friends'), label: s.friends, icon: Icons.people_outline_rounded, height: 40, onPressed: onFriends),
+          SecondaryButton(key: const ValueKey('profile-friends'), label: s.friends, icon: Icons.people_outline_rounded, height: Tokens.buttonSm, onPressed: onFriends),
         ],
       ),
     );
@@ -697,7 +635,7 @@ class _ContactCard extends StatelessWidget {
               ],
             ),
           ),
-          GlyphIcon(Glyph.chevronRight, size: 16, color: c.textTertiary),
+          const RowChevron(),
         ],
       ),
     );

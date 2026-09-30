@@ -69,7 +69,12 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   void _goTo(int index) {
     if (index < 0 || index >= OnboardingFlow.pageCount) return;
     setState(() => _index = index);
-    _pages.animateToPage(index, duration: Tokens.sheetUp, curve: Curves.easeOutCubic);
+    // Reduced motion: the next page is simply there, no slide.
+    if (Tokens.reduced(context)) {
+      _pages.jumpToPage(index);
+    } else {
+      _pages.animateToPage(index, duration: Tokens.sheetUp, curve: Curves.easeOutCubic);
+    }
   }
 
   Future<void> _setCountry(String code) async {
@@ -168,12 +173,11 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     Widget? skip;
     switch (_index) {
       case 0:
-        primary = PrimaryButton(key: const ValueKey('onboarding-primary'), label: s.next, height: 60, onPressed: () => _goTo(1));
+        primary = PrimaryButton(key: const ValueKey('onboarding-primary'), label: s.next, onPressed: () => _goTo(1));
       case 1:
         primary = PrimaryButton(
           key: const ValueKey('onboarding-primary'),
           label: s.next,
-          height: 60,
           onPressed: () async {
             await _leaveTeamPage();
             if (mounted) _goTo(2);
@@ -185,12 +189,11 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             key: const ValueKey('onboarding-primary'),
             child: AppleSignInButton(label: s.p3SignIn, onPressed: busy ? null : _signIn),
           );
-          skip = TextButton(key: const ValueKey('onboarding-skip'), onPressed: busy ? null : () => setState(() => _skipped = true), child: Text(s.skip));
+          skip = GhostButton(key: const ValueKey('onboarding-skip'), label: s.skip, onPressed: busy ? null : () => setState(() => _skipped = true));
         } else {
           primary = PrimaryButton(
             key: const ValueKey('onboarding-primary'),
             label: s.finish,
-            height: 60,
             onPressed: busy ? null : (_asked && !_granted ? _finish : _ask),
           );
         }
@@ -217,7 +220,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                       children: [
                         AnimatedOpacity(
                           opacity: canGoBack ? 1 : 0,
-                          duration: Tokens.fast,
+                          duration: Tokens.motion(context, Tokens.fast),
                           child: IgnorePointer(
                             ignoring: !canGoBack,
                             child: Semantics(
@@ -262,7 +265,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Semantics(label: s.stepOf(_index + 1, OnboardingFlow.pageCount), child: primary),
-                      if (skip != null) ...[const SizedBox(height: 6), skip],
+                      if (skip != null) ...[const SizedBox(height: 8), skip],
                     ],
                   ),
                 ),

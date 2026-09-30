@@ -22,7 +22,26 @@ final groupBoardProvider = FutureProvider.family<List<GroupMemberStats>, String>
   return api.groupBoard(groupId);
 }, retry: noRetry);
 
-/// How often the duel board is refetched while the tab is visible.
+/// Pending in-app invites into somebody's Tagesduell (RPC `my_duel_invites`,
+/// migration 0017), newest first. Empty while signed out, without a backend
+/// or when the call fails — the invite card simply stays away. Refetched by
+/// the `DuelCard` poll ([duelPollIntervalProvider]).
+final duelInvitesProvider = FutureProvider<List<DuelInvite>>((ref) async {
+  final api = ref.watch(duelApiProvider);
+  if (api == null) return const <DuelInvite>[];
+  // Keyed on the effective user id: a sign-in / sign-out refetches, the auth
+  // stream's first emission of the same user does not (no double RPC).
+  final uid = ref.watch(authStateProvider.select((a) => a.asData?.value?.id ?? api.userId));
+  if (uid == null) return const <DuelInvite>[];
+  try {
+    return await api.myInvites();
+  } on SocialError {
+    return const <DuelInvite>[];
+  }
+}, retry: noRetry);
+
+/// How often the duel board and the invites are refetched while the tab is
+/// visible.
 /// Override with `null` in widget tests so no timer outlives the test.
 final duelPollIntervalProvider = Provider<Duration?>((ref) => const Duration(seconds: 60));
 
@@ -135,4 +154,5 @@ void invalidateDuels(WidgetRef ref) {
   ref.invalidate(groupBoardProvider);
   ref.invalidate(myDuelsProvider);
   ref.invalidate(dayDuelProvider);
+  ref.invalidate(duelInvitesProvider);
 }

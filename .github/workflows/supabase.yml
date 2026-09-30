@@ -1,0 +1,71 @@
+# Backend checks for every PR that touches supabase/** (BE-15):
+#   1. Deno tests of the Edge Functions (delete-account, report-notify)
+#   2. a local Supabase stack (Docker) → all migrations → supabase/tests/*.sql
+#      through tools/supabase-test.sh (each file one transaction + rollback)
+# Nothing here talks to the live project; no secrets needed.
+name: supabase
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "tools/supabase-test.sh"
+      - ".github/workflows/supabase.yml"
+
+concurrency:
+  group: supabase-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  functions:
+    name: Edge Function tests (Deno)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+          cache: true
+      - name: deno test
+        run: deno test --allow-env supabase/functions/
+
+  sql:
+    name: Migrations + SQL tests (local stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned: the -x container names below are the ones of this CLI version
+      # (tools/supabase-test.sh was last run locally with 2.75.0).
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.75.0
+      # The images are the slow part of `supabase start`; keep them between runs.
+      - name: Cache Docker images
+        id: images
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/supabase-images
+          key: supabase-images-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}-v1
+      - name: Load cached images
+        if: steps.images.outputs.cache-hit == 'true'
+        run: for f in ~/.cache/supabase-images/*.tar; do docker load -i "$f"; done
+      # Only what the migrations and tests need (db, auth, storage, rest, kong).
+      - name: supabase start
+        run: supabase start -x studio,imgproxy,logflare,vector,realtime,edge-runtime,supavisor,mailpit,postgres-meta
+      - name: Save images for the cache
+        if: steps.images.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cache/supabase-images
+          docker images --format '{{.Repository}}:{{.Tag}}' | grep -E 'supabase|postgrest|kong' | sort -u | while read -r img; do
+            docker save "$img" -o ~/.cache/supabase-images/"$(echo "$img" | tr '/:' '__')".tar
+          done
+      - name: SQL tests
+        run: tools/supabase-test.sh --keep
+      - name: supabase stop
+        if: always()
+        run: supabase stop --no-backup || true

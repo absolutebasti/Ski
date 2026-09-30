@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import '../../app/theme/tokens.dart';
 
 /// A ski route that draws itself (900 ms easeOutQuart) — the onboarding hook.
+/// Under reduced motion (`Tokens.reduced`) the route is complete on the very
+/// first frame; nothing animates.
 class RouteHook extends StatefulWidget {
   const RouteHook({super.key, this.height = 150, this.animate = true});
-  final double height;
+  /// Band height; null = fill the height the parent hands down (Expanded).
+  final double? height;
   final bool animate;
   @override
   State<RouteHook> createState() => _RouteHookState();
@@ -16,10 +19,16 @@ class RouteHook extends StatefulWidget {
 class _RouteHookState extends State<RouteHook> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(vsync: this, duration: Tokens.routeDraw);
 
+  bool _decided = false;
+
   @override
-  void initState() {
-    super.initState();
-    if (widget.animate) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Runs before the first build, so a reduced-motion rider never sees a
+    // half-drawn route. Decided once: a later toggle does not restart the draw.
+    if (_decided) return;
+    _decided = true;
+    if (widget.animate && !Tokens.reduced(context)) {
       _c.forward();
     } else {
       _c.value = 1;
@@ -40,14 +49,15 @@ class _RouteHookState extends State<RouteHook> with SingleTickerProviderStateMix
       width: double.infinity,
       child: AnimatedBuilder(
         animation: _c,
-        builder: (context, _) => CustomPaint(painter: _RoutePainter(Curves.easeOutQuart.transform(_c.value), c.accent, c.liftGrey)),
+        builder: (context, _) => CustomPaint(painter: RoutePainter(Curves.easeOutQuart.transform(_c.value), c.accent, c.liftGrey)),
       ),
     );
   }
 }
 
-class _RoutePainter extends CustomPainter {
-  _RoutePainter(this.t, this.run, this.lift);
+/// Draw progress 0–1 (eased). Public so tests can read the first-frame state.
+class RoutePainter extends CustomPainter {
+  RoutePainter(this.t, this.run, this.lift);
   final double t;
   final Color run, lift;
 
@@ -83,5 +93,5 @@ class _RoutePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _RoutePainter old) => old.t != t;
+  bool shouldRepaint(covariant RoutePainter old) => old.t != t;
 }

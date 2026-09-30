@@ -239,7 +239,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
             children: [
               Expanded(child: PrimaryButton(label: s.share, onPressed: _share)),
               const SizedBox(width: 12),
-              SecondaryButton(label: s.delete, danger: true, height: 60, onPressed: _delete),
+              SecondaryButton(label: s.delete, danger: true, onPressed: _delete),
             ],
           ),
         ),
@@ -292,7 +292,8 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
   final TrackRestoreState restore;
   final VoidCallback? onRestore;
 
-  /// The tag the Tage row's thumbnail flies from (see day_card.dart).
+  /// The tag the Tage row's path thumbnail flies from (see day_card.dart). The
+  /// satellite card carries no Hero, so from there the detail simply opens.
   String get heroTag => 'route-${detail.day.id}';
 
   @override
@@ -453,7 +454,7 @@ class _Route extends StatelessWidget {
                   children: [
                     Text(s.withoutTrack.overline, style: AppText.label(c.textTertiary, size: 12)),
                     const SizedBox(height: 12),
-                    SecondaryButton(label: s.loadTrack, icon: Icons.cloud_download_rounded, height: 44, onPressed: onRestore),
+                    SecondaryButton(label: s.loadTrack, icon: Icons.cloud_download_rounded, height: Tokens.buttonSm, onPressed: onRestore),
                   ],
                 ),
             },
@@ -559,7 +560,7 @@ class _ResortLine extends StatelessWidget {
           children: [
             Flexible(child: text),
             const SizedBox(width: 4),
-            GlyphIcon(Glyph.chevronRight, size: 12, color: c.textTertiary),
+            const RowChevron(inline: true),
           ],
         ),
       ),
