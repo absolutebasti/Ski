@@ -2,7 +2,7 @@
 
 Second audit after waves 1–2c (four auditors, skeptics, planner). Source JSON: `.context/plan/backlog-2026-09-29.json`. Status is kept at the top of `BACKLOG.md`.
 
-**Status 2026-09-30:** wave 1 merged (PR #11); wave 2a done and reviewed (all packages except SOC-NAME-FALLBACK, DEMO-SHOTS, QA-DEVICE-1); founder packages MAP-SNAPSHOT + BUTTONS-POLISH added; lift detection rebuilt by the parallel session (cable signature). Still open: SOC-NAME-FALLBACK, DEMO-SHOTS, QA-DEVICE-1, SOC-SEASONS-COMPARE, NOTIF-LOCAL, LIVE-ACTIVITY, LATER-IMPORT-UNITS.
+**Status 2026-09-30:** wave 1 merged (PR #11); wave 2a done and reviewed (all packages except SOC-NAME-FALLBACK, DEMO-SHOTS, QA-DEVICE-1); founder packages MAP-SNAPSHOT + BUTTONS-POLISH added; lift detection rebuilt by the parallel session (cable signature). Still open: DEMO-SHOTS (after duels v2), QA-DEVICE-1, SOC-SEASONS-COMPARE, NOTIF-LOCAL, LIVE-ACTIVITY, LATER-IMPORT-UNITS.
 
 
 ## Wave 1
