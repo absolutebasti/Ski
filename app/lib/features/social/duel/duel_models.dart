@@ -194,6 +194,75 @@ class LiveDayPayload {
   String toString() => 'LiveDayPayload(${formatDate(day)}, $dropM hm, $runCount runs)';
 }
 
+/// One row of `my_duel_invites()` (migration 0017): a pending invitation into
+/// somebody's Tagesduell — who sent it and the group it leads into.
+@immutable
+class DuelInvite {
+  const DuelInvite({
+    required this.id,
+    required this.fromUserId,
+    required this.fromName,
+    required this.group,
+    this.fromAvatarUrl,
+    this.tz = 'Europe/Vienna',
+    this.memberCount = 1,
+    this.createdAtMs,
+  });
+
+  /// `duel_invites.id` — what `respondInvite` takes.
+  final String id;
+  final String fromUserId;
+
+  /// Display name of the sender at fetch time.
+  final String fromName;
+  final String? fromAvatarUrl;
+
+  /// The duel the invite leads into (id, code, name, day, max members).
+  final DuelGroup group;
+
+  /// IANA zone the duel day is defined in (`groups.tz`).
+  final String tz;
+
+  /// Members already in the duel — '1 / 3' next to the sender.
+  final int memberCount;
+  final int? createdAtMs;
+
+  factory DuelInvite.fromJson(Map<String, Object?> j) {
+    int count(Object? v, int fallback) => v is num ? v.round() : int.tryParse('$v') ?? fallback;
+    final from = (j['from_user'] as String?) ?? '';
+    return DuelInvite(
+      id: (j['id'] as String?) ?? '',
+      fromUserId: from,
+      fromName: (j['from_name'] as String?) ?? '',
+      fromAvatarUrl: j['from_avatar_url'] as String?,
+      group: DuelGroup(
+        id: (j['group_id'] as String?) ?? '',
+        code: (j['code'] as String?) ?? '',
+        name: (j['name'] as String?) ?? '',
+        day: parseDate(j['day']) ?? today(),
+        createdBy: from,
+        maxMembers: count(j['max_members'], 3),
+      ),
+      tz: (j['tz'] as String?) ?? 'Europe/Vienna',
+      memberCount: count(j['member_count'], 1),
+      createdAtMs: _ms(j['created_at']),
+    );
+  }
+
+  /// True when the duel has no seat left — 'Annehmen' would fail with
+  /// duel_full; the card says so instead.
+  bool get full => memberCount >= group.maxMembers;
+
+  @override
+  bool operator ==(Object other) => other is DuelInvite && other.id == id && other.group == group && other.memberCount == memberCount;
+
+  @override
+  int get hashCode => Object.hash(id, group, memberCount);
+
+  @override
+  String toString() => 'DuelInvite($id from $fromName → ${group.code})';
+}
+
 /// ISO timestamp (or DateTime / epoch number) → epoch ms; null when absent.
 int? _ms(Object? v) {
   if (v == null) return null;

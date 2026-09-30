@@ -86,15 +86,17 @@ class _SeasonGoalSheetState extends ConsumerState<SeasonGoalSheet> {
           ],
         ),
         const SizedBox(height: 24),
-        PrimaryButton(key: const ValueKey('season-goal-save'), label: s.goalSave, height: 56, glow: false, onPressed: () => _save(_hm)),
-        const SizedBox(height: 10),
-        Row(children: [Expanded(child: SecondaryButton(key: const ValueKey('season-goal-none'), label: s.goalNone, height: 48, onPressed: () => _save(0)))]),
+        PrimaryButton(key: const ValueKey('season-goal-save'), label: s.goalSave, glow: false, onPressed: () => _save(_hm)),
+        const SizedBox(height: 8),
+        // The quiet way out: a text action, not a second capsule competing with Speichern.
+        Center(child: GhostButton(key: const ValueKey('season-goal-none'), label: s.goalNone, onPressed: () => _save(0))),
       ],
     );
   }
 }
 
-/// 48 pt glass circle with a 22 pt icon; dims when the step is not possible.
+/// −/+ stepper: the icon-only [SecondaryButton] (48 pt glass circle, 20 pt
+/// icon); at the range end it takes the shared disabled look.
 class _StepButton extends StatelessWidget {
   const _StepButton({required this.icon, required this.label, required this.onTap});
   final IconData icon;
@@ -102,30 +104,5 @@ class _StepButton extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    final enabled = onTap != null;
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: label,
-      child: Pressable(
-        onTap: onTap,
-        enabled: enabled,
-        child: Opacity(
-          opacity: enabled ? 1 : 0.38,
-          child: Container(
-            width: Tokens.minTarget,
-            height: Tokens.minTarget,
-            decoration: BoxDecoration(
-              color: c.glassFill,
-              shape: BoxShape.circle,
-              border: Border.all(color: c.glassStroke, width: c.hairlineWidth),
-            ),
-            child: Icon(icon, size: 22, color: c.textPrimary),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => SecondaryButton(label: '', icon: icon, height: Tokens.buttonMd, semanticsLabel: label, onPressed: onTap);
 }

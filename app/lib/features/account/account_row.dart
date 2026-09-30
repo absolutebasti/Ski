@@ -11,8 +11,9 @@ import 'profile_page.dart';
 import 'profile_service.dart';
 
 /// One embeddable row for the Einstellungen sheet: avatar (picture or
-/// initial), display name (or "Anmelden" when signed out) and a chevron.
-/// Tapping opens [ProfilePage] unless [onTap] overrides it.
+/// initial), display name and e-mail — or, signed out, 'Konto' with the
+/// caption 'Anmelden – Sichern, Ranglisten, Freunde', matching the page it
+/// opens. Tapping opens [ProfilePage] unless [onTap] overrides it.
 class AccountRow extends ConsumerWidget {
   const AccountRow({super.key, this.onTap});
 
@@ -25,7 +26,7 @@ class AccountRow extends ConsumerWidget {
     final user = watchAuthUser(ref);
     final profile = ref.watch(profileProvider).value;
     final signedIn = user != null;
-    final name = profile?.displayName ?? user?.displayName ?? s.signIn;
+    final name = profile?.displayName ?? user?.displayName ?? s.title;
     final initial = signedIn ? (profile?.initial ?? _initialOf(name)) : null;
 
     return Pressable(
@@ -33,7 +34,9 @@ class AccountRow extends ConsumerWidget {
       child: Container(
         key: const ValueKey('account-row'),
         constraints: const BoxConstraints(minHeight: Tokens.minTarget),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        // Same 18 pt insets as a SettingsRow: the avatar lines up with the
+        // row glyphs and the chevron with theirs (it sat on the card edge).
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
         color: Colors.transparent,
         child: Row(
           children: [
@@ -60,7 +63,7 @@ class AccountRow extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    signedIn ? name : s.signIn,
+                    signedIn ? name : s.title,
                     style: AppText.bodyText(c.textPrimary, size: 17, weight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -69,14 +72,16 @@ class AccountRow extends ConsumerWidget {
                   Text(
                     signedIn ? (user.email ?? s.signedInAs) : s.rowHint,
                     style: AppText.caption(c.textSecondary),
-                    maxLines: 1,
+                    // Two lines like every SettingsRow caption: with the row's
+                    // 18 pt insets the signed-out hint no longer fits one.
+                    maxLines: signedIn ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            GlyphIcon(Glyph.chevronRight, size: 16, color: c.textTertiary),
+            const RowChevron(),
           ],
         ),
       ),

@@ -69,14 +69,29 @@ class _TabItemState extends State<_TabItem> with SingleTickerProviderStateMixin 
   void initState() {
     super.initState();
     _c = AnimationController(vsync: this, duration: Tokens.pulse);
-    if (widget.pulse) _c.repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncPulse();
   }
 
   @override
   void didUpdateWidget(covariant _TabItem old) {
     super.didUpdateWidget(old);
-    if (widget.pulse && !_c.isAnimating) _c.repeat(reverse: true);
-    if (!widget.pulse && _c.isAnimating) _c.stop();
+    _syncPulse();
+  }
+
+  /// The ring pulses only while recording and motion is allowed; under
+  /// reduced motion it rests at 1 (static ring, no ticker).
+  void _syncPulse() {
+    if (widget.pulse && !Tokens.reduced(context)) {
+      if (!_c.isAnimating) _c.repeat(reverse: true);
+    } else {
+      _c.stop();
+      if (widget.pulse) _c.value = 1;
+    }
   }
 
   @override
@@ -93,7 +108,7 @@ class _TabItemState extends State<_TabItem> with SingleTickerProviderStateMixin 
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         AnimatedContainer(
-          duration: Tokens.medium,
+          duration: Tokens.motion(context, Tokens.medium),
           width: 24,
           height: 2,
           decoration: BoxDecoration(color: widget.selected ? c.accent : Colors.transparent, borderRadius: BorderRadius.circular(1)),

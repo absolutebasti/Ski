@@ -59,7 +59,7 @@ LevelState levelFor(double distanceM) {
 /// [nowMs]: when given, `streak.current` drops to 0 once the most recent day
 /// lies more than one calendar day in the past; without it the current
 /// streak is simply the run ending at the most recent day (§3).
-Achievements computeAchievements(List<DaySummary> days, {String? Function(String? resortId)? countryOf, int? nowMs}) {
+Achievements computeAchievements(List<DaySummary> days, {String? Function(String? resortId)? countryOf, String Function(String resortId)? canonicalId, int? nowMs}) {
   final sorted = [...days]..sort((a, b) => a.startedAt.compareTo(b.startedAt));
 
   var points = 0;
@@ -101,7 +101,8 @@ Achievements computeAchievements(List<DaySummary> days, {String? Function(String
       bestDayRuns = math.max(bestDayRuns, s.runCount);
       points += dayPoints(s);
     }
-    final resortId = day.resortId;
+    // Alias ids (e.g. lech-zuers → st-anton, 0018) count as one resort.
+    final resortId = day.resortId == null ? null : (canonicalId?.call(day.resortId!) ?? day.resortId);
     if (resortId != null) resorts.add(resortId);
     final country = countryOf?.call(resortId);
     if (country != null && country.isNotEmpty) countries.add(country);

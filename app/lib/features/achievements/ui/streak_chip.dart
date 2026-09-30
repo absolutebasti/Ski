@@ -25,9 +25,9 @@ class StreakChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GlyphIcon(Glyph.chevron, size: compact ? 10 : 12, color: c.accent),
-          SizedBox(width: compact ? 6 : 8),
-          Text(s.streak(streak.current), style: AppText.label(c.accent, size: compact ? 11 : 12)),
+          GlyphIcon(Glyph.chevron, size: compact ? 12 : 14, color: c.accent),
+          const SizedBox(width: 6),
+          Text(s.streak(streak.current), style: AppText.chip(c.accent, size: compact ? 12 : 13)),
         ],
       ),
     );

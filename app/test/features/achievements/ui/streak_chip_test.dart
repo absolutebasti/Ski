@@ -22,7 +22,7 @@ void main() {
     final glyph = find.descendant(of: find.byType(StreakChip), matching: find.byType(GlyphIcon));
     expect(glyph, findsOneWidget);
     expect(tester.widget<GlyphIcon>(glyph).glyph, Glyph.chevron);
-    expect(tester.widget<GlyphIcon>(glyph).size, 12);
+    expect(tester.widget<GlyphIcon>(glyph).size, 14, reason: 'chip icon 14 (docs/DESIGN.md §4 CHIPS)');
     expect(find.byWidgetPredicate((w) => w is Container && w.constraints?.maxHeight == 2), findsNothing);
   });
 
@@ -34,6 +34,6 @@ void main() {
     );
     expect(find.text('5 days in a row'), findsOneWidget);
     expect(tester.getSize(find.byType(StreakChip)).height, 26);
-    expect(tester.widget<GlyphIcon>(find.byType(GlyphIcon)).size, 10);
+    expect(tester.widget<GlyphIcon>(find.byType(GlyphIcon)).size, 12);
   });
 }

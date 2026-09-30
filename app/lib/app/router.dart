@@ -33,7 +33,7 @@ class AppRouter {
 
   static Widget heute() => const HeuteScreen();
   static Widget tage() => const TageScreen();
-  static Widget social() => Builder(builder: (context) => SocialScreen(onOpenAccount: () => AccountSheet.show(context)));
+  static Widget social() => Builder(builder: (context) => SocialScreen(onOpenAccount: () => ProfilePage.open(context)));
   static Widget onboarding() => const OnboardingFlow();
   static Widget dayDetail(String dayId) => DayDetailScreen(dayId: dayId);
   static Widget summary(String dayId) => TagesbilanzScreen(dayId: dayId);

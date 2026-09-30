@@ -37,8 +37,8 @@ class AccountStrings {
   String get noResortFound => l.pick(de: 'Kein Skigebiet gefunden.', en: 'No resort found.');
   String get share => l.pick(de: 'In Ranglisten erscheinen', en: 'Appear in Ranglisten');
   String get shareHint => l.pick(
-        de: 'Sichtbar sind dein Name und die Tagessummen je Skigebiet — nie deine Strecke.',
-        en: 'Visible are your name and the day totals per resort — never your track.',
+        de: 'Sichtbar sind dein Name, dein Avatar und die Tagessummen je Skigebiet — nie deine Strecke. Die Top 10 sind öffentlich.',
+        en: 'Visible are your name, your avatar and the day totals per resort — never your track. The top 10 are public.',
       );
 
   // --- sync ----------------------------------------------------------------
@@ -46,6 +46,8 @@ class AccountStrings {
   String get syncing => l.pick(de: 'Wird synchronisiert …', en: 'Syncing …');
   String get syncOffline => l.pick(de: 'Offline — wird nachgeholt', en: 'Offline — will catch up');
   String get syncError => l.pick(de: 'Synchronisierung fehlgeschlagen', en: 'Sync failed');
+  /// Server rate limit (P0005): the outbox resumes by itself — never 'offline'.
+  String get syncThrottled => l.pick(de: 'Sync pausiert, geht gleich weiter', en: 'Sync paused, resuming shortly');
   String get reSignIn => l.pick(de: 'Anmeldung abgelaufen – bitte neu mit Apple anmelden', en: 'Session expired – please sign in with Apple again');
   String get neverSynced => l.pick(de: 'Noch nie synchronisiert', en: 'Never synced');
 
@@ -74,6 +76,8 @@ class AccountStrings {
   String get delete => l.pick(de: 'Löschen', en: 'Delete');
   String get deleteConfirm => l.pick(de: 'Endgültig löschen', en: 'Delete for good');
   String get deletedToast => l.pick(de: 'Konto gelöscht', en: 'Account deleted');
+  /// The delete-account function failed: nothing was deleted, the session stays.
+  String get deleteFailed => l.pick(de: 'Löschen hat nicht geklappt, bitte später erneut', en: 'Deleting did not work, please try again later');
   String get cancel => l.pick(de: 'Abbrechen', en: 'Cancel');
   String get somethingWrong => l.pick(de: 'Hat nicht geklappt. Später nochmal versuchen.', en: 'That did not work. Try again later.');
 
@@ -86,7 +90,8 @@ class AccountStrings {
   String get savedToast => l.pick(de: 'Gesichert', en: 'Saved');
   String get syncedToast => l.pick(de: 'Synchronisiert', en: 'Synced');
   String get signedInAs => l.pick(de: 'Angemeldet', en: 'Signed in');
-  String get rowHint => l.pick(de: 'Sichern, Ranglisten, Freunde', en: 'Backup, leaderboards, friends');
+  /// Caption of the signed-out Konto row — mirrors the page's three benefits.
+  String get rowHint => l.pick(de: 'Anmelden – Sichern, Ranglisten, Freunde', en: 'Sign in – backup, leaderboards, friends');
   String get holdToDelete => l.pick(de: 'Endgültig löschen · halten', en: 'Delete for good · hold');
 
   // --- profile page (PROFILE-PAGE) ------------------------------------------
@@ -121,4 +126,33 @@ class AccountStrings {
   String get contactHint => l.pick(de: 'Fragen, Fehler, Wünsche — schreib uns.', en: 'Questions, bugs, wishes — write to us.');
   String get mailSubject => l.pick(de: 'SlopeTrack — Feedback', en: 'SlopeTrack — feedback');
   String get medalsOpen => l.pick(de: 'Medaillen', en: 'Medals');
+
+  // --- signed-out page (SETTINGS-ACCOUNT-2) ---------------------------------
+  String get sectionBenefits => l.pick(de: 'Mit Konto', en: 'With an account');
+  String get benefitBackup => l.pick(de: 'Backup', en: 'Backup');
+  String get benefitBackupHint => l.pick(
+        de: 'Deine Skitage auf jedem neuen iPhone.',
+        en: 'Your ski days on every new iPhone.',
+      );
+  String get benefitBoards => l.pick(de: 'Ranglisten & Duelle', en: 'Leaderboards & duels');
+  String get benefitBoardsHint => l.pick(
+        de: 'Je Skigebiet und im Tagesduell.',
+        en: 'Per resort and in the day duel.',
+      );
+  String get benefitFriends => l.pick(de: 'Freunde', en: 'Friends');
+  String get benefitFriendsHint => l.pick(
+        de: 'Freundescode und eigene Rangliste.',
+        en: 'Friend code and your own leaderboard.',
+      );
+  String get continueWithout => l.pick(de: 'Ohne Konto weiter', en: 'Continue without an account');
+  String get deviceLevelHint => l.pick(
+        de: 'Level und Medaillen zählen auch ohne Konto – sie bleiben auf diesem iPhone.',
+        en: 'Level and medals count without an account – they stay on this iPhone.',
+      );
+
+  // --- season goal row -------------------------------------------------------
+  String get seasonGoal => l.pick(de: 'Saisonziel', en: 'Season goal');
+  String get seasonGoalHint => l.pick(de: 'Höhenmeter bis Saisonende', en: 'Vertical until the end of the season');
+  String get seasonGoalNone => l.pick(de: 'Kein Ziel', en: 'No goal');
+  String get unitHm => l.pick(de: 'hm', en: 'm');
 }

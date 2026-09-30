@@ -10,6 +10,7 @@ import '../../data/db/days_repository.dart';
 import '../../data/db/providers.dart';
 import '../../data/resorts/resort_repository.dart';
 import '../../data/weather/weather_provider.dart';
+import '../map/map_images.dart';
 import '../map/thumbnail_renderer.dart';
 import '../../platform/device_access.dart';
 import '../../platform/notification_service.dart';
@@ -356,6 +357,12 @@ class RecordingController extends Notifier<RecordingState> {
         final path = await ThumbnailRenderer.renderBoth(detail);
         await _repo.updateMapThumb(dayId, path);
       }
+    } catch (_) {}
+    // Apple-Maps satellite images (MAP-SNAPSHOT; network, iOS only): not
+    // awaited so the Tagesbilanz opens at once. Offline the path PNGs stay and
+    // the day card retries later (missing `<id>_map.png` = retry signal).
+    try {
+      unawaited(ref.read(mapImagesProvider).render(dayId));
     } catch (_) {}
     try {
       final d = await _repo.day(dayId);

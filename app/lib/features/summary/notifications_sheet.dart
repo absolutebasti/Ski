@@ -30,7 +30,7 @@ class NotificationsOptInSheet {
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [SecondaryButton(label: s.notifyNo, onPressed: () => Navigator.of(ctx).pop(false))],
+              children: [GhostButton(label: s.notifyNo, onPressed: () => Navigator.of(ctx).pop(false))],
             ),
             const SizedBox(height: 4),
           ],

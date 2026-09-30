@@ -51,6 +51,27 @@ List<DuelSummary> pastDuels() => [
       duelSummary(id: 'g-3', code: 'PAST03', day: DateTime(2026, 1, 10), board: kFinalBoard.take(2).toList()),
     ];
 
+/// A pending invite from Lena ('u9') into her 'Hahnenkamm-Crew' duel of
+/// 2026-01-15 (the day of [kDuelNow]), one member so far.
+DuelInvite duelInvite({
+  String id = 'inv-1',
+  String fromUserId = 'u9',
+  String fromName = 'Lena',
+  String groupId = 'g-lena',
+  String code = 'PQRS23',
+  String name = 'Hahnenkamm-Crew',
+  DateTime? day,
+  int memberCount = 1,
+  int maxMembers = 3,
+}) =>
+    DuelInvite(
+      id: id,
+      fromUserId: fromUserId,
+      fromName: fromName,
+      group: DuelGroup(id: groupId, code: code, name: name, day: day ?? DateTime(2026, 1, 15), createdBy: fromUserId, maxMembers: maxMembers),
+      memberCount: memberCount,
+    );
+
 /// Overrides on top of `screenOverrides()` — never touches Supabase.
 /// [poll] defaults to null so no duel timer outlives a widget test.
 List<Override> duelOverrides({FakeDuelApi? api, FakeSocialApi? social, AuthUser? user = kUser, Duration? poll}) => [

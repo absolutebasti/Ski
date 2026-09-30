@@ -203,10 +203,35 @@ class SocialStrings {
   /// Opens the Konto sheet, which holds the actual Sign in with Apple button.
   String get signIn => l.pick(de: 'Anmelden', en: 'Sign in');
 
+  // --- signed-out teaser (public top 10, migration 0016) -------------------
+  /// Toast when a teaser row is tapped — rows carry no profile before sign-in.
+  String get teaserRowToast => l.pick(de: 'Anmelden, um Profile zu sehen', en: 'Sign in to see profiles');
+
+  /// The locked Tagesduell preview.
+  String get teaserDuelLine => l.pick(de: 'Duell mit bis zu 3 Freunden · Code teilen', en: 'Duel with up to 3 friends · share a code');
+
+  /// The locked Wochen-Challenge preview.
+  String get teaserChallengeLine => l.pick(de: 'Jede Woche ein neues Ziel · Stand der anderen sehen', en: 'A new goal every week · see where the others stand');
+
+  /// Read out for the lock on a preview card and for the greyed-out filters.
+  String get teaserLocked => l.pick(de: 'Nach dem Anmelden verfügbar', en: 'Available after signing in');
+  String get teaserFilters => l.pick(de: 'Zeitraum, Gebiet und Wertung', en: 'Period, resort and metric');
+
+  /// Under the ghost rows while nobody is ranked — the pinned strip carries
+  /// the 'Platz 1' headline, so this line does not repeat it.
+  String teaserEmptyLine(String? resortName) => resortName == null
+      ? l.pick(de: 'Noch ist niemand gewertet.', en: 'Nobody is ranked yet.')
+      : l.pick(de: 'In $resortName ist noch niemand gewertet.', en: 'Nobody is ranked in $resortName yet.');
+
+  /// Under the ghost rows when the preview could not be loaded.
+  String teaserErrorLine(SocialErrorKind kind) => kind == SocialErrorKind.offline
+      ? l.pick(de: 'Keine Verbindung. Die Vorschau lädt, sobald du Netz hast.', en: 'No connection. The preview loads once you are back online.')
+      : l.pick(de: 'Die Vorschau lädt gerade nicht. Zieh zum Aktualisieren.', en: 'The preview is not loading right now. Pull to refresh.');
+
   String get optInHeadline => l.pick(de: 'Deine Zahlen sind noch privat.', en: 'Your numbers are still private.');
   String get optInLine => l.pick(
-        de: 'Schalte die Rangliste frei, dann tauchst du mit deinem Namen auf.',
-        en: 'Turn the leaderboard on and you show up with your name.',
+        de: 'Schalte die Rangliste frei, dann tauchst du mit deinem Namen auf. Name und Avatar sind dabei öffentlich sichtbar.',
+        en: 'Turn the leaderboard on and you show up with your name. Your name and avatar are then publicly visible.',
       );
   String get optInAction => l.pick(de: 'Rangliste freischalten', en: 'Turn leaderboard on');
   String get optedIn => l.pick(de: 'Rangliste ist an. Ausschalten kannst du sie im Konto.', en: 'Leaderboard is on. Switch it off under Account.');
@@ -243,7 +268,6 @@ class SocialStrings {
   // --- friends via rider profile ------------------------------------------
   String get friendRequestSent => l.pick(de: 'Anfrage gesendet', en: 'Request sent');
   String get nowFriends => l.pick(de: 'Ihr seid jetzt Freunde', en: 'You are friends now');
-
   // --- Tagesduell ----------------------------------------------------------
   String get duel => l.pick(de: 'Tagesduell', en: 'Day duel');
   String get duelIdleLine => l.pick(
@@ -258,10 +282,6 @@ class SocialStrings {
   String get duelName => l.pick(de: 'Name des Duells', en: 'Duel name');
   String get duelDefaultName => l.pick(de: 'Tagesduell', en: 'Day duel');
   String get duelCodeHint => l.pick(de: 'Sechs Zeichen, z. B. KMJ4F2', en: 'Six characters, e.g. KMJ4F2');
-  String duelShareText(String code) => l.pick(
-        de: 'Duell in $kAppName: Code $code. Wer holt heute die meisten Höhenmeter?',
-        en: 'Duel in $kAppName: code $code. Who grabs the most vertical today?',
-      );
   String get duelWaiting => l.pick(de: 'Wartet auf Mitfahrer', en: 'Waiting for riders');
   String get duelLeader => l.pick(de: 'Führt', en: 'Leading');
 

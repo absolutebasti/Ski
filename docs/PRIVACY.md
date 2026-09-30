@@ -1,6 +1,6 @@
 # Datenschutzerklärung / Privacy Policy — SlopeTrack
 
-Stand / last updated: 2026-09-29 · Hosted at https://absolutebasti.github.io/Ski/privacy.html (source: this file → docs/privacy.html)
+Stand / last updated: 2026-09-30 · Hosted at https://absolutebasti.github.io/Ski/privacy.html (source: this file → docs/privacy.html)
 
 ## Deutsch
 
@@ -12,7 +12,7 @@ Stand / last updated: 2026-09-29 · Hosted at https://absolutebasti.github.io/Sk
 
 **2. Konto (optional).** Meldest du dich mit Apple an, erhalten wir eine anonyme Nutzer-ID und – je nach deiner Wahl bei Apple – deinen Namen und eine (Weiterleitungs-)E-Mail-Adresse. Wir speichern dann dein Profil (Anzeigename, Land, Heimatgebiet, Rangliste-Einstellung) und deine Skitage als Kennzahlen (Datum, Skigebiet, Abfahrten, Höhenmeter, Distanz, Geschwindigkeit, Zeiten) sowie die aufgezeichnete Spur als Datei bei unserem Auftragsverarbeiter Supabase Inc. in einem Rechenzentrum in Frankfurt (EU), auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertrag: Backup und Wettbewerb). Optional kannst du ein Profilbild aus deiner Mediathek wählen; es wird verkleinert in der EU gespeichert, ist für jeden abrufbar, der seine Adresse kennt (Ranglisten, Duelle, Freundesliste), und wird mit dem Konto gelöscht.
 
-**3. Ranglisten, Duelle, Challenges.** Nur wenn du „In Ranglisten erscheinen“ einschaltest, sehen andere Nutzer deinen Anzeigenamen, dein Land und deine Kennzahlen in Ranglisten. In einem Tagesduell sehen die bis zu drei Mitglieder gegenseitig Namen und Tageswerte. Punkte, Level, Streak und Medaillen werden auf deinem Gerät berechnet. Du kannst die Rangliste jederzeit in Konto ausschalten; deine Daten verschwinden dann sofort aus den Listen.
+**3. Ranglisten, Duelle, Challenges.** Nur wenn du „In Ranglisten erscheinen“ einschaltest, sehen andere Nutzer deinen Anzeigenamen, dein Land und deine Kennzahlen in Ranglisten. Die Top 10 einer Rangliste (Anzeigename, Profilbild, Punkte) sind zusätzlich öffentlich sichtbar, auch ohne Konto. In einem Tagesduell sehen die bis zu drei Mitglieder gegenseitig Namen und Tageswerte. Punkte, Level, Streak und Medaillen werden auf deinem Gerät berechnet. Du kannst die Rangliste jederzeit in Konto ausschalten; deine Daten verschwinden dann sofort aus den Listen.
 
 **4. Karten und Wetter.** Kartenkacheln kommen von OpenTopoMap und OpenSnowMap (OpenStreetMap-Daten), das Wetter von Open-Meteo mit den Koordinaten des Skigebiets, nicht mit deiner genauen Position. Diese Server sehen deine IP-Adresse und die angefragten Ausschnitte.
 
@@ -38,7 +38,7 @@ Stand / last updated: 2026-09-29 · Hosted at https://absolutebasti.github.io/Sk
 
 **2. Account (optional).** If you sign in with Apple we receive an anonymous user id and – depending on your choice at Apple – your name and a (relay) e-mail address. We then store your profile (display name, country, home resort, leaderboard setting) and your ski days as figures (date, resort, runs, vertical, distance, speed, times) plus the recorded track file with our processor Supabase Inc. in a data centre in Frankfurt (EU), based on Art. 6 (1) (b) GDPR (contract: backup and competition). Optionally you can pick a profile photo from your library; it is stored downscaled in the EU, is accessible to anyone who knows its URL (leaderboards, duels, friends list), and is deleted with the account.
 
-**3. Leaderboards, duels, challenges.** Only if you enable “Appear in leaderboards” do other users see your display name, country and figures. In a day duel the up to three members see each other's names and day figures. Points, levels, streak and medals are computed on your device. You can switch leaderboards off in Account at any time; your data disappears from the lists immediately.
+**3. Leaderboards, duels, challenges.** Only if you enable “Appear in leaderboards” do other users see your display name, country and figures. The top 10 of a leaderboard (display name, profile photo, points) are also publicly visible, even without an account. In a day duel the up to three members see each other's names and day figures. Points, levels, streak and medals are computed on your device. You can switch leaderboards off in Account at any time; your data disappears from the lists immediately.
 
 **4. Maps and weather.** Map tiles come from OpenTopoMap and OpenSnowMap (OpenStreetMap data), weather from Open-Meteo using the resort's coordinates, not your exact position. Those servers see your IP address and the requested areas.
 

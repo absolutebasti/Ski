@@ -33,7 +33,7 @@ void main() {
   tearDown(() => db.close());
 
   group('401', () {
-    test('a 401 refreshes the session once and retries the push', () async {
+    test('a 401 refreshes the session once, retries and goes on to the push', () async {
       await seedFinishedDay(repo);
       api.failure = const AuthException('JWT expired', statusCode: '401');
       api.onRefresh = () => api.failure = null;
@@ -58,8 +58,8 @@ void main() {
       await sub.cancel();
 
       expect(api.refreshCalls, 1);
-      expect(api.upserts, isEmpty);
-      expect(api.fetchCursors, isEmpty, reason: 'no pull without a session');
+      expect(api.fetchCursors, hasLength(2), reason: 'the pull comes first: one try + one retry after the refresh');
+      expect(api.upsertCalls, 0, reason: 'no push without a session');
       expect(s.current.state, SyncState.error);
       expect(s.current.needsSignIn, isTrue);
       expect(s.current.pending, 1);
@@ -183,7 +183,8 @@ void main() {
       ];
       final s = service();
       await s.syncNow();
-      expect(api.fetchOffsets, [0, 500, 1000]);
+      expect(api.fetchKeys.first, isNull);
+      expect(api.fetchKeys.skip(1).map((k) => k?.id), ['r499', 'r999'], reason: 'keyset: each page starts after the last row of the one before');
       expect(api.fetchCursors, [null, null, null], reason: 'every page uses the cursor from before the pull');
       expect(store.cursors['u1'], sampleStartedAt + 1199 * 1000);
       final n = await (db.select(db.days)).get();
@@ -195,14 +196,14 @@ void main() {
         for (var i = 0; i < 500; i++) remoteRow(id: 'r$i', deviceUpdatedAt: sampleStartedAt + i * 1000),
       ];
       await service().syncNow();
-      expect(api.fetchOffsets, [0, 500]);
+      expect(api.fetchKeys.map((k) => k?.id), [null, 'r499']);
     });
 
     test('a smaller page size is honoured', () async {
       api.remoteDays = [for (var i = 0; i < 7; i++) remoteRow(id: 'r$i', deviceUpdatedAt: sampleStartedAt + i)];
       final s = SyncService(repo: repo, api: api, store: MemorySyncStore(), now: () => clock, pageSize: 3);
       await s.pullAll();
-      expect(api.fetchOffsets, [0, 3, 6]);
+      expect(api.fetchKeys.map((k) => k?.id), [null, 'r2', 'r5']);
       expect((await (db.select(db.days)).get()), hasLength(7));
     });
   });

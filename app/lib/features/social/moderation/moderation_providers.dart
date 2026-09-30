@@ -23,6 +23,22 @@ final blockedIdsProvider = FutureProvider<Set<String>>((ref) async {
   }
 }, retry: noRetry);
 
+/// The blocked riders with name and avatar (RPC `blocked_riders`, 0015) for
+/// Einstellungen › 'Blockierte Nutzer'. Empty without a backend, signed out or
+/// when the call fails (e.g. before 0015 is live) — the page then falls back
+/// to `riderProfileProvider` and the placeholder name. The list of rows itself
+/// still comes from [blockedIdsProvider].
+final blockedRidersProvider = FutureProvider<List<BlockedRider>>((ref) async {
+  final api = ref.watch(moderationApiProvider);
+  if (api == null) return const [];
+  ref.watch(authStateProvider);
+  try {
+    return await api.blockedRiders();
+  } on ModerationError {
+    return const [];
+  }
+}, retry: noRetry);
+
 /// Providers dropped after a block / unblock so every board refetches without
 /// the blocked rider. Leaderboard, duel board and friends are here; a later
 /// package appends its own (e.g. `myRankProvider` from SOC-RANGLISTE):
@@ -69,9 +85,11 @@ class ModerationService {
     refresh();
   }
 
-  /// Drop [blockedIdsProvider] and every [blockRefreshTargetsProvider] entry.
+  /// Drop [blockedIdsProvider], [blockedRidersProvider] and every
+  /// [blockRefreshTargetsProvider] entry.
   void refresh() {
     _ref.invalidate(blockedIdsProvider);
+    _ref.invalidate(blockedRidersProvider);
     for (final p in _ref.read(blockRefreshTargetsProvider)) {
       _ref.invalidate(p);
     }

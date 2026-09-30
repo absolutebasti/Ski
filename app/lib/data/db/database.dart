@@ -13,7 +13,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open() : super(driftDatabase(name: 'slopetrack'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -24,6 +24,11 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(syncOutbox);
             await m.addColumn(days, days.syncedAt);
             await m.addColumn(days, days.remoteUpdatedAt);
+          }
+          // v3 (SYNC-2): the storage path of the track backup lives on the day,
+          // so a re-push carries it in the upsert instead of a second write.
+          if (from < 3) {
+            await m.addColumn(days, days.trackPath);
           }
         },
         beforeOpen: (details) async {

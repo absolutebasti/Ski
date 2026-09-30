@@ -19,12 +19,14 @@ List<Override> _overrides({AuthUser? user, FakeProfileApi? api}) => [
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('signed out: person glyph, "Anmelden" and the hint', (tester) async {
+  testWidgets('signed out: person glyph, "Konto" and the sign-in caption', (tester) async {
     var taps = 0;
     await pumpApp(tester, Scaffold(body: AccountRow(onTap: () => taps++)), overrides: _overrides());
     await tester.pumpAndSettle();
 
-    expect(find.text(_de.signIn), findsOneWidget);
+    expect(find.text('Konto'), findsOneWidget);
+    expect(find.text(_de.signIn), findsNothing, reason: 'the title is the page name, not the action');
+    expect(find.text('Anmelden – Sichern, Ranglisten, Freunde'), findsOneWidget);
     expect(find.text(_de.rowHint), findsOneWidget);
     expect(find.byIcon(Icons.person_outline_rounded), findsOneWidget);
 

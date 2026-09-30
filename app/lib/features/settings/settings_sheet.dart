@@ -11,6 +11,7 @@ import '../../data/db/providers.dart';
 import '../../platform/permission_service.dart';
 import '../../platform/providers.dart';
 import '../account/account.dart';
+import 'blocked_users_page.dart';
 import 'diagnostics_page.dart';
 import 'licences_page.dart';
 import 'settings_providers.dart';
@@ -23,7 +24,8 @@ class SettingsSheet {
   const SettingsSheet._();
 
   /// [onAccount] overrides what the Konto row opens; by default it opens
-  /// [AccountSheet] (features/account).
+  /// [ProfilePage] (features/account). Signed in, a second row leads to the
+  /// blocked riders ([BlockedUsersPage]).
   static Future<void> show(BuildContext context, {VoidCallback? onAccount}) => AppSheet.show<void>(
         context,
         title: SettingsStrings.of(context).title,
@@ -154,6 +156,7 @@ class _SettingsSheetBodyState extends ConsumerState<SettingsSheetBody> {
     final location = ref.watch(locationStatusProvider).asData?.value ?? LocationPermissionState.unknown;
     final granted = location == LocationPermissionState.always || location == LocationPermissionState.whileInUse;
     final version = ref.watch(appVersionProvider).asData?.value ?? '–';
+    final signedIn = watchAuthUser(ref) != null;
 
     return SingleChildScrollView(
       child: Column(
@@ -183,13 +186,21 @@ class _SettingsSheetBodyState extends ConsumerState<SettingsSheetBody> {
                   onChanged: _setLocale,
                 ),
               ),
-              SettingsRow(icon: Icons.straighten_rounded, label: s.units, value: s.unitsValue),
             ],
           ),
           SettingsSection(
             label: s.sectionAccount,
             children: [
               AccountRow(onTap: _openAccount),
+              if (signedIn)
+                SettingsRow(
+                  key: const ValueKey('settings-blocked'),
+                  icon: Icons.block_rounded,
+                  label: s.blockedUsers,
+                  caption: s.blockedUsersHint,
+                  chevron: true,
+                  onTap: () => BlockedUsersPage.open(context),
+                ),
             ],
           ),
           SettingsSection(
@@ -208,7 +219,7 @@ class _SettingsSheetBodyState extends ConsumerState<SettingsSheetBody> {
                 icon: Icons.notifications_none_rounded,
                 label: s.notifications,
                 caption: s.notificationsHint,
-                trailing: Switch(
+                trailing: AppSwitch(
                   value: settings.notificationsOptIn,
                   onChanged: (v) => _toggleNotifications(v),
                 ),
@@ -385,7 +396,7 @@ class SettingsRow extends StatelessWidget {
           const SizedBox(width: 12),
           Text(value!, style: AppText.bodyText(valueColor, size: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
         ],
-        if (chevron) ...[const SizedBox(width: 8), GlyphIcon(Glyph.chevronRight, size: 16, color: c.textTertiary)],
+        if (chevron) ...[const SizedBox(width: 8), const RowChevron()],
       ],
     );
 
@@ -409,7 +420,8 @@ class SettingsRow extends StatelessWidget {
   }
 }
 
-/// Text tabs with a champagne underline — no Material segmented control.
+/// The Einstellungen segmented rows (Erscheinungsbild, Sprache): the shared
+/// [SegmentedPill] — a glass track with a raised selected segment.
 class SegmentedTextTabs extends StatelessWidget {
   const SegmentedTextTabs({super.key, required this.options, required this.value, required this.onChanged});
 
@@ -419,52 +431,7 @@ class SegmentedTextTabs extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return SizedBox(
-      height: 40,
-      child: Stack(
-        children: [
-          const Positioned(left: 0, right: 0, bottom: 0, child: Hairline()),
-          Row(
-            children: [
-              for (final o in options)
-                Expanded(
-                  child: Semantics(
-                    button: true,
-                    selected: o.$1 == value,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => onChanged(o.$1),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                o.$2,
-                                style: AppText.button(o.$1 == value ? c.textPrimary : c.textTertiary, size: 15),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          AnimatedContainer(
-                            duration: Tokens.medium,
-                            curve: Curves.easeOutCubic,
-                            height: 2,
-                            color: o.$1 == value ? c.accent : Colors.transparent,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => SegmentedPill<String>(options: options, value: value, onChanged: onChanged);
 }
 
 /// Brand glyph, app name and version — and the hidden seven-tap unlock.

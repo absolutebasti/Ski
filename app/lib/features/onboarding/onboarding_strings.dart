@@ -41,7 +41,10 @@ class OnboardingStrings {
   String get p3SignIn => _l.pick(de: 'Mit Apple anmelden', en: 'Sign in with Apple');
   String get p3Benefit => _l.pick(de: 'Backup, Ranglisten, Duelle', en: 'Backup, rankings, duels');
   String get p3OptIn => _l.pick(de: 'In Ranglisten erscheinen', en: 'Appear in leaderboards');
-  String get p3OptInHint => _l.pick(de: 'Name und Tageswerte, nie die Spur. Jederzeit im Konto änderbar.', en: 'Name and day figures, never the track. Change it any time in Account.');
+  String get p3OptInHint => _l.pick(
+        de: 'Tageswerte, nie die Spur. Name und Avatar sind dann öffentlich sichtbar. Jederzeit im Konto änderbar.',
+        en: 'Day figures, never the track. Your name and avatar are then publicly visible. Change it any time in Account.',
+      );
   String p3SignedIn(String name) => _l.pick(de: 'Angemeldet als $name', en: 'Signed in as $name');
   String get p3Skipped => _l.pick(de: 'Ohne Konto', en: 'Without account');
   String get p3SkippedBody => _l.pick(de: 'Anmelden geht später in den Einstellungen.', en: 'You can sign in later in settings.');

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/surfaces.dart';
 import '../theme/tokens.dart';
 import '../theme/typography.dart';
+import 'app_card.dart';
 import 'sparkline.dart';
 
 /// Overline ABOVE the numeral, unit baseline-aligned beside it.
@@ -133,23 +134,34 @@ class StatTile extends StatelessWidget {
         ),
       ),
     );
-    if (onTap == null) return body;
-    return GestureDetector(onTap: onTap, child: body);
+    // One spoken node 'label value unit' instead of three fragments.
+    return Semantics(
+      container: true,
+      label: _spoken(label, value, unit),
+      button: onTap != null ? true : null,
+      child: onTap == null ? ExcludeSemantics(child: body) : Pressable(onTap: onTap, semantics: false, child: ExcludeSemantics(child: body)),
+    );
   }
 }
 
+/// `label value` (plus ` unit` when present) — the merged semantics label of a tile.
+String _spoken(String label, String value, String? unit) => [label, value, if (unit != null && unit.isNotEmpty) unit].join(' ');
+
 /// Three equal-width value/overline pairs in one row (list rows, PB strip, footers).
 class MetricStrip extends StatelessWidget {
-  const MetricStrip({super.key, required this.items, this.size = 15, this.color, this.alignEnd = false});
+  const MetricStrip({super.key, required this.items, this.size = 15, this.color, this.alignEnd = false, this.units});
   /// (value, unitOrLabel) — the second string is drawn as an overline.
   final List<(String, String)> items;
   final double size;
   final Color? color;
   final bool alignEnd;
+  /// Unit per item, index-aligned with [items] ('km/h' beside '69'); a null or missing entry draws no unit.
+  final List<String?>? units;
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final numeral = HeroNumber.numeralStyle(color ?? c.textPrimary, size);
     return Row(
       children: [
         for (final (i, it) in items.indexed) ...[
@@ -159,7 +171,28 @@ class MetricStrip extends StatelessWidget {
               crossAxisAlignment: alignEnd && i == items.length - 1 ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(it.$1, style: HeroNumber.numeralStyle(color ?? c.textPrimary, size), maxLines: 1, overflow: TextOverflow.ellipsis),
+                if (_unitAt(i) case final unit?)
+                  // Numeral line height stays fixed and the pair scales down as one,
+                  // so '1.849 hm' never truncates and the overlines stay on one line.
+                  SizedBox(
+                    height: MediaQuery.textScalerOf(context).scale(size) * (numeral.height ?? 1),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: alignEnd && i == items.length - 1 ? AlignmentDirectional.bottomEnd : AlignmentDirectional.bottomStart,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(it.$1, style: numeral, maxLines: 1),
+                          const SizedBox(width: 3),
+                          Text(unit, style: AppText.unit(c.textTertiary, size: AppText.unitFor(size)), maxLines: 1),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Text(it.$1, style: numeral, maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 3),
                 // List rows (size ≤ 15) get a 10 pt overline: 'HÖHENMETER' fits a 65 pt column.
                 Text(it.$2.overline, style: AppText.label(c.textTertiary, size: size <= 15 ? 10 : 11), maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -169,6 +202,13 @@ class MetricStrip extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  String? _unitAt(int i) {
+    final u = units;
+    if (u == null || i >= u.length) return null;
+    final unit = u[i];
+    return unit == null || unit.isEmpty ? null : unit;
   }
 }
 
@@ -184,7 +224,8 @@ class PbTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final body = Container(
-      height: 72,
+      // Grows with Dynamic Type: a two-line overline at 1.3× needs ~80 pt, a fixed 72 overflowed.
+      height: MediaQuery.textScalerOf(context).scale(72),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: ShapeDecoration(
         color: Color.alphaBlend(c.accent.withValues(alpha: 0.08), c.surface),
@@ -212,7 +253,13 @@ class PbTile extends StatelessWidget {
         ],
       ),
     );
-    return onTap == null ? body : GestureDetector(onTap: onTap, child: body);
+    // One spoken node 'label value unit' instead of three fragments.
+    return Semantics(
+      container: true,
+      label: _spoken(label, value, unit),
+      button: onTap != null ? true : null,
+      child: onTap == null ? ExcludeSemantics(child: body) : Pressable(onTap: onTap, semantics: false, child: ExcludeSemantics(child: body)),
+    );
   }
 }
 
@@ -227,12 +274,15 @@ class StackedTimeBar extends StatelessWidget {
     this.otherMs = 0,
     required this.labels,
     this.showLegend = true,
+    this.semanticsLabel,
   });
 
   final int skiMs, liftMs, pauseMs, signalLossMs, otherMs;
   /// [ski, lift, pause, signalLoss] localized labels.
   final List<String> labels;
   final bool showLegend;
+  /// Spoken summary of the whole bar ('Abfahrt 42 min, Lift 30 min, Pause 12 min'); replaces the legend's separate nodes. Null = legend texts only.
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +295,7 @@ class StackedTimeBar extends StatelessWidget {
       (pause, c.hairlineStrong, labels[2]),
       if (signalLossMs > 0) (signalLossMs, c.signalLoss, labels.length > 3 ? labels[3] : ''),
     ].where((p) => p.$1 > 0).toList();
-    return Column(
+    final bar = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
@@ -290,6 +340,8 @@ class StackedTimeBar extends StatelessWidget {
         ],
       ],
     );
+    if (semanticsLabel == null) return bar;
+    return Semantics(container: true, label: semanticsLabel, child: ExcludeSemantics(child: bar));
   }
 
   static String _min(int ms) {

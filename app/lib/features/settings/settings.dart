@@ -1,3 +1,4 @@
+export 'blocked_users_page.dart';
 export 'diagnostics_page.dart';
 export 'settings_providers.dart';
 export 'settings_sheet.dart';

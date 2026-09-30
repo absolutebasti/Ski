@@ -32,6 +32,51 @@ class DuelStrings {
 
   String get finished => l.pick(de: 'Tag beendet', en: 'Day ended');
 
+  // --- invites (0017) ------------------------------------------------------
+
+  /// 'Duell-Einladung von Lena' — title of the invite card.
+  /// Without a sender name only 'Duell-Einladung'.
+  String inviteFrom(String name) =>
+      name.isEmpty ? l.pick(de: 'Duell-Einladung', en: 'Duel invite') : l.pick(de: 'Duell-Einladung von $name', en: 'Duel invite from $name');
+  String get accept => l.pick(de: 'Annehmen', en: 'Accept');
+  String get decline => l.pick(de: 'Ablehnen', en: 'Decline');
+
+  /// '+ 2 weitere Einladungen' under the newest invite.
+  String moreInvites(int n) => l.pick(
+        de: n == 1 ? '+ 1 weitere Einladung' : '+ $n weitere Einladungen',
+        en: n == 1 ? '+ 1 more invite' : '+ $n more invites',
+      );
+
+  /// The invite leads into a duel that has no seat left.
+  String get inviteFull => l.pick(de: 'Das Duell ist inzwischen voll.', en: 'The duel has filled up.');
+
+  /// The user already rides a duel on the invite's day — one duel per day.
+  String get inviteBusyDay => l.pick(
+        de: 'Du bist an diesem Tag schon in einem Duell. Verlasse es, um anzunehmen.',
+        en: 'You are already in a duel that day. Leave it to accept.',
+      );
+  String get inviteDeclined => l.pick(de: 'Einladung abgelehnt', en: 'Invite declined');
+  String get inviteGone => l.pick(de: 'Diese Einladung gibt es nicht mehr', en: 'That invite is no longer there');
+
+  // 'Herausfordern' in the rider profile.
+
+  /// Toast after `invite_to_duel`: 'Einladung an Lena gesendet'.
+  String inviteSent(String name) => l.pick(de: 'Einladung an $name gesendet', en: 'Invite sent to $name');
+
+  /// Under 'Herausfordern' before the tap.
+  String get inviteCaption => l.pick(
+        de: 'Lädt in dein Tagesduell ein. Die Einladung erscheint in der Rangliste.',
+        en: 'Invites them to your day duel. The invite shows up on their leaderboard tab.',
+      );
+
+  /// Under 'Herausfordern' once the invite is out.
+  String get inviteSentCaption => l.pick(
+        de: 'Einladung ist raus. Der Code geht auch per Nachricht.',
+        en: 'Invite is out. The code works by message, too.',
+      );
+  String get shareCode => l.pick(de: 'Code teilen', en: 'Share code');
+  String alreadyInDuel(String name) => l.pick(de: '$name ist schon in deinem Duell', en: '$name is already in your duel');
+
   // --- create sheet --------------------------------------------------------
   String get createTitle => l.pick(de: 'Duell starten', en: 'Start duel');
   String get nameLabel => l.pick(de: 'Name (optional)', en: 'Name (optional)');

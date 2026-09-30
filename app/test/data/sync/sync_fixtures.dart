@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:slopetrack/core/core.dart';
 import 'package:slopetrack/data/db/database.dart';
@@ -113,22 +114,49 @@ Map<String, Object?> remoteRow({
 
 String _iso(int ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true).toIso8601String();
 
+/// Moves a day's last-edit time to [at] — the repository stamps the wall
+/// clock, a merge test needs to say which edit was first.
+Future<void> stampUpdatedAt(AppDatabase db, String dayId, int at) =>
+    (db.update(db.days)..where((d) => d.id.equals(dayId))).write(DaysCompanion(updatedAt: Value(at)));
+
 /// In-memory [SyncApi]; records every call and can fail on demand.
+///
+/// With [serverMode] it also behaves like the `days` table: an upsert lands in
+/// [remoteDays] (absent keys keep their value, `updated_at` moves with
+/// `device_updated_at` as the triggers of migration 0015 do), so two
+/// [SyncService]s on two databases can share one instance as 'the backend'.
 class FakeSyncApi implements SyncApi {
-  FakeSyncApi({this.userId = 'u1'});
+  FakeSyncApi({this.userId = 'u1', this.serverMode = false});
 
   @override
   String? userId;
 
+  final bool serverMode;
+
+  /// Server clock in [serverMode], ms epoch; every write moves it on by 1 s.
+  int serverNow = sampleStartedAt + 86400000;
+
   final List<Map<String, Object?>> upserts = [];
+
+  /// Every [upsertDay] call, rejected ones included.
+  int upsertCalls = 0;
 
   /// `sinceMs` of every fetchDays call (one per page).
   final List<int?> fetchCursors = [];
 
-  /// `offset` of every fetchDays call.
-  final List<int> fetchOffsets = [];
+  /// `after` of every fetchDays call: null for the first page, then the key
+  /// of the previous page's last row.
+  final List<PageKey?> fetchKeys = [];
+
+  /// Runs after each page was cut, with the 1-based page number — lets a test
+  /// change [remoteDays] in the middle of a pull.
+  void Function(int page)? afterFetch;
+
   final List<String> uploads = [];
   final List<String> removed = [];
+
+  /// Every [setTrackPath] call (the extra write after a first upload).
+  final List<String> trackPathWrites = [];
   final Map<String, String> trackPaths = {};
 
   /// Storage: path → gzip bytes.
@@ -141,6 +169,9 @@ class FakeSyncApi implements SyncApi {
 
   /// Thrown by [upsertDay] only — a 500 on the write while the pull works.
   Object? upsertFailure;
+
+  /// Thrown by [fetchDays] only — a broken pull while writes work.
+  Object? fetchFailure;
 
   /// Thrown by the next [failuresLeft] calls only, then cleared.
   int failuresLeft = 0;
@@ -170,23 +201,64 @@ class FakeSyncApi implements SyncApi {
 
   @override
   Future<void> upsertDay(Map<String, Object?> row) async {
+    upsertCalls++;
     _check();
     final f = upsertFailure;
     if (f != null) throw f;
     upserts.add(row);
+    final id = row['id'] as String;
+    if (row.containsKey('track_path')) {
+      final path = row['track_path'] as String?;
+      if (path == null) {
+        trackPaths.remove(id);
+      } else {
+        trackPaths[id] = path;
+      }
+    }
+    if (serverMode) _store(id, row);
+  }
+
+  void _store(String id, Map<String, Object?> row) {
+    final i = remoteDays.indexWhere((r) => r['id'] == id);
+    final old = i < 0 ? null : remoteDays[i];
+    final merged = <String, Object?>{'track_path': null, ...?old, ...row};
+    if (old == null || old['device_updated_at'] != row['device_updated_at']) {
+      serverNow += 1000;
+      merged['updated_at'] = _iso(serverNow);
+    }
+    merged['created_at'] = old?['created_at'] ?? merged['updated_at'];
+    if (i < 0) {
+      remoteDays.add(merged);
+    } else {
+      remoteDays[i] = merged;
+    }
+  }
+
+  static int _micros(Map<String, Object?> r) => DateTime.tryParse(r['updated_at'] as String? ?? '')?.microsecondsSinceEpoch ?? 0;
+
+  static int _order(Map<String, Object?> a, Map<String, Object?> b) {
+    final byTime = _micros(a).compareTo(_micros(b));
+    return byTime != 0 ? byTime : (a['id'] as String).compareTo(b['id'] as String);
   }
 
   @override
-  Future<List<Map<String, Object?>>> fetchDays({int? sinceMs, int offset = 0, int limit = 500}) async {
+  Future<List<Map<String, Object?>>> fetchDays({int? sinceMs, PageKey? after, int limit = 500}) async {
     fetchCursors.add(sinceMs);
-    fetchOffsets.add(offset);
+    fetchKeys.add(after);
     _check();
-    final rows = [
-      for (final r in remoteDays)
-        if (sinceMs == null || (DateTime.tryParse(r['updated_at'] as String? ?? '')?.millisecondsSinceEpoch ?? 0) > sinceMs) r,
-    ];
-    if (offset >= rows.length) return [];
-    return rows.sublist(offset, (offset + limit).clamp(0, rows.length));
+    final f = fetchFailure;
+    if (f != null) throw f;
+    final sorted = [...remoteDays]..sort(_order);
+    final Iterable<Map<String, Object?>> rows;
+    if (after != null) {
+      final key = {'updated_at': after.updatedAt, 'id': after.id};
+      rows = sorted.where((r) => _order(r, key) > 0);
+    } else {
+      rows = sorted.where((r) => sinceMs == null || _micros(r) > sinceMs * 1000);
+    }
+    final page = [for (final r in rows.take(limit)) Map<String, Object?>.from(r)];
+    afterFetch?.call(fetchKeys.length);
+    return page;
   }
 
   @override
@@ -201,7 +273,13 @@ class FakeSyncApi implements SyncApi {
   @override
   Future<void> setTrackPath(String dayId, String path) async {
     _check();
+    trackPathWrites.add(dayId);
     trackPaths[dayId] = path;
+    if (serverMode) {
+      final i = remoteDays.indexWhere((r) => r['id'] == dayId);
+      // device_updated_at unchanged → updated_at stays (migration 0015).
+      if (i >= 0) remoteDays[i] = {...remoteDays[i], 'track_path': path};
+    }
   }
 
   @override

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/tokens.dart';
+import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import '../../core/settings.dart';
 import '../../data/resorts/resort_repository.dart';
@@ -26,13 +27,21 @@ import 'social_api.dart';
 import 'social_controls.dart';
 import 'social_models.dart';
 import 'social_strings.dart';
+import 'teaser/teaser_api.dart';
+import 'teaser/teaser_models.dart';
+import 'teaser/teaser_widgets.dart';
 
 /// Tab 3 — the competition core (docs/DESIGN.md §5 "Rangliste",
 /// docs/ONBOARDING-SOCIAL.md): Tagesduell, Wochen-Challenge and the
 /// Rangliste with podium, rows and the own row pinned at the bottom.
 ///
-/// Works signed out, opted out and without a backend: every one of those
-/// states is a Rider card with one line and one action.
+/// Works signed out, opted out and without a backend. Opted out and offline
+/// are a Rider card with one line and one action. Signed out is the teaser
+/// (SOC-TEASER): the public top 10 by points for the season (RPC
+/// `public_board_teaser`, no user ids), the duel and challenge as locked
+/// previews, the period tabs and chips visible but switched off, and the
+/// sign-in call pinned where the own-rank strip sits. Creating or joining a
+/// duel, the challenge and the opt-in stay behind the Konto.
 ///
 /// Scope row: 'Freunde' ranks accepted friends + self (RPC `friends_board`),
 /// 'Mein Land' the own team country, 'Gebiet' one resort, 'Alle' everyone;
@@ -117,6 +126,17 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBinding
     refreshBoards(ref);
     ref.invalidate(myDuelProvider);
     ref.invalidate(openChallengesProvider);
+    ref.invalidate(teaserProvider);
+  }
+
+  /// Pull-to-refresh while signed out: refetch the public top 10.
+  Future<void> _pullRefreshTeaser(TeaserQuery query) async {
+    _refresh();
+    try {
+      await ref.read(teaserProvider(query).future);
+    } catch (_) {
+      // The teaser renders the failure itself.
+    }
   }
 
   /// Pull-to-refresh: drop the caches and wait for the board to come back.
@@ -202,6 +222,12 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBinding
       LeaderboardScope.all => null,
     };
     final signedIn = api != null && user != null;
+    // Signed out with a backend: the public preview. Nothing can be picked
+    // without a Konto, so it is always the season, by points, for the Gebiet
+    // the board would start on (else every resort).
+    final teaser = api != null && user == null && !auth.isLoading;
+    final teaserResortName = chosenResort == null ? null : resorts?.byId(chosenResort)?.name ?? chosenResort;
+    final teaserQuery = TeaserQuery(seasonKey: query.seasonKey, resortId: chosenResort);
     // Only with a backend: the sync status provider builds the SyncService.
     if (signedIn) ref.listen<AsyncValue<SyncStatus>>(accountSyncStatusProvider, _onSync);
 
@@ -211,13 +237,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBinding
     } else if (user == null) {
       body = auth.isLoading
           ? const BoardSkeleton()
-          : SocialStateBlock(
-              pose: 'point',
-              headline: s.signedOutHeadline,
-              line: s.signedOutLine(resortName),
-              actionLabel: s.signIn,
-              onAction: _openAccount,
-            );
+          : _SignedOut(query: teaserQuery, resortName: teaserResortName, countryCode: countryCode, onSignIn: _openAccount);
     } else {
       body = _SignedIn(
         query: query,
@@ -255,13 +275,18 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBinding
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
               slivers: [
                 if (signedIn) CupertinoSliverRefreshControl(onRefresh: () => _pullRefresh(query)),
+                if (teaser) CupertinoSliverRefreshControl(onRefresh: () => _pullRefreshTeaser(teaserQuery)),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, 140),
+                  // Clears the pinned strip (sign-in ≈ 72 pt, own rank ≈ 64 pt)
+                  // plus the 90 pt tab bar it sits on.
+                  padding: EdgeInsets.fromLTRB(Tokens.pad, 0, Tokens.pad, teaser ? 172 : 160),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       ScreenHeader(
                         title: s.title,
-                        caption: s.caption(_period, query.seasonKey, where),
+                        caption: teaser
+                            ? s.caption(LeaderboardPeriod.season, query.seasonKey, teaserResortName)
+                            : s.caption(_period, query.seasonKey, where),
                         padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
                         trailing: signedIn ? [_FriendsButton(onTap: _invite)] : null,
                       ),
@@ -283,9 +308,130 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with WidgetsBinding
                 onJump: (rank) => setState(() => _offset = query.offsetAround(rank)),
                 onTop: _offset == 0 ? null : () => setState(() => _offset = 0),
               ),
+            if (teaser)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: TeaserSignInStrip(
+                  headline: s.signedOutHeadline,
+                  line: s.signedOutLine(teaserResortName),
+                  actionLabel: s.signIn,
+                  onSignIn: _openAccount,
+                  // The shell's Scaffold (extendBody) already reports the tab
+                  // bar + home indicator as bottom padding; adding 56 again
+                  // left an empty 56 pt band under the Anmelden button.
+                  bottomPadding: MediaQuery.paddingOf(context).bottom,
+                ),
+              ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Everything below the header while no Konto is signed in: the duel and the
+/// challenge as locked previews, the tabs and chips of the real board switched
+/// off, and the public top 10. No call here needs a session; every tap that
+/// would (a card, a filter, a row) answers with the sign-in or a toast.
+class _SignedOut extends StatelessWidget {
+  const _SignedOut({required this.query, required this.resortName, required this.countryCode, required this.onSignIn});
+
+  final TeaserQuery query;
+
+  /// Name of the Gebiet the teaser ranks; null = every resort.
+  final String? resortName;
+  final String? countryCode;
+  final VoidCallback onSignIn;
+
+  static void _locked(int _) {}
+
+  @override
+  Widget build(BuildContext context) {
+    final s = SocialStrings.of(context);
+    final name = resortName;
+    // The scope the teaser shows comes first so it is on screen without
+    // scrolling (the row cannot scroll while switched off); the scopes that
+    // need a Konto follow.
+    final scopes = [
+      if (name != null) LeaderboardScope.resort,
+      LeaderboardScope.all,
+      LeaderboardScope.friends,
+      if (countryCode != null) LeaderboardScope.country,
+    ];
+    // Same reason: 'Punkte' — the only metric of the teaser — leads the row.
+    final metrics = [SocialMetric.points, ...SocialMetric.leaderboard.where((m) => m != SocialMetric.points)];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TeaserLockedCard(key: const ValueKey('teaser-duel'), title: s.duel, line: s.teaserDuelLine, lockedLabel: s.teaserLocked, onTap: onSignIn),
+        const SizedBox(height: Tokens.cardGap),
+        TeaserLockedCard(key: const ValueKey('teaser-challenge'), title: s.challenge, line: s.teaserChallengeLine, lockedLabel: s.teaserLocked, onTap: onSignIn),
+        const SizedBox(height: Tokens.sectionGap),
+        TeaserLockedFilters(
+          key: const ValueKey('teaser-filters'),
+          label: '${s.teaserFilters}. ${s.teaserLocked}',
+          onTap: () => showToast(context, s.signInFirst),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SocialSegmentTabs(labels: s.periods, index: 0, onSelect: _locked),
+              const SizedBox(height: 14),
+              SocialChipRow(labels: [for (final sc in scopes) s.scope(sc, countryCode: countryCode)], selected: 0, onSelect: _locked),
+              if (name != null) ...[const SizedBox(height: 10), SocialPickerChip(label: s.resortChip(name))],
+              const SizedBox(height: 10),
+              SocialChipRow(labels: [for (final m in metrics) s.metric(m)], selected: 0, onSelect: _locked),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _TeaserBoard(query: query, resortName: name),
+      ],
+    );
+  }
+}
+
+/// The public top 10, or three ghost rows with one line while it loads, is
+/// empty or could not be fetched.
+class _TeaserBoard extends ConsumerWidget {
+  const _TeaserBoard({required this.query, required this.resortName});
+
+  final TeaserQuery query;
+  final String? resortName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = SocialStrings.of(context);
+    final board = ref.watch(teaserProvider(query));
+    return board.when(
+      loading: () => const BoardSkeleton(),
+      error: (e, _) => _TeaserGhost(line: s.teaserErrorLine(e is SocialError ? e.kind : SocialErrorKind.failed)),
+      data: (rows) => rows.isEmpty
+          ? _TeaserGhost(line: s.teaserEmptyLine(resortName))
+          : TeaserRows(entries: rows, onRow: () => showToast(context, s.teaserRowToast)),
+    );
+  }
+}
+
+class _TeaserGhost extends StatelessWidget {
+  const _TeaserGhost({required this.line});
+  final String line;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const BoardSkeleton(),
+        const SizedBox(height: 14),
+        Text(line, textAlign: TextAlign.center, style: AppText.caption(c.textTertiary)),
+      ],
     );
   }
 }
@@ -600,7 +746,7 @@ class _PinnedOwnRow extends ConsumerWidget {
         rank: r,
         metric: query.metric,
         name: userName,
-        bottomPadding: 56 + MediaQuery.paddingOf(context).bottom,
+        bottomPadding: MediaQuery.paddingOf(context).bottom, // tab bar included (extendBody)
         onJump: canJump ? () => onJump(r.rank) : null,
         onTop: onTop,
         onShare: r == null ? null : () => unawaited(ref.read(rankShareProvider)(context, _cardData(context, r))),

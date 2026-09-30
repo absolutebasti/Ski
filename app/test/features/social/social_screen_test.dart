@@ -9,6 +9,7 @@ import 'package:slopetrack/features/days/resort_picker.dart';
 import 'package:slopetrack/features/share/share_card_data.dart';
 import 'package:slopetrack/features/social/fake_social_api.dart';
 import 'package:slopetrack/features/social/social.dart';
+import 'package:slopetrack/features/social/teaser/teaser.dart';
 
 import '../../support/pump.dart';
 import '../../support/screen_overrides.dart';
@@ -41,12 +42,14 @@ Future<void> _revealChip(WidgetTester tester, String label, {String anchor = 'H�
 Future<void> _pump(
   WidgetTester tester, {
   FakeSocialApi? api,
+  FakeTeaserApi? teaser,
   bool signedIn = true,
   VoidCallback? onOpenAccount,
   List<DaySummary> days = const [],
   Settings settings = _settings,
   List<Resort> resorts = kResorts,
   List<Override> extra = const [],
+  Locale locale = const Locale('de'),
 }) async {
   // Tall phone surface: the achievements header sits above the board, so the
   // tabs and chips must stay on screen without scrolling.
@@ -56,9 +59,12 @@ Future<void> _pump(
   await pumpApp(
     tester,
     SocialScreen(now: kNow, onOpenAccount: onOpenAccount),
+    locale: locale,
     overrides: [
       ...screenOverrides(settings: settings, resorts: resorts, days: days),
       ...socialOverrides(api: api, user: signedIn ? kUser : null),
+      // The public top 10 of the signed-out tab; never the Supabase client.
+      teaserApiProvider.overrideWithValue(teaser),
       ...extra,
     ],
   );
@@ -66,23 +72,205 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('signed out: the Rider, one line, sign in with Apple', (tester) async {
-    var opened = 0;
-    await _pump(tester, api: FakeSocialApi(), signedIn: false, onOpenAccount: () => opened++);
+  group('signed out (teaser)', () {
+    testWidgets('the public top 10, locked duel and challenge previews, sign-in pinned', (tester) async {
+      var opened = 0;
+      final api = FakeSocialApi();
+      final teaser = FakeTeaserApi.topTen();
+      await _pump(tester, api: api, teaser: teaser, signedIn: false, onOpenAccount: () => opened++);
 
-    expect(find.text('Rangliste'), findsOneWidget);
-    expect(find.text('Hol dir Platz 1.'), findsOneWidget);
-    expect(find.text('Melde dich an und fahr gegen Kitzbühel.'), findsOneWidget);
-    // The headline already says 'Platz 1' — the line must not repeat it.
-    expect(find.textContaining('Platz 1 in'), findsNothing);
-    expect(find.byType(LeaderboardPodium), findsNothing);
-    expect(find.byKey(const ValueKey('friends-button')), findsNothing, reason: 'friends need a Konto');
+      expect(find.text('Rangliste'), findsOneWidget);
+      expect(find.text('Saison 2025/26 · Kitzbühel'), findsOneWidget);
+      expect(teaser.calls, [const TeaserQuery(seasonKey: '2025/26', resortId: 'kitzbuehel')]);
 
-    await tester.ensureVisible(find.text('Anmelden'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Anmelden'));
-    await tester.pumpAndSettle();
-    expect(opened, 1);
+      // Ten plain rows by points — no podium (a podium column opens a rider).
+      expect(find.byType(TeaserRows), findsOneWidget);
+      expect(find.byType(LeaderboardRow), findsNWidgets(10));
+      expect(find.byType(LeaderboardPodium), findsNothing);
+      expect(find.text('Lena Bergmann'), findsOneWidget);
+      expect(find.text('Max Steiner'), findsOneWidget);
+      expect(find.text('4.200'), findsOneWidget);
+      expect(find.text('Pkt.'), findsWidgets);
+      expect(find.byKey(const ValueKey('board-skeleton')), findsNothing);
+
+      // Duel and challenge: previews with a lock, none of the real cards.
+      expect(find.byType(TeaserLockedCard), findsNWidgets(2));
+      expect(find.text('TAGESDUELL'), findsOneWidget);
+      expect(find.text('Duell mit bis zu 3 Freunden · Code teilen'), findsOneWidget);
+      expect(find.text('WOCHEN-CHALLENGE'), findsOneWidget);
+      expect(find.byIcon(Icons.lock_outline_rounded), findsNWidgets(2));
+      expect(find.byType(DuelCard), findsNothing);
+      expect(find.byType(ChallengeCard), findsNothing);
+      expect(find.byType(CountryBoardCard), findsNothing);
+
+      // Create / join / opt-in stay behind the Konto.
+      expect(find.text('Duell starten'), findsNothing);
+      expect(find.text('Code eingeben'), findsNothing);
+      expect(find.text('Mitmachen'), findsNothing);
+      expect(find.text('Rangliste freischalten'), findsNothing);
+      expect(find.byKey(const ValueKey('friends-button')), findsNothing, reason: 'friends need a Konto');
+      expect(find.byType(OwnRankStrip), findsNothing);
+
+      // The sign-in sits where the own-rank strip sits; 'Platz 1' is said once.
+      expect(find.byType(TeaserSignInStrip), findsOneWidget);
+      expect(find.text('Hol dir Platz 1.'), findsOneWidget);
+      expect(find.text('Melde dich an und fahr gegen Kitzbühel.'), findsOneWidget);
+      expect(find.textContaining('Platz 1'), findsOneWidget);
+      final strip = tester.getRect(find.byType(TeaserSignInStrip));
+      expect(strip.bottom, tester.getRect(find.byType(SocialScreen)).bottom, reason: 'pinned to the bottom edge, above the tab bar inset');
+
+      await tester.tap(find.text('Anmelden'));
+      await tester.pumpAndSettle();
+      expect(opened, 1);
+
+      // Nothing that needs a session was asked for.
+      expect(api.queries, isEmpty);
+      expect(api.rankQueries, isEmpty);
+      expect(api.countryBoardCalls, isEmpty);
+      expect(api.boardCalls, isEmpty);
+      expect(api.created, isEmpty);
+      expect(api.joined, isEmpty);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('period tabs and chips are visible but switched off', (tester) async {
+      final api = FakeSocialApi();
+      final teaser = FakeTeaserApi.topTen();
+      await _pump(tester, api: api, teaser: teaser, signedIn: false);
+
+      final filters = find.byKey(const ValueKey('teaser-filters'));
+      expect(filters, findsOneWidget);
+      expect(find.descendant(of: filters, matching: find.byType(SocialSegmentTabs)), findsOneWidget);
+      expect(find.descendant(of: filters, matching: find.byType(SocialChipRow)), findsNWidgets(2));
+      expect(tester.widget<SocialSegmentTabs>(find.byType(SocialSegmentTabs)).index, 0, reason: 'Saison');
+      // What the teaser ranks is what is selected: the Gebiet, by points.
+      SocialFilterChip chip(String label) => tester.widget<SocialFilterChip>(find.widgetWithText(SocialFilterChip, label));
+      expect(chip('Gebiet').selected, isTrue);
+      expect(chip('Punkte').selected, isTrue);
+      expect(chip('Alle').selected, isFalse);
+      expect(chip('Höhenmeter').selected, isFalse);
+      expect(find.text('Gebiet: Kitzbühel'), findsOneWidget);
+      // No pointer reaches a tab or a chip.
+      final ignore = tester.widget<IgnorePointer>(find.descendant(of: filters, matching: find.byType(IgnorePointer)).first);
+      expect(ignore.ignoring, isTrue);
+
+      for (final label in ['Monat', 'Woche', 'Alle', 'Höhenmeter', 'Gebiet: Kitzbühel']) {
+        await tester.tap(find.text(label), warnIfMissed: false);
+        await tester.pump();
+      }
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.widget<SocialSegmentTabs>(find.byType(SocialSegmentTabs)).index, 0);
+      expect(chip('Gebiet').selected, isTrue);
+      expect(chip('Punkte').selected, isTrue);
+      expect(find.text('Saison 2025/26 · Kitzbühel'), findsOneWidget, reason: 'the caption did not move to month / week / all');
+      expect(find.byType(ResortPickerSheet), findsNothing);
+      expect(teaser.calls, hasLength(1), reason: 'no re-query');
+      expect(api.queries, isEmpty);
+      // The block says why instead of doing nothing.
+      expect(find.text('Dafür brauchst du ein Konto'), findsWidgets);
+
+      // Let the toasts run out.
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('tapping a teaser row shows the sign-in toast and opens no rider', (tester) async {
+      await _pump(tester, api: FakeSocialApi(), teaser: FakeTeaserApi.topTen(), signedIn: false);
+
+      await tester.tap(find.text('Lena Bergmann'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Anmelden, um Profile zu sehen'), findsOneWidget);
+      expect(find.byType(RiderSheetBody), findsNothing);
+
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+      expect(find.text('Anmelden, um Profile zu sehen'), findsNothing);
+    });
+
+    testWidgets('a locked preview card leads to the sign-in', (tester) async {
+      var opened = 0;
+      await _pump(tester, api: FakeSocialApi(), teaser: FakeTeaserApi.topTen(), signedIn: false, onOpenAccount: () => opened++);
+
+      await tester.tap(find.byKey(const ValueKey('teaser-duel')));
+      await tester.pumpAndSettle();
+      expect(opened, 1);
+      await tester.tap(find.byKey(const ValueKey('teaser-challenge')));
+      await tester.pumpAndSettle();
+      expect(opened, 2);
+    });
+
+    testWidgets('empty teaser: ghost rows and the sign-in, Platz 1 is not repeated', (tester) async {
+      var opened = 0;
+      final teaser = FakeTeaserApi();
+      await _pump(tester, api: FakeSocialApi(), teaser: teaser, signedIn: false, onOpenAccount: () => opened++);
+
+      expect(teaser.calls, hasLength(1));
+      expect(find.byKey(const ValueKey('board-skeleton')), findsOneWidget);
+      expect(find.byType(LeaderboardRow), findsNothing);
+      expect(find.byType(TeaserRows), findsNothing);
+      expect(find.text('In Kitzbühel ist noch niemand gewertet.'), findsOneWidget);
+      // The old card said 'Platz 1' in headline and line; now once, in the strip.
+      expect(find.textContaining('Platz 1'), findsOneWidget);
+      expect(find.byType(SocialStateBlock), findsNothing);
+      expect(find.byType(TeaserLockedCard), findsNWidgets(2));
+      expect(find.byType(TeaserSignInStrip), findsOneWidget);
+
+      await tester.tap(find.text('Anmelden'));
+      await tester.pumpAndSettle();
+      expect(opened, 1);
+    });
+
+    testWidgets('teaser offline: ghost rows with the offline line, sign-in stays', (tester) async {
+      await _pump(
+        tester,
+        api: FakeSocialApi(),
+        teaser: FakeTeaserApi(entries: FakeTeaserApi.sample(), failWith: const SocialError(SocialErrorKind.offline)),
+        signedIn: false,
+      );
+      expect(find.byKey(const ValueKey('board-skeleton')), findsOneWidget);
+      expect(find.byType(LeaderboardRow), findsNothing);
+      expect(find.text('Keine Verbindung. Die Vorschau lädt, sobald du Netz hast.'), findsOneWidget);
+      expect(find.byType(TeaserSignInStrip), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('without a home resort the teaser ranks every resort', (tester) async {
+      final teaser = FakeTeaserApi.topTen();
+      await _pump(tester, api: FakeSocialApi(), teaser: teaser, signedIn: false, settings: _noHome);
+
+      expect(teaser.calls, [const TeaserQuery(seasonKey: '2025/26')]);
+      expect(find.text('Saison 2025/26 · Alle Gebiete'), findsOneWidget);
+      expect(find.text('Melde dich an und fahr gegen alle anderen.'), findsOneWidget);
+      expect(find.text('Gebiet'), findsNothing);
+      expect(find.textContaining('Gebiet:'), findsNothing);
+      expect(tester.widget<SocialFilterChip>(find.widgetWithText(SocialFilterChip, 'Alle')).selected, isTrue);
+      expect(find.byType(LeaderboardRow), findsNWidgets(10));
+    });
+
+    testWidgets('more than ten rows from the server are cut to ten', (tester) async {
+      final rows = [for (var i = 1; i <= 14; i++) TeaserEntry(rank: i, displayName: 'Rider $i', value: 5000.0 - i * 100)];
+      await _pump(tester, api: FakeSocialApi(), teaser: FakeTeaserApi(entriesFor: (_) => rows), signedIn: false);
+      // The fake caps like the server; the widget caps again on its own.
+      expect(find.byType(LeaderboardRow), findsNWidgets(10));
+      expect(find.text('Rider 11'), findsNothing);
+    });
+
+    testWidgets('English: previews, toast copy and the strip', (tester) async {
+      await _pump(tester, api: FakeSocialApi(), teaser: FakeTeaserApi.topTen(), signedIn: false, locale: const Locale('en'));
+      expect(find.text('Duel with up to 3 friends · share a code'), findsOneWidget);
+      expect(find.text('Go for first place.'), findsOneWidget);
+      expect(find.text('Sign in'), findsOneWidget);
+
+      await tester.tap(find.text('Lena Bergmann'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Sign in to see profiles'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+    });
   });
 
   testWidgets('without a backend the tab is offline, not broken', (tester) async {

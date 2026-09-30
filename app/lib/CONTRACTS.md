@@ -46,7 +46,7 @@ interpretation. Everything below already exists and compiles.
 | `dayDetailProvider` | `FutureProvider.family<DayDetail, String>` | WP-02 | data/db/providers.dart |
 | `seasonTotalsProvider` | `StreamProvider<List<SeasonTotals>>` (newest season first) | WP-02 | data/db/providers.dart |
 | `personalBestsProvider` | `StreamProvider<PersonalBests>` | WP-02 | data/db/providers.dart |
-| `resortRepositoryProvider` | `FutureProvider<ResortRepository>` with `Resort? nearest(double lat, double lon)`, `Resort? byId(String)`, `List<Resort> all` | WP-02 (done) | data/resorts/resort_repository.dart |
+| `resortRepositoryProvider` | `FutureProvider<ResortRepository>` with `Resort? nearest(double lat, double lon)` (overlap → larger circle wins), `Resort? byId(String)` (resolves aliases), `String canonicalId(String)`, `Map<String,String> aliases`, `List<Resort> all`, `ResortRepository.fromJsonString` | WP-02 (done) | data/resorts/resort_repository.dart |
 | `locationSourceProvider`, `barometerSourceProvider`, `batterySourceProvider`, `heartRateSourceProvider` | `Provider<...Source>` | WP-03 (done) | platform/providers.dart |
 | `permissionServiceProvider` | `Provider<PermissionService>` — `Future<LocationPermissionState> requestWhenInUse()`, `Future<LocationPermissionState> requestAlways()`, `Future<bool> requestMotion()`, `Future<bool> requestNotifications()`, `Future<LocationPermissionState> status()`, `Future<bool> hasPreciseLocation()`, `Future<bool> requestTemporaryFullAccuracy()`, `Future<void> openSettings()` | WP-03 (done) | platform/permission_service.dart |
 | `notificationServiceProvider` | `Provider<NotificationService>` — `showReminder(id, title, body)`, `cancel(id)`, `scheduleIn(id, Duration, title, body)` | WP-03 (done) | platform/notification_service.dart |
@@ -84,7 +84,7 @@ interpretation. Everything below already exists and compiles.
 |---|---|---|---|
 | `supabaseProvider` | `Provider<SupabaseClient?>` — null when the backend is unavailable; every feature must work with null | lead (done) | data/supabase/supabase_client.dart |
 | `authStateProvider` | `StreamProvider<AuthUser?>` (`id`, `email?`, `displayName`) — signed-in user or null | WP-14 | data/sync/auth_service.dart |
-| `authServiceProvider` | `Provider<AuthService>` — `Future<AuthUser?> signInWithApple()`, `signOut()`, `Future<void> deleteAccount()` (deletes rows via RPC/table deletes then signs out) | WP-14 | data/sync/auth_service.dart |
+| `authServiceProvider` | `Provider<AuthService>` — `Future<AuthUser?> signInWithApple()`, `signOut()`, `Future<bool> deleteAccount()` — Edge Function `delete-account` only, no client fallback; false = failed, session kept (SYNC-2) | WP-14 | data/sync/auth_service.dart |
 | `syncServiceProvider` | `Provider<SyncService>` — `Future<void> pushDay(String dayId)`, `Future<void> pullAll()`, `Future<void> syncNow()`, `Stream<SyncStatus> status` (`idle`, `syncing`, `offline`, `error`, `lastSyncAt`) | WP-14 | data/sync/sync_service.dart |
 | `profileProvider` | `FutureProvider<Profile?>` (`displayName`, `avatarUrl`, `homeResortId`, `shareLeaderboards`) + `profileServiceProvider` with `update(...)` | WP-15 | features/account/profile_service.dart |
 | `AccountSheet.show(context)` | Sign in with Apple / profile / opt-in toggle / sign out / delete account | WP-15 | features/account/account_sheet.dart |
@@ -97,7 +97,7 @@ Rules for backend packages: never block the UI on the network; every remote call
 ### WP-16 Rangliste (done) — features/social
 | Symbol | Type | Notes |
 |---|---|---|
-| `SocialScreen({onOpenAccount, now})` | widget | third tab; `AppRouter.social()` passes `AccountSheet.show` |
+| `SocialScreen({onOpenAccount, now})` | widget | third tab; `AppRouter.social()` passes `ProfilePage.open` |
 | `socialApiProvider` | `Provider<SocialApi?>` | null without Supabase → offline/signed-out states |
 | `leaderboardProvider` | `FutureProvider.family<List<LeaderboardEntry>, LeaderboardQuery>` | RPC `leaderboard` |
 | `groupBoardProvider` | `FutureProvider.family<List<GroupMemberStats>, String>` | RPC `group_board` |
@@ -107,7 +107,7 @@ Rules for backend packages: never block the UI on the network; every remote call
 ### WP-15 Konto (done) — features/account
 | Symbol | Type | Notes |
 |---|---|---|
-| `AccountSheet.show(context)`, `AccountRow({onTap})` | widgets | Konto row in SettingsSheet embeds `AccountRow` |
+| `ProfilePage.open(context)`, `AccountRow({onTap})` | widgets | Konto row in SettingsSheet embeds `AccountRow`; `AccountSheet` retired 2026-09-30 |
 | `profileProvider` | `FutureProvider<Profile?>` | local-first cache, never throws |
 | `profileServiceProvider`, `profileApiProvider` | providers | `FakeProfileApi` for tests |
 | `accountSyncStatusProvider`, `accountSyncTriggerProvider`, `accountSignInProvider`, `accountSignOutProvider`, `accountDeleteProvider` | providers | indirections so tests never build SyncService |
@@ -145,3 +145,16 @@ Rules for backend packages: never block the UI on the network; every remote call
 | UX-POLISH-1 | `RecordCard`, `TimeLegend`, altitude-profile axes, medal titles | Goldens under summary/profile/achievements. |
 | TF-PLIST | `de.lproj/en.lproj/InfoPlist.strings` (variant group wired by the lead), PrivacyInfo photo type, `tools/testflight.sh` | Purpose strings for image_picker's static scan. |
 | BE-14 | migration 0014 (`create_duel` RPC, two-way blocks, reports guard + pg_net → `report-notify`) | Client `createDuel` still inserts directly → SOC-DUEL-INVITES switches to the RPC. |
+
+### Backlog v2 wave 2 (2026-09-30, in progress)
+| Package | Exposes | Notes |
+|---|---|---|
+| SOC-TEASER | `teaserApiProvider: Provider<TeaserApi?>`, `teaserProvider: FutureProvider.family<List<TeaserEntry>, TeaserQuery>`, widgets `TeaserRows`/`TeaserLockedCard`/`TeaserSignInStrip` (barrel `social/teaser/teaser.dart`) | Signed-out Rangliste: public top 10 via RPC `public_board_teaser` (0016, anon), locked duel/challenge previews, sign-in strip where the own-rank strip sits. `SocialStrings.duelShareText` is unused (delete). |
+| SOC-DUEL-INVITES | `DuelApi.inviteToDuel/respondInvite/myInvites` + `supportsInvites`, `duelInvitesProvider`, `DuelInvite`, `DuelInviteCard`, `DuelStrings.invite*` | `SupabaseDuelApi.createDuel` → RPC `create_duel`; RiderSheet 'Herausfordern' = today's duel ?? create → invite → toast; share text = `InviteStrings.duelShareText`. Migration 0017. |
+| SYNC-2 | `profileRepairProvider: Provider<ProfileRepair>` (`repairIfMissing()` runs on start, auth change, 30 s tick), `SyncState.throttled` (P0005, 1 min window), keyset `SyncApi.fetchDays({after, limit, sinceMs})`, drift v3 `days.track_path`, `DaysRepository.markSynced(..., upToOutboxId)` | No main.dart wiring; `AuthService.deleteAccount` → `Future<bool>`. Remote tombstone always wins over a local edit (active recording day protected). |
+| BE-15 | `ModerationApi.blockedRiders()` → `List<BlockedRider>`, `blockedRidersProvider`; SQL `blocked_riders()`, `private.duel_expired`, `days_guard`/`live_days` limits | Live uploader must swallow P0005 (20 s throttle) and 23514 (day outside ± 1). CI workflow `.github/workflows/supabase.yml`. |
+| DATA-RESORTS-2 | `resorts.json` entries carry optional `aliases` + `altFromCentre`; 4.748 entries, 186 aliases, 0 duplicates (tools/data/README.md) | `lech-zuers` → `st-anton` ('Ski Arlberg'). Achievements should count distinct resorts via `canonicalId` (open lead item). Migration 0018. |
+| MAP-SNAPSHOT | `mapSnapshotSourceProvider: Provider<MapSnapshotSource>` (MethodChannel `de.torchtechnology.slopetrack/map_snapshot` → `ios/Runner/MapSnapshot.swift`, MKMapSnapshotter satellite → muted fallback, null on error/offline), `mapImagesProvider: Provider<MapImages>` (`render(dayId)` after End, `ensure(dayId)` retry once per session), `mapImageRevisionProvider`, `ThumbnailRenderer.renderMap/mapBounds/mapPathFor/heroPathFor`, `MapRegion`/`MapFrame`/`MapGeo` (map_region.dart), `MapStrings.appleAttribution` | Files `thumbs/<id>_map.png` (card), `<id>_hero.png` + `_hero.json` (Tagesbilanz ground). Offline → path PNGs stay. Attribution 'Karten: © Apple' on every snapshot (DESIGN.md). |
+| LEAD-WIDGETS | Glyph.friends/sun/check/search/person/bell/lock/battery/walk/pause/satellite; `MetricStrip` items with optional `unit`; `SurfaceCard(alignment:)`; Semantics: AppSheet close label, PbTile/StatTile merged label, `StackedTimeBar(semanticsLabel:)`, `SpeedBar(semanticsLabel:)`, toast liveRegion, `HoldToConfirmButton(semanticsHint:)`; reduced motion via `Tokens.reduced/motion` in RecordingPill, tab pulse, Pressable | Tests under test/app/widgets. |
+| UX-ONBOARDING-A11Y | `HookPage` (centred Column, riderMin 160 / riderMax 200 / overlap 24), `RouteHook(height:)` (null = fill), `RoutePainter` public; test/app/text_scale_test.dart (four screens at 1.3×), test/app/theme/contrast_test.dart (WCAG floors, allow-list empty) | Glyph wishes: more, locateOff. |
+| SETTINGS-ACCOUNT-2 | `BlockedUsersPage.open(context)` (Einstellungen › Konto › Blockierte Nutzer), `AccountSignedOutBody`, `ProfileLevelCard`, `SeasonGoalCard` (→ `SeasonGoalSheet.show`), `accountDeleteProvider: Provider<DeleteAccountAction>` with `typedef DeleteAccountAction = Future<bool> Function()` | `AccountSheet` deleted; router and demo route 'account' open `ProfilePage` directly. Units row removed until a units setting exists. Blocked names come from the `blocked_riders()` RPC (BE-15, 0015). |

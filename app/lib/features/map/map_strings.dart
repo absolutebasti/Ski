@@ -20,6 +20,9 @@ class MapStrings {
   String get end => _l.pick(de: 'Ende', en: 'End');
   String get noTrack => _l.pick(de: 'Noch keine Spur', en: 'No track yet');
 
+  /// Attribution on every Apple-Maps snapshot we show (day card, Tagesbilanz).
+  String get appleAttribution => _l.pick(de: 'Karten: © Apple', en: 'Maps: © Apple');
+
   // --- GPS quality pill ----------------------------------------------------
   String get noGps => _l.pick(de: 'Kein GPS', en: 'No GPS');
 

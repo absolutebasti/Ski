@@ -38,6 +38,11 @@ class LiveDuelUploader {
   final Duration interval;
 
   Timer? _timer;
+  /// 0015 throttles `live_days` updates within 20 s (P0005). A write that
+  /// lands inside the window waits for the cooldown instead of failing.
+  static const Duration minGap = Duration(seconds: 20);
+  Timer? _cooldown;
+  bool _pending = false;
   LiveDayPayload? _lastSent;
   String? _lastRunId;
   bool _inFlight = false;
@@ -87,6 +92,9 @@ class LiveDuelUploader {
   void _stop() {
     _timer?.cancel();
     _timer = null;
+    _cooldown?.cancel();
+    _cooldown = null;
+    _pending = false;
     _lastSent = null;
     _lastRunId = null;
   }
@@ -116,11 +124,22 @@ class LiveDuelUploader {
     final payload = _payload(duel, _ref.read(liveStateProvider));
     final last = _lastSent;
     if (last != null && payload.sameNumbers(last)) return;
+    if (_cooldown != null) {
+      _pending = true;
+      return;
+    }
     _inFlight = true;
     try {
       await api.upsertLive(payload);
       _lastSent = payload;
       writes++;
+      _cooldown = Timer(minGap, () {
+        _cooldown = null;
+        if (_pending && !_disposed) {
+          _pending = false;
+          unawaited(_upsert());
+        }
+      });
     } on SocialError {
       // Offline on a chairlift: the next tick tries again.
     } catch (_) {

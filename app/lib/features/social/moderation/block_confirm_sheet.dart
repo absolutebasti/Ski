@@ -66,9 +66,9 @@ class _BlockConfirmSheetBodyState extends ConsumerState<BlockConfirmSheetBody> {
         const SizedBox(height: Tokens.sectionGap),
         Row(
           children: [
-            Expanded(child: SecondaryButton(key: const ValueKey('block-cancel'), label: s.cancel, height: 52, onPressed: _busy ? null : () => Navigator.of(context).maybePop(false))),
+            Expanded(child: SecondaryButton(key: const ValueKey('block-cancel'), label: s.cancel, onPressed: _busy ? null : () => Navigator.of(context).maybePop(false))),
             const SizedBox(width: 10),
-            Expanded(child: SecondaryButton(key: const ValueKey('block-confirm'), label: s.blockConfirm, height: 52, danger: true, onPressed: _busy ? null : _confirm)),
+            Expanded(child: SecondaryButton(key: const ValueKey('block-confirm'), label: s.blockConfirm, danger: true, onPressed: _busy ? null : _confirm)),
           ],
         ),
         SizedBox(height: MediaQuery.paddingOf(context).bottom),

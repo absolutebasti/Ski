@@ -81,6 +81,9 @@ class DaysRepository {
         statsToCompanion(stats).copyWith(
           status: Value(DayStatus.finished.dbValue), endedAt: Value(endedAt), updatedAt: Value(_now()),
           trackedOnWatch: Value(trackedOnWatch), engineVersion: const Value(TrackingConfig.engineVersion),
+          // The track is final now: whatever backup exists (a day that was
+          // reopened) is stale, the next push uploads again.
+          trackPath: const Value(null),
         ),
       );
       await _enqueue(dayId, SyncOp.upsert);
@@ -152,8 +155,9 @@ class DaysRepository {
   /// away (SYNC-HARDENING): a deleted day must not keep megabytes of track on
   /// the phone; the aggregates stay for the backend round-trip.
   Future<void> softDeleteDay(String id) => db.transaction(() async {
+        final now = _now();
         await (db.update(db.days)..where((d) => d.id.equals(id))).write(
-          DaysCompanion(deletedAt: Value(_now()), updatedAt: Value(_now())),
+          DaysCompanion(deletedAt: Value(now), updatedAt: Value(now), trackPath: const Value(null)),
         );
         await (db.delete(db.points)..where((p) => p.dayId.equals(id))).go();
         await (db.delete(db.segments)..where((s) => s.dayId.equals(id))).go();
@@ -201,11 +205,15 @@ class DaysRepository {
     });
   }
 
+  /// Thumbnail and weather live on this phone only. Neither is an edit:
+  /// `updatedAt` is what travels as `device_updated_at` and decides the
+  /// two-device merge (SYNC-2), so a local-only write must not make this row
+  /// look newer than a real edit from another device.
   Future<void> updateMapThumb(String dayId, String path) =>
-      (db.update(db.days)..where((d) => d.id.equals(dayId))).write(DaysCompanion(mapThumbPath: Value(path), updatedAt: Value(_now())));
+      (db.update(db.days)..where((d) => d.id.equals(dayId))).write(DaysCompanion(mapThumbPath: Value(path)));
 
   Future<void> setWeather(String dayId, WeatherSnapshot w) => (db.update(db.days)..where((d) => d.id.equals(dayId)))
-      .write(DaysCompanion(weatherJson: Value(_encode(w.toJson())), updatedAt: Value(_now())));
+      .write(DaysCompanion(weatherJson: Value(_encode(w.toJson()))));
 
   Future<void> setStreamRestarts(String dayId, int n) =>
       (db.update(db.days)..where((d) => d.id.equals(dayId))).write(DaysCompanion(streamRestarts: Value(n)));
@@ -290,13 +298,41 @@ class DaysRepository {
 
   Future<int> outboxCount() async => (await outbox()).length;
 
-  /// Marks a day as pushed and drops its outbox entry.
-  Future<void> markSynced(String dayId, int remoteUpdatedAt) => db.transaction(() async {
+  /// Marks a day as pushed and drops its outbox entries — only those with
+  /// `id <= upToOutboxId` when given (SYNC-2): an edit that was queued while
+  /// the push was in flight gets a higher id and must survive. Null drops
+  /// every entry of the day.
+  Future<void> markSynced(String dayId, int remoteUpdatedAt, {int? upToOutboxId}) => db.transaction(() async {
         await (db.update(db.days)..where((d) => d.id.equals(dayId))).write(
           DaysCompanion(syncedAt: Value(_now()), remoteUpdatedAt: Value(remoteUpdatedAt)),
         );
-        await (db.delete(db.syncOutbox)..where((o) => o.dayId.equals(dayId))).go();
+        final q = db.delete(db.syncOutbox)..where((o) => o.dayId.equals(dayId));
+        if (upToOutboxId != null) q.where((o) => o.id.isSmallerOrEqualValue(upToOutboxId));
+        await q.go();
       });
+
+  /// Highest outbox id queued for [dayId], null when nothing is queued. Read
+  /// before a push so [markSynced] leaves later entries alone.
+  Future<int?> latestOutboxId(String dayId) async {
+    final maxId = db.syncOutbox.id.max();
+    final q = db.selectOnly(db.syncOutbox)
+      ..addColumns([maxId])
+      ..where(db.syncOutbox.dayId.equals(dayId));
+    return (await q.getSingle()).read(maxId);
+  }
+
+  /// Local copy of `days.track_path`, null when unknown or without a backup.
+  Future<String?> trackPathOf(String dayId) async =>
+      (await (db.select(db.days)..where((d) => d.id.equals(dayId))).getSingleOrNull())?.trackPath;
+
+  /// Remembers the storage path of the uploaded backup (SYNC-2). Not an edit:
+  /// `updatedAt` stays, nothing is queued. With [ifUpdatedAt] the path is only
+  /// kept when the row is still the one that was uploaded.
+  Future<void> setTrackPath(String dayId, String? path, {int? ifUpdatedAt}) {
+    final q = db.update(db.days)..where((d) => d.id.equals(dayId));
+    if (ifUpdatedAt != null) q.where((d) => d.updatedAt.equals(ifUpdatedAt));
+    return q.write(DaysCompanion(trackPath: Value(path)));
+  }
 
   /// One failed attempt; returns the new count (0 when the entry is gone).
   /// The entry stays queued — SyncService spaces retries with a backoff.
@@ -333,10 +369,16 @@ class DaysRepository {
 
   /// Merges a remote `days` row (snake_case keys, as returned by the backend).
   ///
-  /// Never touches an active local day and applies last-writer-wins on
-  /// `device_updated_at` (remote) vs. `updatedAt` (local). Returns true when
-  /// the local row changed.
-  Future<bool> upsertFromRemote(Map<String, Object?> remote) async {
+  /// Never touches an active local day and applies last-edit-wins on
+  /// `device_updated_at` (remote) vs. `updatedAt` (local): the older edit
+  /// loses, whichever device made it and however long it was offline. When
+  /// the remote edit is strictly newer, a pending push of the local edit is
+  /// dropped — it lost. A row this phone already holds in exactly that
+  /// version (its own push coming back, or the last row of the previous pull)
+  /// is left alone. Returns true when the local row changed.
+  Future<bool> upsertFromRemote(Map<String, Object?> remote) => db.transaction(() => _upsertFromRemote(remote));
+
+  Future<bool> _upsertFromRemote(Map<String, Object?> remote) async {
     final id = remote['id'] as String?;
     if (id == null || id.isEmpty) return false;
     final remoteUpdated = _ts(remote['device_updated_at']) ?? _ts(remote['updated_at']) ?? 0;
@@ -345,7 +387,12 @@ class DaysRepository {
       // A day that is being recorded right now is always the local truth.
       if (existing.status == DayStatus.active.dbValue) return false;
       if (existing.updatedAt > remoteUpdated) return false;
+      if (existing.updatedAt == remoteUpdated && existing.remoteUpdatedAt == remoteUpdated) return false;
+      if (existing.updatedAt < remoteUpdated) {
+        await (db.delete(db.syncOutbox)..where((o) => o.dayId.equals(id))).go();
+      }
     }
+    final remoteTrack = remote['track_path'] as String?;
     final deletedAt = _ts(remote['deleted_at']);
     final startedAt = _ts(remote['started_at']) ?? existing?.startedAt ?? remoteUpdated;
     final skiDistanceM = _d(remote['ski_distance_m']);
@@ -390,23 +437,37 @@ class DaysRepository {
       deletedAt: Value(deletedAt),
       syncedAt: Value(_now()),
       remoteUpdatedAt: Value(remoteUpdated),
+      trackPath: Value(remoteTrack != null && remoteTrack.isNotEmpty ? remoteTrack : existing?.trackPath),
     );
     await db.into(db.days).insertOnConflictUpdate(companion);
     return true;
   }
 
   /// Remote tombstone: hide the day locally without queueing another push.
+  /// Points and segments go too (SYNC-2) — same as a local delete — and a
+  /// pending push of the day is dropped, the server already has the tombstone.
+  /// A delete always wins, whatever the timestamps say: it was confirmed on
+  /// the other device and its track backup is gone. Only the day that is
+  /// being recorded right now is left alone. False when nothing changed.
   Future<bool> softDeleteFromRemote(String id, {int? remoteUpdatedAt}) async {
     final existing = await (db.select(db.days)..where((d) => d.id.equals(id))).getSingleOrNull();
     if (existing == null) return false;
     if (existing.status == DayStatus.active.dbValue) return false;
+    // The same tombstone again (last row of the previous pull): already applied.
+    if (existing.deletedAt != null && remoteUpdatedAt != null && existing.remoteUpdatedAt == remoteUpdatedAt) return false;
     final now = _now();
-    await (db.update(db.days)..where((d) => d.id.equals(id))).write(DaysCompanion(
-      deletedAt: Value(existing.deletedAt ?? (remoteUpdatedAt ?? now)),
-      updatedAt: Value(remoteUpdatedAt ?? now),
-      syncedAt: Value(now),
-      remoteUpdatedAt: Value(remoteUpdatedAt ?? now),
-    ));
+    await db.transaction(() async {
+      await (db.update(db.days)..where((d) => d.id.equals(id))).write(DaysCompanion(
+        deletedAt: Value(existing.deletedAt ?? (remoteUpdatedAt ?? now)),
+        updatedAt: Value(remoteUpdatedAt ?? now),
+        syncedAt: Value(now),
+        remoteUpdatedAt: Value(remoteUpdatedAt ?? now),
+        trackPath: const Value(null),
+      ));
+      await (db.delete(db.points)..where((p) => p.dayId.equals(id))).go();
+      await (db.delete(db.segments)..where((s) => s.dayId.equals(id))).go();
+      await (db.delete(db.syncOutbox)..where((o) => o.dayId.equals(id))).go();
+    });
     return true;
   }
 

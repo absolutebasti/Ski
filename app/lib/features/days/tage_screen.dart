@@ -191,7 +191,7 @@ class _OlderSeason extends StatelessWidget {
                     child: Text('${s.dayCount(t.dayCount)} · ${Fmt.metres(t.dropM, locale: l.code)} ${s.unitHm}', style: AppText.numXs(c.textSecondary).copyWith(fontFamily: AppText.body, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end),
                   ),
                   const SizedBox(width: 10),
-                  AnimatedRotation(turns: expanded ? 0.25 : 0, duration: Tokens.medium, child: GlyphIcon(Glyph.chevronRight, size: 16, color: c.textTertiary)),
+                  AnimatedRotation(turns: expanded ? 0.25 : 0, duration: Tokens.medium, child: const RowChevron()),
                 ],
               ),
             ),

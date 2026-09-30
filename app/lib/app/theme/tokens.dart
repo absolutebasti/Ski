@@ -43,13 +43,13 @@ class Tokens {
   static const lightHairlineStrong = Color(0xFFD2CCBE);
   static const lightInk = Color(0xFF0E1013);
   static const lightSecondary = Color(0xFF5A5F68);
-  static const lightTertiary = Color(0xFF8B9098);
+  static const lightTertiary = Color(0xFF83888F);
   static const lightQuaternary = Color(0xFFAFB4BB);
   static const lightAccent = Color(0xFF7A5E1E);
   static const lightAccentPressed = Color(0xFF634C16);
   static const lightIce = Color(0xFF0A6E9E);
   static const lightDanger = Color(0xFFD6321F);
-  static const lightLiftGrey = Color(0xFF8B9098);
+  static const lightLiftGrey = Color(0xFF83888F);
 
   // ---- Brand field (icon, onboarding hero, share card only) ----
   static const cream = Color(0xFFF4F1EA);
@@ -70,6 +70,17 @@ class Tokens {
   static const double minTarget = 56;
   static const double startButton = 76;
   static const double holdButton = 64;
+
+  // ---- Button heights: one ramp for every capsule control ----
+  /// The decisive action of a page, dock or single-purpose sheet, and every
+  /// button stacked with or beside it (label 17).
+  static const double buttonLg = 60;
+  /// Actions inside cards, state blocks and multi-action sheets (label 16).
+  static const double buttonMd = 48;
+  /// Inline actions beside text in a row (label 15) — also the tap minimum.
+  static const double buttonSm = 44;
+  /// Smallest hit area of any control; smaller visuals get a [HitSlop].
+  static const double tapTarget = 44;
   static const double hairlineWidthDark = 0.5;
   static const double hairlineWidthLight = 1.0;
 
@@ -81,6 +92,14 @@ class Tokens {
   static const medium = Duration(milliseconds: 220);
   static const sheetUp = Duration(milliseconds: 320);
   static const routeDraw = Duration(milliseconds: 900);
+
+  /// True when the system asks for reduced motion (Reduce Motion or
+  /// disableAnimations). Count-ups, pulses and route draws then land on
+  /// their final frame at once; Pressable scales become Duration.zero.
+  static bool reduced(BuildContext context) => MediaQuery.disableAnimationsOf(context);
+
+  /// [duration] or zero under reduced motion.
+  static Duration motion(BuildContext context, Duration duration) => reduced(context) ? Duration.zero : duration;
 
   // ---- Elevation (L2 floating) ----
   static const double glassBlur = 30;

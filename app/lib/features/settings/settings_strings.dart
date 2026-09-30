@@ -29,8 +29,6 @@ class SettingsStrings {
   String get system => l.pick(de: 'System', en: 'System');
   String get german => 'Deutsch';
   String get english => 'English';
-  String get units => l.pick(de: 'Einheiten', en: 'Units');
-  String get unitsValue => l.pick(de: 'Folgt der Sprache', en: 'Follows the language');
 
   // --- Konto ---------------------------------------------------------------
   String get account => l.pick(de: 'Konto', en: 'Account');
@@ -39,6 +37,19 @@ class SettingsStrings {
         en: 'Sign in, profile and leaderboards.',
       );
   String get comingSoon => l.pick(de: 'Bald verfügbar', en: 'Coming soon');
+
+  // --- Blockierte Nutzer ---------------------------------------------------
+  String get blockedUsers => l.pick(de: 'Blockierte Nutzer', en: 'Blocked users');
+  String get blockedUsersHint => l.pick(de: 'Wen du nicht mehr sehen willst.', en: 'Who you no longer want to see.');
+  String get blockedNone => l.pick(de: 'Niemand blockiert.', en: 'Nobody blocked.');
+  String get blockedIntro => l.pick(
+        de: 'Blockierte sehen dich in keiner Rangliste, du sie auch nicht. Freigeben hebt das auf.',
+        en: 'Blocked riders see you on no leaderboard, and you do not see them. Unblocking lifts that.',
+      );
+  String get unblock => l.pick(de: 'Freigeben', en: 'Unblock');
+  String get unblockedToast => l.pick(de: 'Freigegeben', en: 'Unblocked');
+  String get unblockFailed => l.pick(de: 'Hat nicht geklappt. Später nochmal versuchen.', en: 'That did not work. Try again later.');
+  String get blockedLoadFailed => l.pick(de: 'Liste gerade nicht erreichbar.', en: 'List not reachable right now.');
 
   String get location => l.pick(de: 'Standortzugriff', en: 'Location access');
   String get locationHint => l.pick(

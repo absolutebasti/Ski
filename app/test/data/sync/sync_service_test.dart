@@ -4,6 +4,7 @@ import 'package:slopetrack/data/db/database.dart';
 import 'package:slopetrack/data/db/days_repository.dart';
 import 'package:slopetrack/data/sync/sync_service.dart';
 import 'package:slopetrack/data/sync/sync_store.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 import 'sync_fixtures.dart';
 
@@ -96,6 +97,77 @@ void main() {
     await service().pushDay('d1');
     expect(api.uploads, ['d1']);
     expect(api.trackPaths['d1'], 'u1/d1.json.gz');
+    expect(await repo.trackPathOf('d1'), 'u1/d1.json.gz', reason: 'remembered for the next push');
+  });
+
+  test('once the track is uploaded, a push is one write: track_path rides in the upsert', () async {
+    await seedFinishedDay(repo, points: samplePoints());
+    final s = service();
+    await s.syncNow();
+    expect(api.upserts.single.containsKey('track_path'), isFalse, reason: 'first push: nothing uploaded yet, the server value stays');
+    expect(api.uploads, ['d1']);
+    expect(api.trackPathWrites, ['d1']);
+
+    await repo.updateResort('d1', 'skiwelt', 'SkiWelt');
+    await s.syncNow();
+    expect(api.upserts, hasLength(2));
+    expect(api.upserts.last['track_path'], 'u1/d1.json.gz');
+    expect(api.uploads, ['d1'], reason: 'no second upload for a resort edit');
+    expect(api.trackPathWrites, ['d1'], reason: 'no second write either');
+  });
+
+  test('a day that was reopened and finished again uploads its track again', () async {
+    await seedFinishedDay(repo, points: samplePoints());
+    final s = service();
+    await s.syncNow();
+    expect(await repo.trackPathOf('d1'), isNotNull);
+
+    await repo.reopenDay('d1');
+    await repo.appendPoints('d1', samplePoints(startedAt: sampleStartedAt + 60000));
+    await repo.finishDay('d1', endedAt: sampleStartedAt + 120000, stats: sampleStats, segments: const []);
+    expect(await repo.trackPathOf('d1'), isNull, reason: 'the old backup is stale');
+    await s.syncNow();
+    expect(api.uploads, ['d1', 'd1']);
+    expect(await repo.trackPathOf('d1'), 'u1/d1.json.gz');
+  });
+
+  test('a failed upload leaves the path open; the day itself is pushed', () async {
+    await seedFinishedDay(repo, points: samplePoints());
+    final failing = _UploadThrows();
+    final s = SyncService(repo: repo, api: failing, store: MemorySyncStore(), now: () => clock);
+    await s.syncNow();
+    expect(failing.upserts, hasLength(1));
+    expect(await repo.outbox(), isEmpty);
+    expect(await repo.trackPathOf('d1'), isNull);
+    expect(s.current.state, SyncState.idle);
+  });
+
+  test('device_updated_at is the last local edit, not the push time', () async {
+    await seedFinishedDay(repo);
+    final editedAt = sampleStartedAt + 5000;
+    await stampUpdatedAt(db, 'd1', editedAt);
+    clock = editedAt + const Duration(days: 3).inMilliseconds; // pushed three days later
+    await service().syncNow();
+    expect(api.upserts.single['device_updated_at'], DateTime.fromMillisecondsSinceEpoch(editedAt, isUtc: true).toIso8601String());
+    final row = await (db.select(db.days)..where((d) => d.id.equals('d1'))).getSingle();
+    expect(row.remoteUpdatedAt, editedAt);
+    expect(row.updatedAt, editedAt, reason: 'a push is not an edit');
+  });
+
+  test('an edit queued while the push is in flight stays in the outbox', () async {
+    await seedFinishedDay(repo);
+    final racing = _EditDuringUpsert(() => repo.updateResort('d1', 'skiwelt', 'SkiWelt'));
+    final s = SyncService(repo: repo, api: racing, store: MemorySyncStore(), now: () => clock);
+    await s.syncNow();
+    expect(racing.upserts.single['resort_id'], 'kitzbuehel', reason: 'the row as it was when the push started');
+    final queue = await repo.outbox();
+    expect(queue, hasLength(1), reason: 'the newer entry was not cleared by the older push');
+    expect(s.current.pending, 1);
+
+    racing.onUpsert = null;
+    await s.syncNow();
+    expect(racing.upserts.last['resort_id'], 'skiwelt');
+    expect(await repo.outbox(), isEmpty);
   });
 
   test('a day without points uploads nothing', () async {
@@ -113,7 +185,7 @@ void main() {
     expect(await repo.outbox(), isEmpty);
   });
 
-  test('syncNow drains the outbox and then pulls', () async {
+  test('syncNow pulls and drains the outbox', () async {
     await seedFinishedDay(repo, id: 'local');
     api.remoteDays = [remoteRow(id: 'remote', deviceUpdatedAt: sampleStartedAt + 90000000)];
 
@@ -193,6 +265,90 @@ void main() {
     expect(s.nextAttemptAt(entry.id), isNull);
   });
 
+  group('throttled (P0005)', () {
+    final rateLimited = PostgrestException(message: 'rate_limited', code: 'P0005');
+
+    test('rate_limited → SyncState.throttled, never offline, no failed attempt', () async {
+      await seedFinishedDay(repo, id: 'a');
+      await seedFinishedDay(repo, id: 'b', startedAt: sampleStartedAt + 86400000);
+      api.upsertFailure = rateLimited;
+      final s = service();
+      final seen = <SyncState>[];
+      final sub = s.status.listen((st) => seen.add(st.state));
+      await s.syncNow();
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(s.current.state, SyncState.throttled);
+      expect(seen, isNot(contains(SyncState.offline)));
+      expect(seen, isNot(contains(SyncState.error)));
+      expect(s.current.pending, 2);
+      expect(s.current.needsSignIn, isFalse);
+      expect(api.upsertCalls, 1, reason: 'the limit is per rider: the rest of the outbox waits too');
+      expect((await repo.outbox()).map((e) => e.attempts), [0, 0]);
+      expect(s.isThrottled, isTrue);
+      expect(s.throttledUntil, clock + s.throttleWindow.inMilliseconds);
+      expect(api.fetchCursors, hasLength(1), reason: 'the pull is not rate-limited');
+    });
+
+    test('inside the window nothing is sent; after it the outbox drains by itself', () async {
+      await seedFinishedDay(repo);
+      api.upsertFailure = rateLimited;
+      final s = service();
+      await s.syncNow();
+      expect(api.upsertCalls, 1);
+
+      // a manual sync inside the window: pull yes, push no
+      clock += s.throttleWindow.inMilliseconds - 1;
+      await s.syncNow();
+      expect(api.upsertCalls, 1);
+      expect(api.fetchCursors, hasLength(2));
+      expect(s.current.state, SyncState.throttled);
+
+      // window over, server still says no → the pause starts again
+      clock += 1;
+      expect(s.isThrottled, isFalse);
+      await s.syncNow();
+      expect(api.upsertCalls, 2);
+      expect(s.current.state, SyncState.throttled);
+      expect(s.isThrottled, isTrue);
+
+      // window over, server is fine again
+      api.upsertFailure = null;
+      clock += s.throttleWindow.inMilliseconds;
+      await s.syncNow();
+      expect(api.upserts, hasLength(1));
+      expect(await repo.outbox(), isEmpty);
+      expect(s.current.state, SyncState.idle);
+      expect(s.throttledUntil, isNull);
+    });
+
+    test('too_many_days (P0004) only parks that one day; the others still go out', () async {
+      await seedFinishedDay(repo, id: 'fourth');
+      await seedFinishedDay(repo, id: 'other', startedAt: sampleStartedAt + 86400000);
+      final picky = _RejectsDay('fourth', PostgrestException(message: 'too_many_days', code: 'P0004'));
+      final s = SyncService(repo: repo, api: picky, store: MemorySyncStore(), now: () => clock);
+      await s.syncNow();
+      expect(picky.upserts.single['id'], 'other');
+      final left = (await repo.outbox()).single;
+      expect(left.dayId, 'fourth');
+      expect(left.attempts, 1);
+      expect(s.current.state, SyncState.idle);
+      expect(s.isThrottled, isFalse);
+    });
+  });
+
+  test('a broken pull does not hold the outbox back; the run ends in error', () async {
+    await seedFinishedDay(repo);
+    api.fetchFailure = StateError('500 on select');
+    final s = service();
+    await s.syncNow();
+    expect(api.upserts, hasLength(1), reason: 'a new day still reaches the boards');
+    expect(await repo.outbox(), isEmpty);
+    expect(s.current.state, SyncState.error);
+    expect(s.current.needsSignIn, isFalse);
+  });
+
   test('backoff doubles and caps at one hour', () {
     expect(SyncService.backoffFor(0), const Duration(seconds: 1));
     expect(SyncService.backoffFor(1), const Duration(seconds: 1));
@@ -262,4 +418,36 @@ void main() {
     expect(s.current.state, SyncState.idle);
     expect(await repo.outboxCount(), 1);
   });
+}
+
+/// Storage is down: the upload throws, everything else works.
+class _UploadThrows extends FakeSyncApi {
+  @override
+  Future<String> uploadTrack(String dayId, List<int> gzipBytes) async => throw StateError('storage down');
+}
+
+/// Runs [onUpsert] in the middle of the write — an edit that lands while the
+/// push is on its way.
+class _EditDuringUpsert extends FakeSyncApi {
+  _EditDuringUpsert(this.onUpsert);
+  Future<void> Function()? onUpsert;
+
+  @override
+  Future<void> upsertDay(Map<String, Object?> row) async {
+    await super.upsertDay(row);
+    await onUpsert?.call();
+  }
+}
+
+/// The server refuses one day and takes the rest.
+class _RejectsDay extends FakeSyncApi {
+  _RejectsDay(this.dayId, this.error);
+  final String dayId;
+  final Object error;
+
+  @override
+  Future<void> upsertDay(Map<String, Object?> row) async {
+    if (row['id'] == dayId) throw error;
+    await super.upsertDay(row);
+  }
 }

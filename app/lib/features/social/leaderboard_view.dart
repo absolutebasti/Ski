@@ -305,11 +305,13 @@ class OwnRankStrip extends StatelessWidget {
                         style: AppText.bodyStrong(c.textPrimary, size: 15),
                       ),
                       if (action != null)
-                        Pressable(
-                          onTap: action.$2,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(action.$1, style: AppText.caption(c.accent, size: 12)),
+                        HitSlop(
+                          child: Pressable(
+                            onTap: action.$2,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(action.$1, style: AppText.caption(c.accent, size: 12)),
+                            ),
                           ),
                         ),
                     ],
@@ -327,21 +329,7 @@ class OwnRankStrip extends StatelessWidget {
                   ),
                 if (r != null && onShare != null) ...[
                   const SizedBox(width: 10),
-                  Semantics(
-                    button: true,
-                    label: s.shareRank,
-                    child: Pressable(
-                      onTap: onShare,
-                      child: Container(
-                        key: const ValueKey('own-rank-share'),
-                        width: 32,
-                        height: 32,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(color: c.glassFill, shape: BoxShape.circle, border: Border.all(color: c.glassStroke, width: c.hairlineWidth)),
-                        child: GlyphIcon(Glyph.share, size: 16, color: c.textPrimary),
-                      ),
-                    ),
-                  ),
+                  HeaderButton(key: const ValueKey('own-rank-share'), glyph: Glyph.share, size: 32, tooltip: s.shareRank, onTap: onShare),
                 ],
               ],
             ),
