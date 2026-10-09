@@ -371,6 +371,11 @@ class DaysRepository {
 
   Future<void> clearOutbox() => db.delete(db.syncOutbox).go();
 
+  /// Account deleted: no day is on any server any more.
+  Future<void> resetSyncMarks() => db.update(db.days).write(
+        const DaysCompanion(syncedAt: Value(null), remoteUpdatedAt: Value(null), trackPath: Value(null)),
+      );
+
   /// Merges a remote `days` row (snake_case keys, as returned by the backend).
   ///
   /// Never touches an active local day and applies last-edit-wins on

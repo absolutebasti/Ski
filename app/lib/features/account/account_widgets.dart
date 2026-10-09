@@ -330,6 +330,10 @@ Future<bool?> accountDeleteWithConfirm(BuildContext context, WidgetRef ref) asyn
   try {
     final deleted = await ref.read(accountDeleteProvider)();
     if (!deleted) return false;
+    // Local sync bookkeeping of the deleted account; never holds up the UI.
+    try {
+      unawaited(ref.read(syncServiceProvider).forgetAccount().catchError((Object _) {}));
+    } catch (_) {}
     ref.read(profileServiceProvider).clear();
     ref.invalidate(profileProvider);
     return true;

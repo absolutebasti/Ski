@@ -98,8 +98,8 @@ class SettingsStrings {
       );
   String get deleteConfirmTitle => l.pick(de: 'Wirklich endgültig löschen?', en: 'Really delete for good?');
   String get deleteConfirmBody => l.pick(
-        de: 'Das lässt sich nicht rückgängig machen. Es gibt keine Kopie in der Cloud.',
-        en: 'This cannot be undone. There is no copy in the cloud.',
+        de: 'Das lässt sich nicht rückgängig machen. Was in deinem Konto gesichert ist, bleibt dort, bis du das Konto löschst.',
+        en: 'This cannot be undone. What is backed up in your account stays there until you delete the account.',
       );
   String get deleteConfirm => l.pick(de: 'Endgültig löschen', en: 'Delete for good');
   String get cancel => l.pick(de: 'Abbrechen', en: 'Cancel');
