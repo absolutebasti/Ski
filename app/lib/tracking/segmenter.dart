@@ -26,6 +26,8 @@ class SegTick {
     this.cableHolds = false,
     this.cableRides = false,
     this.cableVetoRun = false,
+    this.deadGap = false,
+    this.deadGapKind = SegmentKind.signalLoss,
   });
   final int ts;
   /// Display speed m/s (meaningless when [hasFix] is false and gap is long).
@@ -49,6 +51,14 @@ class SegTick {
   /// like, so it must not stop a RUN from starting — that was the bug that made
   /// a steady 5–11 m/s descent disappear from the day.
   final bool cableVetoRun;
+  /// Nothing at all (no fix, no barometer) reached the segmenter for longer
+  /// than signalLossGapS — the app was not running or the phone was off. The
+  /// gap is SIGNAL LOSS whatever the state, so an open RUN or LIFT never
+  /// stretches over it.
+  final bool deadGap;
+  /// What the dead gap becomes: STOP when the rider is back where the gap
+  /// began, SIGNAL LOSS otherwise.
+  final SegmentKind deadGapKind;
 }
 
 /// 1 Hz state machine: STOP / RUN / LIFT / OTHER / SIGNAL LOSS (docs/PLAN.md §5).
@@ -70,6 +80,8 @@ class Segmenter {
 
   SegmentKind get state => _state;
   bool get vehicle => _vehicle;
+  /// Timestamp of the last tick seen (any kind), null before the first.
+  int? get lastTickTs => _lastTs;
   MotionState get motionState => switch (_state) {
         SegmentKind.run => MotionState.run,
         SegmentKind.lift => MotionState.lift,
@@ -152,6 +164,12 @@ class Segmenter {
     }
 
     // ---- No fix this tick: only barometric rules apply ----
+    if (!t.hasFix && t.deadGap) {
+      if (_state != t.deadGapKind) _transition(t.deadGapKind, _lastFixTs ?? t.ts);
+      _gapStartTs = t.ts;
+      _gapStartH = null;
+      return;
+    }
     if (!t.hasFix) {
       final gh = _gapStartH;
       final gain = (h != null && gh != null) ? h - gh : null;

@@ -81,6 +81,9 @@ class TrackingConfig {
   static const int runMinDurationS = 60;
   static const double runMinDropM = 40;
   static const int signalLossGapS = 120;
+  /// A dead gap (nothing recorded at all) that ends within this distance of
+  /// where it began is a pause, not signal loss.
+  static const double deadGapPauseM = 300;
 
   // ---- Cable-ride signature (docs/TRACKING.md) ----
   // A cable (gondola, chairlift, T-bar, funicular) moves at a constant speed on
@@ -388,6 +391,8 @@ class TrackingConfig {
   static const double meaningfulDayMinDistanceM = 100;
   static const int meaningfulDayMinMovingS = 60;
   static const int restartMergeWindowH = 4;
+  /// A Start farther than this from where the last day ended begins a new day.
+  static const double restartMergeMaxKm = 15;
   static const int silentResumeMaxMin = 30;
   static const int streamWatchdogS = 60;
 

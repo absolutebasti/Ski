@@ -41,6 +41,9 @@ class FakeLocationSource implements LocationSource {
 
   @override
   int get restartCount => 0;
+
+  @override
+  Future<RawFix?> lastKnown() async => null;
 }
 
 /// Push-driven sources for deterministic controller tests.
@@ -60,6 +63,10 @@ class ManualLocationSource implements LocationSource {
   Future<bool> restartIfSilent(int nowMs) async => false;
   @override
   int get restartCount => restarts;
+  /// What [lastKnown] answers (restart-merge distance check).
+  RawFix? lastKnownFix;
+  @override
+  Future<RawFix?> lastKnown() async => lastKnownFix;
   void push(RawFix f) => _ctrl.add(f);
 }
 
@@ -125,10 +132,13 @@ class FakePermissionService implements PermissionService {
   LocationPermissionState state;
   bool precise;
   bool serviceOn;
+  /// `denied` = iOS "not determined": the prompt appears and the rider allows.
+  bool askable = false;
   @override
   Future<LocationPermissionState> status() async => state;
   @override
-  Future<LocationPermissionState> requestWhenInUse() async => state = state == LocationPermissionState.denied ? LocationPermissionState.denied : LocationPermissionState.whileInUse;
+  Future<LocationPermissionState> requestWhenInUse() async =>
+      state = state == LocationPermissionState.denied && !askable ? LocationPermissionState.denied : LocationPermissionState.whileInUse;
   @override
   Future<LocationPermissionState> requestAlways() async => state = state == LocationPermissionState.whileInUse ? LocationPermissionState.always : state;
   @override

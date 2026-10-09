@@ -52,6 +52,30 @@ void main() {
     expect(g.stopSince, isNotNull);
   });
 
+  test('a session reopened after a long pause counts idle from its own start', () {
+    final dayStart = at(2027, 1, 10, 9);
+    final session = at(2027, 1, 10, 15, 5); // morning ended ~12:00, Start again at 15:05
+    final g = Guards(dayStartMs: dayStart, sessionStartMs: session);
+    expect(g.evaluate(resting, session + 1000), isNot(contains(GuardAction.autoEndIdle)));
+    expect(g.evaluate(resting, session + TrackingConfig.idleAutoEndMin * 60000), contains(GuardAction.autoEndIdle));
+  });
+
+  test('lift rides keep a day without detected runs alive', () {
+    final start = at(2027, 1, 10, 9);
+    final g = Guards(dayStartMs: start);
+    const onLift = LiveState(state: MotionState.lift, batteryPct: 80);
+    g.evaluate(onLift, start + 170 * 60000);
+    expect(g.evaluate(resting, start + 181 * 60000), isNot(contains(GuardAction.autoEndIdle)));
+    expect(g.evaluate(resting, start + (170 + TrackingConfig.idleAutoEndMin) * 60000), contains(GuardAction.autoEndIdle));
+  });
+
+  test('dayExpired: past 03:00 the next day or longer than maxDayH', () {
+    expect(Guards.dayExpired(at(2027, 1, 10, 9), at(2027, 1, 10, 18)), isFalse);
+    expect(Guards.dayExpired(at(2027, 1, 10, 9), at(2027, 1, 11, 2)), isTrue, reason: '17 h > maxDayH');
+    expect(Guards.dayExpired(at(2027, 1, 10, 22), at(2027, 1, 11, 2)), isFalse);
+    expect(Guards.dayExpired(at(2027, 1, 10, 22), at(2027, 1, 11, 3)), isTrue, reason: 'rollover');
+  });
+
   test('vehicle flag sustained for five minutes ends the day', () {
     final start = at(2027, 1, 10, 9);
     final g = Guards(dayStartMs: start);

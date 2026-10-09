@@ -77,6 +77,12 @@ class GeolocatorLocationSource implements LocationSource {
   }
 
   @override
+  Future<RawFix?> lastKnown() async {
+    final p = await Geolocator.getLastKnownPosition();
+    return p == null ? null : positionToRawFix(p);
+  }
+
+  @override
   Future<bool> restartIfSilent(int nowMs) async {
     if (_sub == null) return false;
     final last = _lastFixTs;

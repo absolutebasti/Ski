@@ -82,6 +82,8 @@ class TrackingEngine {
   PressureSample? _pendingPressure;
   int? _pendingHr;
   int? _lastAcceptedTs;
+  /// Position of the last accepted fix (dead-gap pause vs. signal loss).
+  RawFix? _lastAcceptedFix;
   int? _lastTickTs;
   int _ticksSinceRecompute = 0;
   int _finalizedCount = 0;
@@ -126,6 +128,7 @@ class TrackingEngine {
 
     var accepted = false;
     var reason = RejectReason.none;
+    RawFix? prevAccepted;
     double rawSpeed = 0;
     GateResult? g;
     if (fix != null) {
@@ -133,7 +136,9 @@ class TrackingEngine {
       accepted = g.accepted;
       reason = g.reason;
       if (accepted) {
+        prevAccepted = _lastAcceptedFix;
         _lastAcceptedTs = fix.ts;
+        _lastAcceptedFix = fix;
         _gps.addAccepted(fix.ts, fix.hAccM);
         fused = _alt.addFix(fix, altAnchor: g.altAnchor, nowMs: nowMs) ?? fused;
         rawSpeed = _speed.update(fix, speedTrusted: g.speedTrusted);
@@ -154,6 +159,17 @@ class TrackingEngine {
       _cable.add(ts: ts, lat: fix.lat, lon: fix.lon, altM: fused, speedMs: fix.speedMs, speedAccMs: fix.speedAccMs);
     }
     final before = _segmenter.intervals.length;
+    // Dead gap: no tick at all for longer than signal loss allows (app not
+    // running, phone off, no barometer). Back where it stopped = a pause
+    // (Start again after lunch); anywhere else = signal loss. Live and replay
+    // see the same fixes, so both mark it the same way.
+    final segLast = _segmenter.lastTickTs;
+    if (segLast != null && ts - segLast > TrackingConfig.signalLossGapS * 1000) {
+      final samePlace = accepted && fix != null && prevAccepted != null &&
+          haversineM(prevAccepted.lat, prevAccepted.lon, fix.lat, fix.lon) <= TrackingConfig.deadGapPauseM;
+      _segmenter.tick(SegTick(ts: ts - 1, vH: 0, h: null, hasFix: false, gapMs: ts - segLast,
+          deadGap: true, deadGapKind: samePlace ? SegmentKind.stop : SegmentKind.signalLoss));
+    }
     _segmenter.tick(SegTick(
       ts: ts,
       vH: _speed.displaySpeed,

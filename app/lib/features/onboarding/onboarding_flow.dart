@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/app_home.dart';
 import '../../app/shell.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/widgets/widgets.dart';
@@ -154,7 +155,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     }
     if (!mounted) return;
     await Navigator.of(context).pushAndRemoveUntil<void>(
-      MaterialPageRoute<void>(builder: (_) => const RootShell()),
+      // The home route (with its invite + live-duel hosts) is replaced: the
+      // shell brings its own.
+      MaterialPageRoute<void>(builder: (_) => const AppHome(child: RootShell())),
       (route) => false,
     );
   }

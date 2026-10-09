@@ -42,7 +42,9 @@ class IdleView extends ConsumerWidget {
 
   RecordingErrorKind? _cardFor(LocationPermissionState? status, bool? precise) {
     if (error != null) return error;
-    if (status == LocationPermissionState.denied || status == LocationPermissionState.deniedForever) return RecordingErrorKind.locationDenied;
+    // `denied` on iOS means "not determined" (e.g. an expired "Allow Once"):
+    // Start asks again, so only a real refusal shows the Settings card.
+    if (status == LocationPermissionState.deniedForever) return RecordingErrorKind.locationDenied;
     if (precise == false) return RecordingErrorKind.reducedAccuracy;
     return null;
   }

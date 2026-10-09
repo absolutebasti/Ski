@@ -15,6 +15,7 @@ import '../recording/live_state_provider.dart';
 import '../recording/recording_badges.dart';
 import '../recording/recording_controller.dart';
 import '../recording/recovery_service.dart';
+import '../settings/settings_providers.dart';
 import '../settings/settings_sheet.dart';
 import 'live_view.dart';
 import 'idle_view.dart';
@@ -42,10 +43,27 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
   Timer? _bannerTimer;
   String? _lastRunId;
 
+  /// Back from iOS Settings (or any app switch): permission and accuracy may
+  /// have changed — re-read them so the cards and the Start button follow.
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _refreshAccess);
+  }
+
   @override
   void dispose() {
+    _lifecycle.dispose();
     _bannerTimer?.cancel();
     super.dispose();
+  }
+
+  void _refreshAccess() {
+    if (!mounted) return;
+    ref.read(settingsRefreshProvider.notifier).bump();
+    if (_startError != null && _startError != RecordingErrorKind.alreadyRecording) setState(() => _startError = null);
   }
 
   Future<void> _start() async {
@@ -58,7 +76,11 @@ class _HeuteScreenState extends ConsumerState<HeuteScreen> {
     } on RecordingError catch (e) {
       if (mounted) setState(() => _startError = e.kind);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      // Start may have shown the iOS permission prompt.
+      if (mounted) {
+        ref.read(settingsRefreshProvider.notifier).bump();
+        setState(() => _busy = false);
+      }
     }
   }
 

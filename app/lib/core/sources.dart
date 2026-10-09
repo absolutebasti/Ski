@@ -12,6 +12,8 @@ abstract class LocationSource {
   Future<bool> restartIfSilent(int nowMs) async => false;
   /// Number of restarts so far (diagnostics).
   int get restartCount => 0;
+  /// The position iOS last knew, without starting updates (null if none).
+  Future<RawFix?> lastKnown() async => null;
 }
 
 abstract class BarometerSource {
