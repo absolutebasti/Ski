@@ -21,6 +21,7 @@ class ModerationError implements Exception {
 /// `reports.reason` so the founder can filter reports without parsing copy.
 enum ReportReason {
   offensiveName('offensive_name'),
+  offensiveImage('offensive_image'),
   cheating('cheating'),
   other('other');
 

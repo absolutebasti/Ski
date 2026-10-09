@@ -294,7 +294,9 @@ class _CardHairline extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(height: 0.5, child: ColoredBox(color: Colors.white.withValues(alpha: 0.10)));
 }
 
-/// Glyph + `kAppName`, bottom-right of the card (chevron 56, wordmark 46).
+/// Glyph + `kAppName`, bottom-right of the card (chevron 56, wordmark 46),
+/// with 'Gratis im App Store' underneath so a screenshot still says where the
+/// app comes from.
 class Wordmark extends StatelessWidget {
   const Wordmark({super.key, this.size = 56});
   final double size;
@@ -302,16 +304,24 @@ class Wordmark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const c = AppColors.dark;
-    return Row(
+    return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        CustomPaint(
-          size: Size.square(size),
-          painter: const GlyphPainter(color: Tokens.textPrimary),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            CustomPaint(
+              size: Size.square(size),
+              painter: const GlyphPainter(color: Tokens.textPrimary),
+            ),
+            SizedBox(width: size * 0.25),
+            Text(kAppName, style: AppText.headline(c.textPrimary, size: size * 46 / 56)),
+          ],
         ),
-        SizedBox(width: size * 0.25),
-        Text(kAppName, style: AppText.headline(c.textPrimary, size: size * 46 / 56)),
+        SizedBox(height: size * 0.12),
+        Text(ShareStrings(AppLocale.of(context)).getApp, style: AppText.caption(c.textSecondary, size: size * 24 / 56)),
       ],
     );
   }

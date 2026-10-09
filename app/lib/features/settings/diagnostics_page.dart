@@ -15,6 +15,7 @@ import 'settings_providers.dart';
 import 'settings_sheet.dart';
 import '../recording/recording_access.dart';
 import 'settings_strings.dart';
+import '../share/share_strings.dart';
 
 /// Hidden behind seven taps on the settings footer (docs/DESIGN.md §5):
 /// sensor status, today's fix counters and two repair tools. Same visual
@@ -49,7 +50,7 @@ class _DiagnosticsPageState extends ConsumerState<DiagnosticsPage> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      await ref.read(shareServiceProvider).shareDiagnostics(dayId);
+      await ref.read(shareServiceProvider).shareDiagnostics(dayId, strings: ShareStrings.of(context));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -216,9 +216,10 @@ class GhostButton extends StatelessWidget {
   }
 }
 
-/// 'Mit Apple anmelden': Apple's black style in dark (ink fill, cream label),
-/// its white style in light (surface fill, ink label) — both with a 1 pt
-/// hairlineStrong edge. The one capsule that is neither champagne nor glass.
+/// 'Mit Apple anmelden' in Apple's styles (HIG "Sign in with Apple"): ink
+/// (near black) with a pure white logo and label in dark, surface with black
+/// in light, 1 pt hairlineStrong edge. The one capsule that is neither
+/// champagne nor glass.
 class AppleButton extends StatelessWidget {
   const AppleButton({super.key, required this.label, this.onPressed, this.height = Tokens.buttonLg});
 
@@ -230,7 +231,7 @@ class AppleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final enabled = onPressed != null;
-    final fg = enabled ? c.textPrimary : c.textQuaternary;
+    final fg = enabled ? (c.isDark ? Colors.white : Colors.black) : c.textQuaternary;
     final m = buttonMetrics(height);
     return Pressable(
       onTap: onPressed,

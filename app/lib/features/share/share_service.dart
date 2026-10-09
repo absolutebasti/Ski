@@ -78,11 +78,16 @@ class ShareService {
     }
   }
 
-  (String, String) _cardText(ShareStrings s, AppLocale l, ShareCardData data) => switch (data) {
+  (String, String) _cardText(ShareStrings s, AppLocale l, ShareCardData data) {
+    final (subject, text) = _cardLine(s, l, data);
+    return (subject, s.withLink(text));
+  }
+
+  (String, String) _cardLine(ShareStrings s, AppLocale l, ShareCardData data) => switch (data) {
     DayCardData(:final detail) => (
       s.shareCardSubject,
       s.summaryLine(
-        resort: detail.day.resortName ?? s.freeTerrain,
+        resort: detail.day.resortName,
         runCount: '${detail.day.stats.runCount}',
         dropM: Fmt.metres(detail.day.stats.dropM, locale: l.code),
       ),
@@ -103,7 +108,7 @@ class ShareService {
   /// Renders the card off-screen and shares it as PNG. [format] defaults to the
   /// 1080×1350 portrait variant; square and story write their own file name.
   /// [awaitFrame] is injectable for widget tests, which pump frames by hand.
-  Future<void> shareDayCard(BuildContext context, DayDetail detail, {Future<void> Function()? awaitFrame, ShareFormat format = ShareFormat.portrait}) async {
+  Future<void> shareDayCard(BuildContext context, DayDetail detail, {Future<void> Function()? awaitFrame, ShareFormat format = ShareFormat.story}) async {
     final s = ShareStrings.of(context);
     final l = AppLocale.of(context);
     final png = await ShareCardRenderer.render(context, detail, awaitFrame: awaitFrame, format: format);
@@ -113,11 +118,11 @@ class ShareService {
     await _sink(
       [XFile(file.path, mimeType: 'image/png')],
       subject: s.shareCardSubject,
-      text: s.summaryLine(
-        resort: detail.day.resortName ?? s.freeTerrain,
+      text: s.withLink(s.summaryLine(
+        resort: detail.day.resortName,
         runCount: '${st.runCount}',
         dropM: Fmt.metres(st.dropM, locale: l.code),
-      ),
+      )),
     );
   }
 

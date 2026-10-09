@@ -23,6 +23,7 @@ import 'resort_picker.dart';
 import 'run_list.dart';
 import 'stats_grid.dart';
 import 'track_restore.dart';
+import '../share/share_strings.dart';
 
 /// Tag detail (docs/DESIGN.md §5 "Tag — Detail"). The map is the hero: full
 /// bleed from the very top edge, collapsing into a 52 pt bar on scroll. Then
@@ -70,7 +71,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
       case DayShareAction.card:
         await shareDayCardById(context, ref, widget.dayId);
       case DayShareAction.gpx:
-        await shareDayGpxById(ref, widget.dayId);
+        await shareDayGpxById(ref, widget.dayId, strings: ShareStrings.of(context));
     }
   }
 

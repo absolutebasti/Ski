@@ -35,7 +35,7 @@ class AccountStrings {
   String get clearResort => l.pick(de: 'Kein Heimatgebiet', en: 'No home resort');
   String get searchResort => l.pick(de: 'Skigebiet suchen', en: 'Search resort');
   String get noResortFound => l.pick(de: 'Kein Skigebiet gefunden.', en: 'No resort found.');
-  String get share => l.pick(de: 'In Ranglisten erscheinen', en: 'Appear in Ranglisten');
+  String get share => l.pick(de: 'In Ranglisten erscheinen', en: 'Appear in leaderboards');
   String get shareHint => l.pick(
         de: 'Sichtbar sind dein Name, dein Avatar und die Tagessummen je Skigebiet — nie deine Strecke. Die Top 10 sind öffentlich.',
         en: 'Visible are your name, your avatar and the day totals per resort — never your track. The top 10 are public.',

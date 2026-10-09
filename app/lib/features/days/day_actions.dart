@@ -7,6 +7,7 @@ import '../../app/widgets/widgets.dart';
 import '../../data/db/providers.dart';
 import '../share/share_service.dart';
 import 'days_strings.dart';
+import '../share/share_strings.dart';
 
 /// Long-press menu on a day card.
 enum DayMenuAction { share, delete }
@@ -104,9 +105,9 @@ Future<void> shareDayCardById(BuildContext context, WidgetRef ref, String dayId)
 }
 
 /// Loads the full day and hands the GPX file to the share sheet.
-Future<void> shareDayGpxById(WidgetRef ref, String dayId) async {
+Future<void> shareDayGpxById(WidgetRef ref, String dayId, {ShareStrings strings = ShareStrings.de}) async {
   final detail = await ref.read(dayDetailProvider(dayId).future);
-  await ref.read(shareServiceProvider).shareGpx(detail);
+  await ref.read(shareServiceProvider).shareGpx(detail, strings: strings);
 }
 
 /// Soft delete — the row stays on disk with `deletedAt` set.

@@ -13,6 +13,7 @@ import '../social_models.dart';
 import '../social_strings.dart';
 import 'duel_models.dart';
 import 'duel_strings.dart';
+import '../rider_name.dart';
 
 /// Final board of a Tagesduell for the Tagesbilanz and the history sheet:
 /// the result line ('Gewonnen' / 'Platz 2 von 3'), every member with their
@@ -109,7 +110,7 @@ class _ResultRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(own ? s.you : member.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.bodyText(c.textPrimary, size: 16, weight: own ? FontWeight.w700 : FontWeight.w500)),
+                Text(own ? s.you : riderName(context, member.displayName), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.bodyText(c.textPrimary, size: 16, weight: own ? FontWeight.w700 : FontWeight.w500)),
                 Text(
                   '${member.runCount} ${s.metric(SocialMetric.runCount)} · ${Fmt.kmh(member.maxSpeedMs, locale: l)} km/h',
                   maxLines: 1,

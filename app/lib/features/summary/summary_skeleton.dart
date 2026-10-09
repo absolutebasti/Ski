@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/tokens.dart';
 import '../../app/widgets/widgets.dart';
+import '../../app/l10n/app_locale.dart';
 
 /// Placeholder while the day loads: the shape of the Tagesbilanz as
 /// 6 %-opacity skeleton blocks (docs/DESIGN.md — no spinner, no shimmer).
@@ -23,7 +24,7 @@ class SummarySkeleton extends StatelessWidget {
     final c = AppColors.of(context);
     final fill = c.textPrimary.withValues(alpha: 0.06);
     return Semantics(
-      label: 'Lädt',
+      label: AppLocale.of(context).pick(de: 'Lädt', en: 'Loading'),
       excludeSemantics: true,
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),

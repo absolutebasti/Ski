@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/widgets/widgets.dart';
 import 'day_detail_screen.dart';
+import '../../app/l10n/app_locale.dart';
 
 /// Placeholder rows while the Tage list loads: the shape of what is coming as
 /// 6 %-opacity blocks (docs/DESIGN.md §5 — no spinner, no shimmer).
@@ -22,7 +23,7 @@ class DayListSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final fill = _fill(context);
     return Semantics(
-      label: 'Lädt',
+      label: AppLocale.of(context).pick(de: 'Lädt', en: 'Loading'),
       excludeSemantics: true,
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),
@@ -76,7 +77,7 @@ class DayDetailSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final fill = _fill(context);
     return Semantics(
-      label: 'Lädt',
+      label: AppLocale.of(context).pick(de: 'Lädt', en: 'Loading'),
       excludeSemantics: true,
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),

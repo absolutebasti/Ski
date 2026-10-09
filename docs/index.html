@@ -1,4 +1,6 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SlopeTrack – Ski-Tracker &amp; Duelle · SlopeTrack</title><style>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SlopeTrack – Ski-Tracker</title>
+<meta name="description" content="Ein Tipp startet den Skitag: Abfahrten, Höhenmeter, Tempo – dazu Ranglisten und Duelle mit Freunden. Gratis fürs iPhone.">
+<meta property="og:title" content="SlopeTrack – Ski-Tracker"><meta property="og:description" content="Abfahrten, Höhenmeter, Tempo – und Duelle mit Freunden. Gratis fürs iPhone."><meta property="og:image" content="https://absolutebasti.github.io/Ski/img/icon.png"><meta name="twitter:card" content="summary"><style>
 :root{--bg:#0B0C0E;--card:#15171B;--ink:#F4F1EA;--muted:#A9ABB2;--accent:#E3C88C;--hair:#2A2D33}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,Inter,Segoe UI,Helvetica,Arial,sans-serif}
 main{max-width:760px;margin:0 auto;padding:40px 20px 80px}header{display:flex;align-items:center;gap:12px;margin-bottom:32px}
@@ -8,10 +10,18 @@ header strong{font-size:18px;letter-spacing:.02em}nav a{color:var(--muted);text-
 h1{font-size:34px;line-height:1.15;margin:0 0 8px;letter-spacing:-.01em}h2{font-size:22px;margin:40px 0 12px}.sub{color:var(--muted);margin:0 0 28px}
 a{color:var(--accent)}p{margin:0 0 14px}.card{background:var(--card);border:1px solid var(--hair);border-radius:20px;padding:24px 24px}
 .lang{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:32px 0 8px}
+.btn{display:inline-block;border-radius:999px;height:56px;line-height:56px;padding:0 28px;font-size:17px;font-weight:600;text-decoration:none;background:var(--accent);color:var(--bg);margin:8px 0 28px}.btn[aria-disabled="true"]{opacity:.45;pointer-events:none}.shot{display:block;width:100%;max-width:330px;border-radius:28px;margin:8px 0 28px}
+header{flex-wrap:wrap}nav{display:flex;flex-wrap:wrap;gap:6px 16px}nav a{margin-right:0!important}
 footer{margin-top:56px;color:var(--muted);font-size:13px}footer a{color:var(--muted)}
-.todo{background:#2b2411;border:1px solid #5a4a1c;color:#E3C88C;border-radius:12px;padding:12px 16px;font-size:14px}
 </style></head>
 <body><main><header><span class="mark"></span><strong>SlopeTrack</strong><nav style="margin-left:auto"><a href="index.html">Start</a><a href="privacy.html">Datenschutz</a><a href="support.html">Support</a><a href="terms.html">Nutzung</a><a href="imprint.html">Impressum</a></nav></header>
-<h1>SlopeTrack – Ski-Tracker &amp; Duelle</h1><p class="sub">Ein Tipp startet den Tag. Abfahrten, Höhenmeter, Tempo – und Ranglisten pro Land und Skigebiet.</p>
+<h1>SlopeTrack – Ski-Tracker</h1><p class="sub">Ein Tipp startet den Tag. Abfahrten, Höhenmeter, Tempo – und Ranglisten pro Land und Skigebiet.</p>
+<a class="btn" id="store" href="#" aria-disabled="true">Bald im App Store</a>
+<img class="shot" src="img/tagesbilanz.png" alt="Tagesbilanz in SlopeTrack: Höhenmeter, Abfahrten, Top-Speed">
 <div class="card"><p>SlopeTrack zählt deinen Skitag automatisch, auch mit gesperrtem iPhone, und stellt dich – wenn du willst – in Ranglisten, Duelle und Wochen-Challenges. Punkte, Level, Streaks und Medaillen entstehen auf deinem Gerät.</p><p><a href="privacy.html">Datenschutz</a> · <a href="support.html">Support</a> · <a href="terms.html">Nutzungsbedingungen</a> · <a href="imprint.html">Impressum</a></p></div>
-<footer>© 2026 TORCHTECHNOLOGY LTD · Torch Technology · <a href="imprint.html">Impressum</a> · <a href="privacy.html">Datenschutz</a> · <a href="mailto:hello@torchtechnology.de">hello@torchtechnology.de</a></footer></main></body></html>
+<footer>© 2026 TORCHTECHNOLOGY LTD · Torch Technology · <a href="imprint.html">Impressum</a> · <a href="privacy.html">Datenschutz</a> · <a href="mailto:hello@torchtechnology.de">hello@torchtechnology.de</a></footer></main><script>
+// App Store URL — set once the App Store Connect record exists (same value as kAppStoreUrl in the app).
+var STORE_URL='';
+if(STORE_URL){var b=document.getElementById('store');b.href=STORE_URL;b.textContent='Gratis im App Store laden';b.removeAttribute('aria-disabled');}
+</script>
+</body></html>

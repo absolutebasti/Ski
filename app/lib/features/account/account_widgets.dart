@@ -21,6 +21,7 @@ import '../today/season_goal_sheet.dart';
 import 'account_providers.dart';
 import 'account_strings.dart';
 import 'profile_service.dart';
+import 'terms_line.dart';
 
 /// Building blocks of the profile page: the Apple button, the signed-out
 /// body, the level and season-goal cards, the confirmations, the sync card,
@@ -504,6 +505,8 @@ class ShareOptInCard extends StatelessWidget {
                 Text(s.share, style: AppText.title(c.textPrimary)),
                 const SizedBox(height: 4),
                 Text(s.shareHint, style: AppText.caption(c.textSecondary)),
+                const SizedBox(height: 6),
+                const TermsLine(),
               ],
             ),
           ),

@@ -405,7 +405,9 @@ void main() {
       tester,
       api: FakeSocialApi(userId: 'u1', entries: kEntries, failWith: const SocialError(SocialErrorKind.offline)),
     );
-    expect(find.text('Keine Verbindung.'), findsOneWidget);
+    // Board and duel card both say so (the duel card no longer offers 'Duell
+    // starten' when it never learned today's duel).
+    expect(find.text('Keine Verbindung.'), findsNWidgets(2));
     expect(find.text('Deine Zahlen sind noch privat.'), findsNothing);
   });
 

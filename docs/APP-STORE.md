@@ -109,6 +109,6 @@ Captured on the iPhone 17 Pro Max simulator with demo data via `OUT=.context/sho
 1. Create the App Store Connect app record "SlopeTrack – Ski-Tracker" with bundle id `de.torchtechnology.slopetrack`; paste this sheet.
    In "Pricing and Availability" untick **Switzerland** before the first release.
 2. `tools/testflight.sh --upload` with the signed-in Xcode account of team 5GDU97KSQU (Apple Distribution certificate is present on this Mac) **or** an App Store Connect API key (`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH`). The script refuses stale archives (CFBundleVersion must equal `BUILD_NUMBER`).
-3. Fill in `docs/imprint.html` (address, legal form, VAT id) — mandatory in DE.
+3. ~~Fill in `docs/imprint.html`~~ done 2026-10-09 (TORCHTECHNOLOGY LTD).
 4. Optional: custom domain for the pages (e.g. slopetrack.app → GitHub Pages CNAME).
 5. Apple provider secret in Supabase expires every 6 months — set a calendar reminder.

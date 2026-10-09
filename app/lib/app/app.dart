@@ -42,7 +42,7 @@ class _SlopeTrackAppState extends ConsumerState<SlopeTrackApp> {
       ],
       localeResolutionCallback: (device, supported) {
         final resolved = locale ??
-            supported.firstWhere((s) => s.languageCode == device?.languageCode, orElse: () => const Locale('de'));
+            supported.firstWhere((s) => s.languageCode == device?.languageCode, orElse: () => const Locale('en')); // FR/IT/NL… read English, like the iOS prompts
         Intl.defaultLocale = resolved.languageCode;
         return resolved;
       },

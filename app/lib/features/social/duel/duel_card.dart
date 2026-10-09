@@ -20,6 +20,7 @@ import 'duel_history.dart';
 import 'duel_models.dart';
 import 'duel_providers.dart';
 import 'duel_strings.dart';
+import '../rider_name.dart';
 
 /// Tagesduell — the private race of the day (docs/ONBOARDING-SOCIAL.md,
 /// live since SOC-LIVE-DUEL).
@@ -205,13 +206,33 @@ class _DuelCardState extends ConsumerState<DuelCard> with WidgetsBindingObserver
   Widget build(BuildContext context) {
     final s = SocialStrings.of(context);
     final ds = DuelStrings.of(context);
-    final duel = ref.watch(myDuelProvider).asData?.value;
+    final duelAsync = ref.watch(myDuelProvider);
+    // `.value` keeps the last duel through a failed refetch (offline poll).
+    final duel = duelAsync.value;
     // `.value` keeps the last list while a poll refetches — no flicker.
     final invites = ref.watch(duelInvitesProvider).value ?? const <DuelInvite>[];
     final invite = invites.isEmpty ? null : invites.first;
     final now = widget.now ?? DateTime.now();
     final Widget card;
-    if (duel == null) {
+    if (duel == null && duelAsync.hasError) {
+      // Never knew today's duel (offline at start): say so instead of offering
+      // 'Duell starten' next to a duel that may be running.
+      final c = AppColors.of(context);
+      final e = duelAsync.error;
+      final offline = e is SocialError && e.kind == SocialErrorKind.offline;
+      card = AppCard(
+        header: s.duel,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(offline ? s.offlineHeadline : s.errorHeadline, style: AppText.bodyStrong(c.textPrimary)),
+            const SizedBox(height: 12),
+            SecondaryButton(label: s.retry, height: Tokens.buttonMd, onPressed: () => ref.invalidate(myDuelProvider)),
+          ],
+        ),
+      );
+    } else if (duel == null) {
       // One champagne CTA at a time: with an invite on top, 'Annehmen' is it.
       card = _DuelIdle(busy: _busy, quiet: invite != null, onCreate: _create, onJoin: _join);
     } else {
@@ -503,7 +524,7 @@ class DuelRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(own ? s.you : member.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.bodyText(c.textPrimary, size: 16, weight: own ? FontWeight.w700 : FontWeight.w500)),
+                Text(own ? s.you : riderName(context, member.displayName), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.bodyText(c.textPrimary, size: 16, weight: own ? FontWeight.w700 : FontWeight.w500)),
                 Row(
                   children: [
                     Flexible(
