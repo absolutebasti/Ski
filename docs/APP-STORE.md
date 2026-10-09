@@ -1,6 +1,6 @@
 # SlopeTrack — App Store Connect (fill-in sheet, 2026-09-27)
 
-**Bundle ID** `de.torchtechnology.slopetrack` · **Team** 5GDU97KSQU · **SKU** slopetrack-ios · **Primary language** German (de-DE), localisation en-US · **Category** Health & Fitness, secondary Sports · **Devices** iPhone only, portrait · **Price** free, no IAP · **Copyright** 2026 TORCHTECHNOLOGY LTD.
+**Bundle ID** `de.torchtechnology.slopetrack` · **Team** 5GDU97KSQU · **SKU** slopetrack-ios · **Primary language** German (de-DE), localisation en-US · **Category** Health & Fitness, secondary Sports · **Devices** iPhone only, portrait · **Price** free, no IAP · **Availability** all countries **except Switzerland** (Suva holds the CH mark "SLOPE TRACK", founder decision 2026-10-09; can be added later in Pricing and Availability) · **Copyright** 2026 TORCHTECHNOLOGY LTD.
 
 ## URLs (live via GitHub Pages from `docs/`)
 | Field | URL |
@@ -107,6 +107,7 @@ Captured on the iPhone 17 Pro Max simulator with demo data via `OUT=.context/sho
 
 ## Founder to-do before submission
 1. Create the App Store Connect app record "SlopeTrack – Ski-Tracker" with bundle id `de.torchtechnology.slopetrack`; paste this sheet.
+   In "Pricing and Availability" untick **Switzerland** before the first release.
 2. `tools/testflight.sh --upload` with the signed-in Xcode account of team 5GDU97KSQU (Apple Distribution certificate is present on this Mac) **or** an App Store Connect API key (`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH`). The script refuses stale archives (CFBundleVersion must equal `BUILD_NUMBER`).
 3. Fill in `docs/imprint.html` (address, legal form, VAT id) — mandatory in DE.
 4. Optional: custom domain for the pages (e.g. slopetrack.app → GitHub Pages CNAME).
