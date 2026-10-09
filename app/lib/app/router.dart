@@ -18,7 +18,6 @@ import 'placeholders.dart';
 ///   DayDetailScreen(dayId: String)     features/days
 ///   TagesbilanzScreen(dayId: String)   features/summary
 ///   OnboardingFlow()                   features/onboarding
-///   MapSheet.show(context)             features/map      (modal, not a route)
 ///   SettingsSheet.show(context)        features/settings (modal, not a route)
 class AppRoutes {
   const AppRoutes._();

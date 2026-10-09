@@ -90,6 +90,10 @@ class DaysRepository {
     });
   }
 
+  /// Drops the points after [ts] (trailing idle trimmed at an auto-end).
+  Future<void> deletePointsAfter(String dayId, int ts) =>
+      (db.delete(db.points)..where((p) => p.dayId.equals(dayId) & p.ts.isBiggerThanValue(ts))).go();
+
   Future<void> discardDay(String dayId) async {
     await db.transaction(() async {
       await (db.delete(db.points)..where((p) => p.dayId.equals(dayId))).go();
@@ -366,6 +370,11 @@ class DaysRepository {
       });
 
   Future<void> clearOutbox() => db.delete(db.syncOutbox).go();
+
+  /// Account deleted: no day is on any server any more.
+  Future<void> resetSyncMarks() => db.update(db.days).write(
+        const DaysCompanion(syncedAt: Value(null), remoteUpdatedAt: Value(null), trackPath: Value(null)),
+      );
 
   /// Merges a remote `days` row (snake_case keys, as returned by the backend).
   ///

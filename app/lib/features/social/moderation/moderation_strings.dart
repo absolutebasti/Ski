@@ -33,6 +33,7 @@ class ModerationStrings {
   String reportQuestion(String name) => l.pick(de: 'Was stimmt mit dem Profil von $name nicht?', en: 'What is wrong with the profile of $name?');
   String reason(ReportReason r) => switch (r) {
         ReportReason.offensiveName => l.pick(de: 'Anstößiger Name', en: 'Offensive name'),
+        ReportReason.offensiveImage => l.pick(de: 'Anstößiges Profilbild', en: 'Offensive profile photo'),
         ReportReason.cheating => l.pick(de: 'Betrug/unrealistische Werte', en: 'Cheating / unrealistic values'),
         ReportReason.other => l.pick(de: 'Sonstiges', en: 'Other'),
       };

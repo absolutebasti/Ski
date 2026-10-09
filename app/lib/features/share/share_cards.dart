@@ -13,6 +13,7 @@ import '../achievements/ui/level_ring.dart' show tierColor;
 import 'share_card.dart';
 import 'share_card_data.dart';
 import 'share_strings.dart';
+import '../social/rider_name.dart';
 
 /// Renders the share card for any [ShareCardData] at the requested
 /// [ShareFormat]. `day` is the existing [ShareCard]; medal, level, season,
@@ -661,7 +662,7 @@ class _DuelRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (row.isMe) ...[Text(strings.you.overline, style: AppText.label(c.textSecondary, size: 20)), const SizedBox(height: 6)],
-                _OneLine(row.displayName, style: AppText.headline(c.textPrimary, size: height * 0.27)),
+                _OneLine(riderNameFor(locale, row.displayName), style: AppText.headline(c.textPrimary, size: height * 0.27)),
                 const SizedBox(height: 8),
                 Text(
                   strings.duelCaption(row.runCount, Fmt.kmh(row.maxSpeedMs, locale: locale.code)),

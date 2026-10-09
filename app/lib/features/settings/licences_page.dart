@@ -7,15 +7,15 @@ import '../../app/widgets/widgets.dart';
 import 'settings_strings.dart';
 
 /// Attribution the data and font licences require to be visible in-app:
-/// OpenStreetMap (ODbL), OpenTopoMap and OpenSnowMap (CC BY-SA), Open-Meteo
-/// (CC BY 4.0), Inter (OFL). Package licences via Flutter's licence registry.
+/// Apple Maps (satellite images), OpenStreetMap / OpenSkiMap (ODbL, resort
+/// data), Open-Meteo (CC BY 4.0), Inter (OFL). Package licences via Flutter's
+/// licence registry.
 class LicencesPage extends StatelessWidget {
   const LicencesPage({super.key});
 
   static const sources = <(String, String, String)>[
     ('OpenStreetMap', '© OpenStreetMap contributors · ODbL 1.0', 'openstreetmap.org/copyright'),
-    ('OpenTopoMap', 'Kartendarstellung · CC BY-SA 3.0', 'opentopomap.org'),
-    ('OpenSnowMap', 'Pisten und Lifte · CC BY-SA 2.0', 'opensnowmap.org'),
+    ('Apple Karten', 'Satellitenbilder der Skitage · © Apple und Datenpartner', 'apple.com/legal/internet-services/maps'),
     ('OpenSkiMap', 'Skigebiete (OpenStreetMap-Daten) · ODbL 1.0', 'openskimap.org'),
     ('Open-Meteo', 'Wetterdaten · CC BY 4.0', 'open-meteo.com'),
     ('Inter', 'Schrift von Rasmus Andersson · SIL Open Font License 1.1', 'rsms.me/inter'),

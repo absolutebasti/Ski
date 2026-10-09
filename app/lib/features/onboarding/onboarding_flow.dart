@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/app_home.dart';
 import '../../app/shell.dart';
 import '../../app/theme/tokens.dart';
 import '../../app/widgets/widgets.dart';
@@ -41,7 +42,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // page 3
   AuthUser? _user;
   bool _skipped = false;
-  bool _optIn = true;
+  /// Off until the rider switches it on: name and photo become public, which
+  /// needs an active choice (GDPR consent, App Review 1.2 terms line).
+  bool _optIn = false;
   bool _signingIn = false;
   bool _signInFailed = false;
   bool _asking = false;
@@ -154,7 +157,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     }
     if (!mounted) return;
     await Navigator.of(context).pushAndRemoveUntil<void>(
-      MaterialPageRoute<void>(builder: (_) => const RootShell()),
+      // The home route (with its invite + live-duel hosts) is replaced: the
+      // shell brings its own.
+      MaterialPageRoute<void>(builder: (_) => const AppHome(child: RootShell())),
       (route) => false,
     );
   }

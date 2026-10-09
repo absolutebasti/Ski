@@ -16,6 +16,7 @@ import '../../data/sync/auth_service.dart';
 import 'onboarding_countries.dart';
 import 'onboarding_strings.dart';
 import 'route_hook.dart';
+import '../account/terms_line.dart';
 
 /// Shared scrolling skeleton for P2/P3: headline 22 + one line, then content.
 /// P1 ([HookPage]) lays itself out as a centred Column instead.
@@ -608,7 +609,7 @@ class ReadyPage extends StatelessWidget {
     required this.granted,
     required this.grantedAlways,
     required this.onOpenSettings,
-    this.optIn = true,
+    this.optIn = false,
     this.onOptIn,
   });
   final AuthUser? user;
@@ -647,6 +648,8 @@ class ReadyPage extends StatelessWidget {
                       Text(s.p3OptIn, style: AppText.bodyStrong(c.textPrimary)),
                       const SizedBox(height: 2),
                       Text(s.p3OptInHint, style: AppText.caption(c.textSecondary)),
+                      const SizedBox(height: 4),
+                      const TermsLine(),
                     ],
                   ),
                 ),

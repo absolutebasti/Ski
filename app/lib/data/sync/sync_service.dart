@@ -152,6 +152,29 @@ class SyncService {
 
   Future<int> pendingCount() => repo.outboxCount();
 
+  /// True when at least one outbox entry may be sent now — not every queued
+  /// entry is: one the server keeps rejecting waits out its backoff, and the
+  /// 30 s poll must not pull the whole account for it every time.
+  Future<bool> hasDueEntries() async {
+    final t = now();
+    for (final e in await repo.outbox()) {
+      final due = _nextAttemptAt[e.id];
+      if (due == null || t >= due) return true;
+    }
+    return false;
+  }
+
+  /// After the account was deleted: nothing queued for it survives, the local
+  /// days count as never synced, and the next sign-in (a new account even with
+  /// the same Apple ID) is not treated as a Konto switch — days recorded from
+  /// now on upload to it.
+  Future<void> forgetAccount() async {
+    await repo.clearOutbox();
+    _nextAttemptAt.clear();
+    await repo.resetSyncMarks();
+    await store.setLastUserId(null);
+  }
+
   /// ms epoch before which [outboxId] is not retried; null = due now.
   int? nextAttemptAt(int outboxId) => _nextAttemptAt[outboxId];
 
@@ -545,7 +568,7 @@ void startAutoSync(Ref ref) {
     if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
     unawaited(repairProfile());
     // A rate-limited outbox waits its window out instead of knocking every 30 s.
-    if (await service.pendingCount() > 0 && !service.isThrottled) unawaited(service.syncNow());
+    if (!service.isThrottled && await service.hasDueEntries()) unawaited(service.syncNow());
   });
   ref.onDispose(timer.cancel);
 

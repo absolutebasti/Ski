@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:slopetrack/app/brand.dart';
 import 'package:slopetrack/data/db/database.dart';
 import 'package:slopetrack/data/db/days_repository.dart';
 import 'package:slopetrack/features/share/share_service.dart';
@@ -52,11 +53,13 @@ void main() {
     final (files, subject, text) = shared.single;
     final file = files.single;
     expect(file.mimeType, 'image/png');
-    expect(file.path, endsWith('-0192ab.png'));
+    expect(file.path, endsWith('-0192ab-9x16.png'), reason: 'the day card defaults to the story format');
     expect(File(file.path).existsSync(), isTrue);
     expect(File(file.path).lengthSync(), greaterThan(1000));
     expect(subject, 'Mein Skitag');
     expect(text, startsWith('Skitag in Kitzbühel · ${detail.day.stats.runCount} Abfahrten · '));
+    expect(text, contains('· SlopeTrack\n'), reason: 'app name, then the link on its own line');
+    expect(text!.split('\n').last, kGetAppUrl);
     await tester.pump();
   });
 }

@@ -4,17 +4,31 @@ import '../core/core.dart';
 
 /// A raw state interval before validity rules and merging.
 class RawInterval {
-  RawInterval({required this.kind, required this.startTs, required this.endTs, this.vehicle = false});
+  RawInterval({required this.kind, required this.startTs, required this.endTs, this.vehicle = false, this.cable = false});
   SegmentKind kind;
   int startTs;
   int endTs;
   bool vehicle;
+  /// Set by finalize's cable post-pass: the cable signature covers this
+  /// interval, so it is a lift ride even when it goes *down* into the valley.
+  bool cable;
   int get durationMs => endTs - startTs;
 }
 
 /// Per-tick input for the segmenter.
 class SegTick {
-  const SegTick({required this.ts, required this.vH, required this.h, required this.hasFix, required this.gapMs});
+  const SegTick({
+    required this.ts,
+    required this.vH,
+    required this.h,
+    required this.hasFix,
+    required this.gapMs,
+    this.cableHolds = false,
+    this.cableRides = false,
+    this.cableVetoRun = false,
+    this.deadGap = false,
+    this.deadGapKind = SegmentKind.signalLoss,
+  });
   final int ts;
   /// Display speed m/s (meaningless when [hasFix] is false and gap is long).
   final double vH;
@@ -23,6 +37,28 @@ class SegTick {
   final bool hasFix;
   /// Milliseconds since the last accepted fix (0 when this tick has one).
   final int gapMs;
+  /// Loose cable signature (CableDetector.holdsAt): constant speed, straight,
+  /// altitude one way *or* flat. Holds a running LIFT together over a cable
+  /// car's flat mid-span and over the stretch where a chairlift dips.
+  final bool cableHolds;
+  /// Strict cable signature (CableDetector.ridesAt) — **ascending only**: the
+  /// loose test plus a real altitude *gain* on a real gradient. Opens a LIFT.
+  /// A ride down is never opened here; `descent.dart` decides that afterwards
+  /// from a station at both ends, three minutes and 120 m of drop.
+  final bool cableRides;
+  /// CableDetector.vetoesRunAt: [cableHolds] minus the descending case. A window
+  /// losing height at a constant speed on a straight line is what a schuss looks
+  /// like, so it must not stop a RUN from starting — that was the bug that made
+  /// a steady 5–11 m/s descent disappear from the day.
+  final bool cableVetoRun;
+  /// Nothing at all (no fix, no barometer) reached the segmenter for longer
+  /// than signalLossGapS — the app was not running or the phone was off. The
+  /// gap is SIGNAL LOSS whatever the state, so an open RUN or LIFT never
+  /// stretches over it.
+  final bool deadGap;
+  /// What the dead gap becomes: STOP when the rider is back where the gap
+  /// began, SIGNAL LOSS otherwise.
+  final SegmentKind deadGapKind;
 }
 
 /// 1 Hz state machine: STOP / RUN / LIFT / OTHER / SIGNAL LOSS (docs/PLAN.md §5).
@@ -34,6 +70,7 @@ class Segmenter {
   SegmentKind _state = SegmentKind.other;
   int? _stateStart;
   int _stopTicks = 0, _moveTicks = 0, _liftTicks = 0, _liftExitTicks = 0, _flatTicks = 0, _vehicleTicks = 0, _slowTicks = 0;
+  int _cableTicks = 0;
   bool _vehicle = false;
   int? _gapStartTs;
   double? _gapStartH;
@@ -43,6 +80,8 @@ class Segmenter {
 
   SegmentKind get state => _state;
   bool get vehicle => _vehicle;
+  /// Timestamp of the last tick seen (any kind), null before the first.
+  int? get lastTickTs => _lastTs;
   MotionState get motionState => switch (_state) {
         SegmentKind.run => MotionState.run,
         SegmentKind.lift => MotionState.lift,
@@ -72,6 +111,7 @@ class Segmenter {
     _liftTicks = 0;
     _liftExitTicks = 0;
     _flatTicks = 0;
+    _cableTicks = 0;
     _runHits.clear();
   }
 
@@ -124,6 +164,12 @@ class Segmenter {
     }
 
     // ---- No fix this tick: only barometric rules apply ----
+    if (!t.hasFix && t.deadGap) {
+      if (_state != t.deadGapKind) _transition(t.deadGapKind, _lastFixTs ?? t.ts);
+      _gapStartTs = t.ts;
+      _gapStartH = null;
+      return;
+    }
     if (!t.hasFix) {
       final gh = _gapStartH;
       final gain = (h != null && gh != null) ? h - gh : null;
@@ -198,16 +244,30 @@ class Segmenter {
     final flat = vz30 != null && vz30.abs() < TrackingConfig.runFlatVz30Ms && vH < TrackingConfig.runFlatSpeedMs;
     _flatTicks = flat ? _flatTicks + 1 : 0;
 
-    final liftEnter = (_liftTicks >= TrackingConfig.liftEnterS) ||
+    _cableTicks = t.cableRides ? _cableTicks + 1 : 0;
+    // A confirmed cable ride is a lift whatever the barometer says: it catches
+    // the T-bar (too shallow for vz30), the funicular (too fast for
+    // liftMaxHorizontalSpeedMs) and the gondola riding *down* into the valley
+    // (which otherwise passes the RUN entry rule at 25 km/h).
+    final cableEnter = _cableTicks >= TrackingConfig.cableEnterS;
+    final liftEnter = cableEnter ||
+        (_liftTicks >= TrackingConfig.liftEnterS) ||
         (gained60 != null && gained60 >= TrackingConfig.liftEnterGained60M && vH <= TrackingConfig.liftMaxHorizontalSpeedMs);
 
     switch (_state) {
       case SegmentKind.lift:
-        if (_liftExitTicks >= TrackingConfig.liftExitS || (vz10 != null && vz10 <= TrackingConfig.liftExitVz10Ms)) {
+        // While the cable signature holds, neither exit may fire: that keeps a
+        // cable car's flat mid-span inside one ride, and it is what stops a
+        // *descending* ride from leaving LIFT on the very next tick (vz10 is
+        // strongly negative all the way down).
+        if (!t.cableHolds &&
+            (_liftExitTicks >= TrackingConfig.liftExitS || (vz10 != null && vz10 <= TrackingConfig.liftExitVz10Ms))) {
           _transition(SegmentKind.other, t.ts - (_liftExitTicks >= TrackingConfig.liftExitS ? TrackingConfig.liftExitS * 1000 : 0));
         }
       case SegmentKind.run:
-        if (liftEnter) {
+        if (cableEnter) {
+          _transition(SegmentKind.lift, t.ts - TrackingConfig.cableEnterS * 1000);
+        } else if (liftEnter) {
           _transition(SegmentKind.lift, t.ts - TrackingConfig.liftEnterS * 1000);
         } else if (_stopTicks >= TrackingConfig.runStopAbsorbS) {
           _transition(SegmentKind.stop, t.ts - TrackingConfig.runStopAbsorbS * 1000);
@@ -215,7 +275,7 @@ class Segmenter {
           _transition(SegmentKind.other, t.ts - TrackingConfig.runFlatS * 1000);
         }
       case SegmentKind.stop:
-        if (runHits >= TrackingConfig.runEnterHits) {
+        if (runHits >= TrackingConfig.runEnterHits && !t.cableVetoRun) {
           _transition(SegmentKind.run, t.ts - 10000);
         } else if (liftEnter) {
           _transition(SegmentKind.lift, t.ts - TrackingConfig.liftEnterS * 1000);
@@ -224,7 +284,7 @@ class Segmenter {
         }
       case SegmentKind.other:
       case SegmentKind.signalLoss:
-        if (runHits >= TrackingConfig.runEnterHits) {
+        if (runHits >= TrackingConfig.runEnterHits && !t.cableVetoRun) {
           _transition(SegmentKind.run, t.ts - 10000);
         } else if (liftEnter) {
           _transition(SegmentKind.lift, t.ts - TrackingConfig.liftEnterS * 1000);

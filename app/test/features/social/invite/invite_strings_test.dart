@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:slopetrack/app/brand.dart';
 import 'package:slopetrack/app/l10n/app_locale.dart';
 import 'package:slopetrack/features/social/friends/friends_api.dart';
 import 'package:slopetrack/features/social/friends/friends_strings.dart';
@@ -16,8 +17,8 @@ void main() {
     final t = _de.duelShareText('kmj4f2');
     expect(t, contains('Code KMJ4F2'));
     expect(t, contains(InviteLinks.share(InviteKind.duel, 'KMJ4F2')));
-    expect(InviteLinks.appStoreLinkLive, isFalse, reason: 'flip appStoreUrlPlaceholder to the real record and this test changes');
-    expect(t, isNot(contains(InviteLinks.appStoreUrlPlaceholder)));
+    expect(InviteLinks.appStoreLinkLive, isFalse, reason: 'set kAppStoreUrl to the real record and this test changes');
+    expect(t, isNot(contains('apps.apple.com')));
     expect(t, isNot(contains('App laden')));
     expect(t.split('\n'), hasLength(2));
     expect(_en.duelShareText('KMJ4F2'), startsWith('Duel in SlopeTrack: code KMJ4F2.'));
@@ -35,8 +36,8 @@ void main() {
   });
 
   test('the App Store line itself still exists for the day the record is live', () {
-    expect(_de.appStoreLine, startsWith('App laden: https://apps.apple.com/'));
-    expect(_en.appStoreLine, startsWith('Get the app: https://apps.apple.com/'));
+    expect(_de.appStoreLine, startsWith('App laden: $kAppStoreUrl'));
+    expect(_en.appStoreLine, startsWith('Get the app: $kAppStoreUrl'));
   });
 
   test('no share text and no friends/invite source but the placeholder constant carries id0000000000', () {

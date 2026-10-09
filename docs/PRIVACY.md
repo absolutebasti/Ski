@@ -1,12 +1,12 @@
 # Datenschutzerklärung / Privacy Policy — SlopeTrack
 
-Stand / last updated: 2026-09-30 · Hosted at https://absolutebasti.github.io/Ski/privacy.html (source: this file → docs/privacy.html)
+Stand 9. Oktober 2026 · last updated 9 October 2026
 
 ## Deutsch
 
 **Kurz gesagt:** Ohne Konto bleiben deine Skitage auf deinem iPhone. Mit Konto (Sign in with Apple) sichern wir deine Skitage in der EU und zeigen dich – nur wenn du es einschaltest – in Ranglisten. Keine Werbung, kein Tracking, keine Weitergabe an Dritte.
 
-**Verantwortlich:** Sebastian Fackelmann, Torch Technology, hello@torchtechnology.de (Anschrift im Impressum).
+**Verantwortlich:** TORCHTECHNOLOGY LTD (Torch Technology), 25 Martiou 27, D. Michael Tower, Flat/Office 105A, Egkomi, 2408 Nicosia, Republik Zypern, hello@torchtechnology.de. Weitere Angaben im Impressum.
 
 **1. Standort und Sensoren.** Während du einen Skitag aufzeichnest, erfasst die App deinen GPS-Standort – auch im Hintergrund bei gesperrtem iPhone – und den Luftdrucksensor (Berechtigung „Bewegung & Fitness“). Daraus berechnet sie Abfahrten, Höhenmeter, Distanz und Geschwindigkeit. Eine Apple-Watch-Erweiterung mit Herzfrequenz ist geplant und in dieser Version nicht enthalten. Die Rohdaten liegen in der lokalen Datenbank der App. Beendest du den Tag, endet die Standortnutzung.
 
@@ -14,9 +14,13 @@ Stand / last updated: 2026-09-30 · Hosted at https://absolutebasti.github.io/Sk
 
 **3. Ranglisten, Duelle, Challenges.** Nur wenn du „In Ranglisten erscheinen“ einschaltest, sehen andere Nutzer deinen Anzeigenamen, dein Land und deine Kennzahlen in Ranglisten. Die Top 10 einer Rangliste (Anzeigename, Profilbild, Punkte) sind zusätzlich öffentlich sichtbar, auch ohne Konto. In einem Tagesduell sehen die bis zu drei Mitglieder gegenseitig Namen und Tageswerte. Punkte, Level, Streak und Medaillen werden auf deinem Gerät berechnet. Du kannst die Rangliste jederzeit in Konto ausschalten; deine Daten verschwinden dann sofort aus den Listen.
 
-**4. Karten und Wetter.** Kartenkacheln kommen von OpenTopoMap und OpenSnowMap (OpenStreetMap-Daten), das Wetter von Open-Meteo mit den Koordinaten des Skigebiets, nicht mit deiner genauen Position. Diese Server sehen deine IP-Adresse und die angefragten Ausschnitte.
+**4. Karten und Wetter.** Für das Satellitenbild eines Skitags fragt die App den Kartenausschnitt rund um deine Spur bei Apple Maps an (Apple Distribution International Ltd., Irland); Apple erhält dabei den Ausschnitt und deine IP-Adresse, die Spur selbst wird auf dem Gerät eingezeichnet. Das Wetter kommt von Open-Meteo mit den Koordinaten des Skigebiets, nicht mit deiner genauen Position; Open-Meteo sieht dabei deine IP-Adresse.
 
 **5. Teilen.** Teilst du eine Tagesbilanz, eine Medaille oder eine GPX-Datei, entscheidest du selbst, wohin sie geht.
+
+**5a. Freunde, Einladungen, Melden und Blockieren.** Mit Konto speichern wir Freundschaften und Freundschaftsanfragen, Duell-Einladungen, die von dir blockierten Nutzer sowie Meldungen (wer hat wen wann aus welchem Grund gemeldet). Meldungen prüfen wir, um unzulässige Namen oder Bilder zu entfernen und Missbrauch zu verhindern (Art. 6 Abs. 1 lit. b und f DSGVO). Wen du blockierst, sieht niemand außer dir. Diese Daten werden mit deinem Konto gelöscht.
+
+**5b. Diese Webseiten und Einladungslinks.** Diese Seiten und die Seiten hinter Einladungslinks liegen bei GitHub Pages (GitHub Inc., USA). GitHub verarbeitet dabei deine IP-Adresse, um die Seite auszuliefern (Art. 6 Abs. 1 lit. f DSGVO); Übermittlungen in die USA stützen sich auf das EU-US Data Privacy Framework bzw. EU-Standardvertragsklauseln. Wir setzen auf diesen Seiten keine Cookies und kein Tracking ein.
 
 **6. Löschen.** In den Einstellungen löschst du einzelne Tage oder alles auf dem Gerät. In Konto › „Konto löschen“ entfernen wir dein Profil, alle Skitage und Spuren und dein Login sofort und vollständig. Deinstallierst du die App ohne Konto, sind alle Daten weg.
 
@@ -32,7 +36,7 @@ Stand / last updated: 2026-09-30 · Hosted at https://absolutebasti.github.io/Sk
 
 **In short:** Without an account your ski days stay on your iPhone. With an account (Sign in with Apple) we back up your ski days in the EU and show you in leaderboards only if you switch that on. No ads, no tracking, no selling of data.
 
-**Controller:** Sebastian Fackelmann, Torch Technology, hello@torchtechnology.de (postal address in the imprint).
+**Controller:** TORCHTECHNOLOGY LTD (Torch Technology), 25 Martiou 27, D. Michael Tower, Flat/Office 105A, Egkomi, 2408 Nicosia, Republic of Cyprus, hello@torchtechnology.de. More details in the imprint.
 
 **1. Location and sensors.** While you record a ski day the app collects your GPS position – also in the background with the phone locked – and the barometer (“Motion & Fitness” permission) to compute runs, vertical, distance and speed. An Apple Watch extension with heart rate is planned and not part of this version. Raw data lives in the app's local database. Location use ends when you end the day.
 
@@ -40,9 +44,13 @@ Stand / last updated: 2026-09-30 · Hosted at https://absolutebasti.github.io/Sk
 
 **3. Leaderboards, duels, challenges.** Only if you enable “Appear in leaderboards” do other users see your display name, country and figures. The top 10 of a leaderboard (display name, profile photo, points) are also publicly visible, even without an account. In a day duel the up to three members see each other's names and day figures. Points, levels, streak and medals are computed on your device. You can switch leaderboards off in Account at any time; your data disappears from the lists immediately.
 
-**4. Maps and weather.** Map tiles come from OpenTopoMap and OpenSnowMap (OpenStreetMap data), weather from Open-Meteo using the resort's coordinates, not your exact position. Those servers see your IP address and the requested areas.
+**4. Maps and weather.** For the satellite image of a ski day the app requests the map area around your track from Apple Maps (Apple Distribution International Ltd., Ireland); Apple receives that area and your IP address, the track itself is drawn on the device. Weather comes from Open-Meteo using the resort's coordinates, not your exact position; Open-Meteo sees your IP address.
 
 **5. Sharing.** When you share a day card, a medal or a GPX file, you decide where it goes.
+
+**5a. Friends, invites, reports and blocks.** With an account we store friendships and friend requests, duel invites, the users you block and reports (who reported whom, when and why). We review reports to remove inadmissible names or images and to prevent abuse (Art. 6 (1) (b) and (f) GDPR). Nobody but you sees whom you block. This data is deleted with your account.
+
+**5b. These web pages and invite links.** These pages and the pages behind invite links are hosted on GitHub Pages (GitHub Inc., USA). GitHub processes your IP address to deliver the page (Art. 6 (1) (f) GDPR); transfers to the US rely on the EU-US Data Privacy Framework or EU standard contractual clauses. We use no cookies and no tracking on these pages.
 
 **6. Deletion.** Delete single days or everything on the device in Settings. Account › “Delete account” removes your profile, all ski days and tracks and your login immediately and completely. Uninstalling without an account removes everything.
 

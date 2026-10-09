@@ -28,9 +28,17 @@ class ShareStrings {
   String get gpxSubject => l.pick(de: 'Skitag als GPX', en: 'Ski day as GPX');
   String get diagnosticsSubject => l.pick(de: '$kAppName Diagnosepaket', en: '$kAppName diagnostics bundle');
 
-  /// 'Skitag in Kitzbühel · 3 Abfahrten · 1.900 hm'
-  String summaryLine({required String resort, required String runCount, required String dropM}) =>
-      l.pick(de: 'Skitag in $resort · $runCount Abfahrten · $dropM hm', en: 'Ski day in $resort · $runCount runs · $dropM m vertical');
+  /// 'Skitag in Kitzbühel · 3 Abfahrten · 1.900 hm · SlopeTrack' (no resort:
+  /// 'Skitag · 3 Abfahrten · …').
+  String summaryLine({required String? resort, required String runCount, required String dropM}) => resort == null
+      ? l.pick(de: 'Skitag · $runCount Abfahrten · $dropM hm · $kAppName', en: 'Ski day · $runCount runs · $dropM m vertical · $kAppName')
+      : l.pick(de: 'Skitag in $resort · $runCount Abfahrten · $dropM hm · $kAppName', en: 'Ski day in $resort · $runCount runs · $dropM m vertical · $kAppName');
+
+  /// Every shared card carries a way to the app: [kGetAppUrl] on its own line.
+  String withLink(String text) => '$text\n$kGetAppUrl';
+
+  /// Under the wordmark on every card.
+  String get getApp => l.pick(de: 'Gratis im App Store', en: 'Free on the App Store');
 
   // --- entry points (semantics) ---------------------------------------------
   String get shareMedal => l.pick(de: 'Medaille teilen', en: 'Share medal');

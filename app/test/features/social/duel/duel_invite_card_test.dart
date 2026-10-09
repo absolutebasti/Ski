@@ -232,7 +232,9 @@ void main() {
     final api = FakeDuelApi(userId: 'u1', invites: [duelInvite()], failWith: const SocialError(SocialErrorKind.offline));
     await _pump(tester, api);
     expect(find.byType(DuelInviteCard), findsNothing);
-    expect(find.text('Duell starten'), findsOneWidget);
+    // The same failure hides today's duel too: the card says so and offers a retry.
+    expect(find.text('Keine Verbindung.'), findsOneWidget);
+    expect(find.text('Erneut versuchen'), findsOneWidget);
   });
 
   testWidgets('English copy; a sender without a name gets the bare title', (tester) async {

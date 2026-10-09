@@ -12,6 +12,7 @@ import '../recording/live_state_provider.dart';
 import '../social/duel/duel.dart';
 import '../social/social_models.dart';
 import 'today_strings.dart';
+import '../social/rider_name.dart';
 
 /// Where the rider stands in today's Tagesduell, measured against the board.
 ///
@@ -92,8 +93,8 @@ class _DuelLineState extends ConsumerState<DuelLine> {
     final text = other == null
         ? s.duelAlone
         : standing.leading
-            ? s.duelAhead(runnerUp: other.displayName, hm: hm)
-            : s.duelBehind(place: standing.place, leader: other.displayName, hm: hm);
+            ? s.duelAhead(runnerUp: riderName(context, other.displayName), hm: hm)
+            : s.duelBehind(place: standing.place, leader: riderName(context, other.displayName), hm: hm);
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Row(

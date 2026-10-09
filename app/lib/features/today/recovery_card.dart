@@ -98,8 +98,10 @@ class _RecoveryCardState extends ConsumerState<RecoveryCard> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: SecondaryButton(label: s.resume, height: Tokens.buttonMd, onPressed: _busy ? null : _resume)),
-              const SizedBox(width: 8),
+              if (info.canResume) ...[
+                Expanded(child: SecondaryButton(label: s.resume, height: Tokens.buttonMd, onPressed: _busy ? null : _resume)),
+                const SizedBox(width: 8),
+              ],
               Expanded(child: SecondaryButton(label: s.discard, height: Tokens.buttonMd, danger: true, onPressed: _busy ? null : _discard)),
             ],
           ),

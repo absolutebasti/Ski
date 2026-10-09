@@ -81,10 +81,13 @@ class RecordingController extends Notifier<RecordingState> {
   // ---------------------------------------------------------------- start
 
   Future<void> startDay() async {
-    if (state.isRecording || state.status == RecordingStatus.starting) throw const RecordingError(RecordingErrorKind.alreadyRecording);
+    if (state.status != RecordingStatus.idle || _ending) throw const RecordingError(RecordingErrorKind.alreadyRecording);
     state = const RecordingState(status: RecordingStatus.starting);
     try {
-      final st = await _perm.status();
+      var st = await _perm.status();
+      // iOS reports "not determined" (e.g. after "Allow Once" expired) as
+      // denied: ask again instead of sending the rider to Settings.
+      if (st == LocationPermissionState.denied) st = await _perm.requestWhenInUse();
       if (st == LocationPermissionState.denied || st == LocationPermissionState.deniedForever) {
         throw const RecordingError(RecordingErrorKind.locationDenied);
       }
@@ -93,18 +96,28 @@ class RecordingController extends Notifier<RecordingState> {
         if (!await _perm.requestTemporaryFullAccuracy()) throw const RecordingError(RecordingErrorKind.reducedAccuracy);
       }
       final now = _clock.now();
+      // An interrupted day still open (recovery card): Start continues it when
+      // it is still today, otherwise it is finished first and a new day begins.
+      final open = await _repo.activeDay();
+      if (open != null) {
+        if (!Guards.dayExpired(open.startedAt, now)) {
+          state = RecordingState.idle;
+          await resumeDay(open.id);
+          return;
+        }
+        await endRecoveredDay(open.id);
+      }
       // Restart merge: a day that ended < 4 h ago continues silently.
-      final recent = await _repo.recentFinishedDay(nowMs: now, window: const Duration(hours: TrackingConfig.restartMergeWindowH));
+      final recent = await _mergeCandidate(now);
       String dayId;
       int startedAt;
       if (recent != null) {
-        dayId = recent.id;
-        startedAt = recent.startedAt;
+        dayId = recent.day.id;
+        startedAt = recent.day.startedAt;
         await _repo.reopenDay(dayId);
-        final points = await _repo.pointsRaw(dayId);
-        _engine = _replay(dayId, points);
-        _resortResolved = recent.resortId != null;
-        ref.read(liveTrackProvider.notifier).seed(points);
+        _engine = _replay(dayId, recent.points);
+        _resortResolved = recent.day.resortId != null;
+        ref.read(liveTrackProvider.notifier).seed(recent.points);
       } else {
         dayId = const Uuid().v7();
         startedAt = now;
@@ -134,10 +147,31 @@ class RecordingController extends Notifier<RecordingState> {
     return e;
   }
 
+  /// The finished day a Start continues (restart merge, docs/PLAN.md §5):
+  /// ended < restartMergeWindowH ago, still the same ski day (no rollover,
+  /// under maxDayH), its points on this phone, and — when iOS knows where we
+  /// are — not somewhere else (> restartMergeMaxKm from where it ended).
+  Future<({DayRecord day, List<TrackPoint> points})?> _mergeCandidate(int now) async {
+    final recent = await _repo.recentFinishedDay(nowMs: now, window: const Duration(hours: TrackingConfig.restartMergeWindowH));
+    if (recent == null || Guards.dayExpired(recent.startedAt, now)) return null;
+    final points = await _repo.pointsRaw(recent.id);
+    final lastPos = points.lastWhere((p) => p.hasPosition, orElse: () => const TrackPoint(ts: 0));
+    if (!lastPos.hasPosition) return null; // restored from the server without its track
+    try {
+      final here = await _location.lastKnown();
+      if (here != null &&
+          now - here.ts <= 15 * 60000 &&
+          haversineM(here.lat, here.lon, lastPos.lat!, lastPos.lon!) > TrackingConfig.restartMergeMaxKm * 1000) {
+        return null;
+      }
+    } catch (_) {}
+    return (day: recent, points: points);
+  }
+
   Future<void> _run({required String dayId, required int startedAt}) async {
     final now = _clock.now();
     _writer = BatchWriter(_repo, dayId);
-    _guards = Guards(dayStartMs: startedAt);
+    _guards = Guards(dayStartMs: startedAt, sessionStartMs: now);
     _lastSegmentsWriteMs = now;
     _lastWatchdogMs = now;
     _lastBatterySampleMs = 0;
@@ -150,7 +184,8 @@ class RecordingController extends Notifier<RecordingState> {
     // iOS: CMAltimeter needs Motion & Fitness; without it the day is GPS-only.
     if (!await _access.isMotionGranted()) ref.read(recordingHintsProvider.notifier).push(RecordingHint.motionDenied);
 
-    _fixSub = _location.fixes.listen((f) => _engine?.addFix(f), onError: (_) {});
+    // A stream error usually means access was lost: re-check right away.
+    _fixSub = _location.fixes.listen((f) => _engine?.addFix(f), onError: (_) => unawaited(recheckAccess()));
     _serviceSub = _access.locationServiceChanges.listen(_onServiceStatus);
     _pressSub = _baro.samples.listen((s) => _engine?.addPressure(s));
     _hrSub = _hr.bpm.listen((b) {
@@ -205,6 +240,8 @@ class RecordingController extends Notifier<RecordingState> {
     if (now - _lastWatchdogMs >= TrackingConfig.streamWatchdogS * 1000) {
       _lastWatchdogMs = now;
       unawaited(_location.restartIfSilent(now));
+      // Access can be revoked while the phone stays locked (no resume event).
+      unawaited(recheckAccess());
     }
     if (now - _lastBatterySampleMs >= TrackingConfig.batterySampleMin * 60000) {
       _lastBatterySampleMs = now;
@@ -331,15 +368,22 @@ class RecordingController extends Notifier<RecordingState> {
     state = RecordingState(status: RecordingStatus.ending, dayId: dayId, startedAt: state.startedAt);
     await _stopSources();
     final now = _clock.now();
-    final result = e.finish();
+    var result = e.finish();
     await _writer?.flush(now);
+    // Trailing idle (forgotten recording): the numbers end where the day
+    // ended — drop the idle tail before computing what is stored and synced.
+    if (trimTrailingIdleFrom != null && result.points.isNotEmpty && result.points.last.ts > trimTrailingIdleFrom) {
+      await _repo.deletePointsAfter(dayId, trimTrailingIdleFrom);
+      result = TrackingEngine.computeDay(dayId, await _repo.pointsRaw(dayId));
+    }
     final meaningful = result.stats.totalDistanceM >= TrackingConfig.meaningfulDayMinDistanceM &&
         (result.stats.skiMs + result.stats.liftMs + result.stats.otherMs) >= TrackingConfig.meaningfulDayMinMovingS * 1000;
     String? out;
     if (!meaningful) {
       await _repo.discardDay(dayId);
     } else {
-      final endedAt = trimTrailingIdleFrom ?? (result.points.isEmpty ? now : result.points.last.ts);
+      final lastTs = result.points.isEmpty ? now : result.points.last.ts;
+      final endedAt = trimTrailingIdleFrom == null || trimTrailingIdleFrom > lastTs ? lastTs : trimTrailingIdleFrom;
       await _repo.finishDay(dayId, endedAt: endedAt, stats: result.stats, segments: result.segments, trackedOnWatch: _watchHrSeen);
       out = dayId;
     }
@@ -364,19 +408,25 @@ class RecordingController extends Notifier<RecordingState> {
     try {
       unawaited(ref.read(mapImagesProvider).render(dayId));
     } catch (_) {}
+    ref.invalidate(dayDetailProvider(dayId));
+    // Weather is network (up to two 10 s timeouts on a weak mountain signal):
+    // the Tagesbilanz opens without it and refreshes when it lands.
+    unawaited(_attachWeather(dayId));
+  }
+
+  Future<void> _attachWeather(String dayId) async {
     try {
       final d = await _repo.day(dayId);
       final resortId = d?.resortId;
-      if (resortId != null) {
-        final resorts = await ref.read(resortRepositoryProvider.future);
-        final resort = resorts.byId(resortId);
-        if (resort != null) {
-          final w = await ref.read(weatherProvider(resort).future);
-          if (w != null) await _repo.setWeather(dayId, w);
-        }
-      }
+      if (resortId == null) return;
+      final resorts = await ref.read(resortRepositoryProvider.future);
+      final resort = resorts.byId(resortId);
+      if (resort == null) return;
+      final w = await ref.read(weatherProvider(resort).future);
+      if (w == null) return;
+      await _repo.setWeather(dayId, w);
+      ref.invalidate(dayDetailProvider(dayId));
     } catch (_) {}
-    ref.invalidate(dayDetailProvider(dayId));
   }
 
   Future<void> discardDay() async {
@@ -440,8 +490,17 @@ class RecordingController extends Notifier<RecordingState> {
   Future<bool> resumeIfActive() async {
     if (state.isRecording) return true;
     final d = await _repo.activeDay();
-    if (d == null) return false;
+    if (d == null) {
+      // Nothing to record: make sure iOS stops relaunching us on movement.
+      await ref.read(watchdogChannelProvider).stop();
+      return false;
+    }
     final now = _clock.now();
+    if (Guards.dayExpired(d.startedAt, now)) {
+      // Yesterday's day (or > maxDayH): the guards would have closed it.
+      await endRecoveredDay(d.id);
+      return false;
+    }
     final last = d.lastFixAt ?? d.startedAt;
     final launchedByWatchdog = await ref.read(watchdogChannelProvider).didLaunchFromLocation();
     if (now - last > TrackingConfig.silentResumeMaxMin * 60000 && !launchedByWatchdog) {
@@ -454,8 +513,13 @@ class RecordingController extends Notifier<RecordingState> {
   /// "Fortsetzen" on the recovery card, or silent resume.
   Future<bool> resumeDay(String dayId) async {
     if (state.isRecording) return true;
+    if (state.status != RecordingStatus.idle || _ending) return false;
     final d = await _repo.day(dayId);
     if (d == null) return false;
+    if (Guards.dayExpired(d.startedAt, _clock.now())) {
+      await endRecoveredDay(dayId);
+      return false;
+    }
     state = const RecordingState(status: RecordingStatus.starting);
     try {
       final points = await _repo.pointsRaw(dayId);
@@ -474,6 +538,7 @@ class RecordingController extends Notifier<RecordingState> {
   Future<String?> endRecoveredDay(String dayId) async {
     final d = await _repo.day(dayId);
     if (d == null) return null;
+    await ref.read(watchdogChannelProvider).stop();
     final points = await _repo.pointsRaw(dayId);
     final result = TrackingEngine.computeDay(dayId, points);
     final meaningful = result.stats.totalDistanceM >= TrackingConfig.meaningfulDayMinDistanceM;
@@ -489,6 +554,7 @@ class RecordingController extends Notifier<RecordingState> {
   }
 
   Future<void> discardRecoveredDay(String dayId) async {
+    await ref.read(watchdogChannelProvider).stop();
     await _repo.discardDay(dayId);
     ref.read(recoveryRefreshProvider.notifier).bump();
   }

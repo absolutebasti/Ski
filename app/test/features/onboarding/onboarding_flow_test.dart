@@ -287,7 +287,7 @@ void main() {
   });
 
 
-  testWidgets('after sign-in the leaderboard opt-in is on by default and reaches the profile', (tester) async {
+  testWidgets('after sign-in the leaderboard opt-in is off by default and reaches the profile', (tester) async {
     final api = FakeProfileApi(userId: 'u1');
     await _pump(tester, RecordingPermissions(), signIn: () async => const AuthUser(id: 'u1', displayName: 'Sebastian'),
         extra: [profileApiProvider.overrideWithValue(api)]);
@@ -296,14 +296,14 @@ void main() {
     await _primary(tester); // sign in
     final sw = find.byKey(const ValueKey('onboarding-optin'));
     expect(sw, findsOneWidget);
-    expect(tester.widget<AppSwitch>(sw).value, isTrue);
+    expect(tester.widget<AppSwitch>(sw).value, isFalse, reason: 'public name + photo need an active choice');
     await _primary(tester); // Los geht's
     expect(find.byType(RootShell), findsOneWidget);
     expect(api.patches, isNotEmpty);
-    expect(api.patches.last['share_leaderboards'], isTrue);
+    expect(api.patches.last['share_leaderboards'], isFalse);
   });
 
-  testWidgets('switching the opt-in off sends false', (tester) async {
+  testWidgets('switching the opt-in on sends true', (tester) async {
     final api = FakeProfileApi(userId: 'u1');
     await _pump(tester, RecordingPermissions(), signIn: () async => const AuthUser(id: 'u1', displayName: 'Sebastian'),
         extra: [profileApiProvider.overrideWithValue(api)]);
@@ -314,7 +314,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('onboarding-optin')));
     await tester.pumpAndSettle();
     await _primary(tester); // Los geht's
-    expect(api.patches.last['share_leaderboards'], isFalse);
+    expect(api.patches.last['share_leaderboards'], isTrue);
   });
 
   testWidgets('the primary button carries no leading chevron', (tester) async {

@@ -1,8 +1,11 @@
 export 'altitude.dart';
+export 'cable.dart';
+export 'descent.dart';
 export 'engine.dart';
 export 'finalize.dart';
 export 'gate.dart';
 export 'gps_quality.dart';
+export 'rigidity.dart';
 export 'segmenter.dart';
 export 'speed.dart';
 export 'vertical.dart';

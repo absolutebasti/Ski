@@ -8,7 +8,7 @@ class RecordingStrings {
   const RecordingStrings(this.de);
   final bool de;
   static RecordingStrings forLocale(String setting, String deviceLang) =>
-      RecordingStrings(setting == 'de' || (setting != 'en' && deviceLang != 'en'));
+      RecordingStrings(setting == 'de' || (setting != 'en' && deviceLang == 'de'));
   static RecordingStrings of(BuildContext context) => RecordingStrings(AppLocale.of(context).isGerman);
 
   String get idleTitle => de ? 'Noch am Fahren?' : 'Still skiing?';

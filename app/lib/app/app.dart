@@ -6,8 +6,7 @@ import 'package:intl/intl.dart';
 import '../core/settings.dart';
 import 'brand.dart';
 import 'l10n/app_locale.dart';
-import '../features/social/duel/live_duel_uploader.dart';
-import '../features/social/invite/invite_listener.dart';
+import 'app_home.dart';
 import 'router.dart';
 import 'shell.dart';
 import 'theme/theme.dart';
@@ -43,7 +42,7 @@ class _SlopeTrackAppState extends ConsumerState<SlopeTrackApp> {
       ],
       localeResolutionCallback: (device, supported) {
         final resolved = locale ??
-            supported.firstWhere((s) => s.languageCode == device?.languageCode, orElse: () => const Locale('de'));
+            supported.firstWhere((s) => s.languageCode == device?.languageCode, orElse: () => const Locale('en')); // FR/IT/NL… read English, like the iOS prompts
         Intl.defaultLocale = resolved.languageCode;
         return resolved;
       },
@@ -53,7 +52,7 @@ class _SlopeTrackAppState extends ConsumerState<SlopeTrackApp> {
       // Invite links (duel / friend codes) are handled inside the Navigator so
       // the toast has an Overlay; the onboarding keeps a pending link for later.
       // LiveDuelSyncHost keeps the live-duel uploader watched (Riverpod 3 pauses unwatched providers).
-      home: LiveDuelSyncHost(child: InviteListener(child: _onboardingDone ? const RootShell() : AppRouter.onboarding())),
+      home: AppHome(child: _onboardingDone ? const RootShell() : AppRouter.onboarding()),
     );
   }
 }

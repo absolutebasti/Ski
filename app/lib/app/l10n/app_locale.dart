@@ -12,7 +12,9 @@ class AppLocale {
 
   static AppLocale of(BuildContext context) => AppLocale(Localizations.localeOf(context));
 
-  bool get isGerman => locale.languageCode != 'en';
+  /// German only for German devices (or the setting); every other language
+  /// reads English, matching the English base of the iOS permission prompts.
+  bool get isGerman => locale.languageCode == 'de';
   String get code => isGerman ? 'de' : 'en';
 
   String pick({required String de, required String en}) => isGerman ? de : en;

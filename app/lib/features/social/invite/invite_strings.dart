@@ -47,8 +47,8 @@ class InviteStrings {
   /// `App laden: <store>` — only part of a share text while
   /// [InviteLinks.appStoreLinkLive]; the placeholder id must never be shared.
   String get appStoreLine => l.pick(
-        de: 'App laden: ${InviteLinks.appStoreUrlPlaceholder}',
-        en: 'Get the app: ${InviteLinks.appStoreUrlPlaceholder}',
+        de: 'App laden: $kAppStoreUrl',
+        en: 'Get the app: $kAppStoreUrl',
       );
 
   String _lines(String head, String link) => [head, link, if (InviteLinks.appStoreLinkLive) appStoreLine].join('\n');

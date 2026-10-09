@@ -107,7 +107,16 @@ class AltitudeFuser {
     final conf = math.min(w, _kWindowWeightStart) / math.max(w, _kWindowWeightStart);
     final kObs = (gpsAlt - g0) / dBaro;
     final blended = _k * TrackingConfig.kEmaOld + kObs * (1 - TrackingConfig.kEmaOld) * conf + _k * (1 - TrackingConfig.kEmaOld) * (1 - conf);
+    final kOld = _k;
     _k = blended.clamp(TrackingConfig.kMin, TrackingConfig.kMax);
+    // Re-anchor so a new scale bends the *future* trend instead of stepping the
+    // current value: k multiplies ~1 000 m of barometric altitude, so a 0.03
+    // correction (well inside the noise of two GPS altitudes 80 m apart) would
+    // jump the displayed altitude by 30 m — and every rule that reads the
+    // altitude trend (lift exit, cable monotonicity) would read that jump as a
+    // real climb or descent. Continuity here, offset correction via the slow
+    // anchor EMA.
+    _a = _a! - (_k - kOld) * b1;
     _kWindowBaroStart = b1;
     _kWindowGpsStart = gpsAlt;
     _kWindowWeightStart = w;
