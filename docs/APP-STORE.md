@@ -1,6 +1,6 @@
 # SlopeTrack — App Store Connect (fill-in sheet, 2026-09-27)
 
-**Bundle ID** `de.torchtechnology.slopetrack` · **Team** 5GDU97KSQU · **SKU** slopetrack-ios · **Primary language** German (de-DE), localisation en-US · **Category** Health & Fitness, secondary Sports · **Devices** iPhone only, portrait · **Price** free, no IAP · **Copyright** 2026 Torch Technology.
+**Bundle ID** `de.torchtechnology.slopetrack` · **Team** 5GDU97KSQU · **SKU** slopetrack-ios · **Primary language** German (de-DE), localisation en-US · **Category** Health & Fitness, secondary Sports · **Devices** iPhone only, portrait · **Price** free, no IAP · **Copyright** 2026 TORCHTECHNOLOGY LTD.
 
 ## URLs (live via GitHub Pages from `docs/`)
 | Field | URL |
