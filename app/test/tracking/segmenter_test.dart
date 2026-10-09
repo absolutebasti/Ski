@@ -11,12 +11,21 @@ class Sim {
   int? lastFixTs;
 
   /// [n] ticks at horizontal speed [vH], altitude changing by [dh] per tick.
-  Sim run(int n, {required double vH, double dh = 0, bool fix = true}) {
+  /// [cableHolds] / [cableRides] / [cableVetoRun] are the detector's verdicts.
+  /// [cableVetoRun] defaults to [cableHolds] for an ascending or flat window; a
+  /// *descending* window holds but must never veto a run, so those tests pass
+  /// `cableVetoRun: false` explicitly.
+  Sim run(int n,
+      {required double vH, double dh = 0, bool fix = true, bool cableHolds = false, bool cableRides = false, bool? cableVetoRun}) {
     for (var i = 0; i < n; i++) {
       ts += 1000;
       h += dh;
       if (fix) lastFixTs = ts;
-      seg.tick(SegTick(ts: ts, vH: vH, h: h, hasFix: fix, gapMs: fix ? 0 : ts - (lastFixTs ?? ts)));
+      seg.tick(SegTick(
+        ts: ts, vH: vH, h: h, hasFix: fix, gapMs: fix ? 0 : ts - (lastFixTs ?? ts),
+        cableHolds: cableHolds || cableRides, cableRides: cableRides,
+        cableVetoRun: cableVetoRun ?? (cableHolds || cableRides),
+      ));
     }
     return this;
   }
@@ -147,5 +156,70 @@ void main() {
     for (var i = 1; i < s.seg.intervals.length; i++) {
       expect(s.seg.intervals[i].startTs, s.seg.intervals[i - 1].endTs, reason: 'intervals are contiguous');
     }
+  });
+
+  group('cable signature (cableEnterS = ${TrackingConfig.cableEnterS})', () {
+    test('cableRides for cableEnterS ticks opens a LIFT even when nothing else would', () {
+      // 10 m/s is faster than liftMaxHorizontalSpeedMs and the altitude barely
+      // moves: no other rule in the machine would call this a lift (funicular).
+      final s = Sim().run(TrackingConfig.cableEnterS - 1, vH: 10, dh: 0.3, cableRides: true);
+      expect(s.state, isNot(SegmentKind.lift));
+      s.run(1, vH: 10, dh: 0.3, cableRides: true);
+      expect(s.state, SegmentKind.lift);
+    });
+
+    test('a broken run of ride ticks never reaches cableEnterS', () {
+      final s = Sim();
+      for (var i = 0; i < 6; i++) {
+        s.run(TrackingConfig.cableEnterS - 1, vH: 10, dh: 0.3, cableRides: true);
+        s.run(1, vH: 10, dh: 0.3);
+      }
+      expect(s.state, isNot(SegmentKind.lift));
+    });
+
+    test('from RUN, cableEnter ends the run backdated by cableEnterS', () {
+      final s = Sim().run(30, vH: 8, dh: -1.5);
+      expect(s.state, SegmentKind.run);
+      final at = s.ts;
+      s.run(TrackingConfig.cableEnterS, vH: 7, dh: -1.7, cableRides: true);
+      expect(s.state, SegmentKind.lift, reason: 'a confirmed ride ends the run');
+      expect(s.seg.open!.startTs, at + 1000 * (TrackingConfig.cableEnterS - TrackingConfig.cableEnterS));
+      expect(s.seg.intervals.last.kind, SegmentKind.run);
+      expect(s.seg.intervals.last.endTs, s.ts - TrackingConfig.cableEnterS * 1000);
+    });
+
+    test('cableVetoRun vetoes a RUN entry (from OTHER and from STOP)', () {
+      expect(Sim().run(20, vH: 6, dh: -1.2, cableVetoRun: true).state, isNot(SegmentKind.run));
+      expect(Sim().run(10, vH: 0.5).run(20, vH: 6, dh: -1.2, cableVetoRun: true).state, isNot(SegmentKind.run));
+      // …and the same ticks without the veto do start a run
+      expect(Sim().run(20, vH: 6, dh: -1.2).state, SegmentKind.run);
+    });
+
+    test('a DESCENDING hold does not veto a RUN entry', () {
+      // The bug this guards: a window that is losing height at a constant speed
+      // on a straight line is what a steady 5–11 m/s schuss looks like. Vetoing
+      // the run there made the whole descent disappear — 0 runs, 0 km/h, 0 m.
+      // A descent is only ever taken away afterwards, by the interval-level rule.
+      expect(Sim().run(20, vH: 6, dh: -1.2, cableHolds: true, cableVetoRun: false).state, SegmentKind.run);
+      expect(Sim().run(10, vH: 0.5).run(20, vH: 6, dh: -1.2, cableHolds: true, cableVetoRun: false).state, SegmentKind.run);
+    });
+
+    test('cableHolds keeps a LIFT open over a flat mid-span', () {
+      final s = Sim().run(40, vH: 4, dh: 1);
+      expect(s.state, SegmentKind.lift);
+      s.run(60, vH: 6, cableHolds: true); // flat for a minute: liftExitS would fire
+      expect(s.state, SegmentKind.lift);
+      s.run(TrackingConfig.liftExitS + 1, vH: 6);
+      expect(s.state, isNot(SegmentKind.lift), reason: 'without the hold the same flat span ends it');
+    });
+
+    test('cableHolds keeps a DESCENDING lift open (vz10 is far below liftExitVz10Ms)', () {
+      final s = Sim().run(40, vH: 4, dh: 1);
+      expect(s.state, SegmentKind.lift);
+      s.run(120, vH: 7, dh: -1.7, cableHolds: true);
+      expect(s.state, SegmentKind.lift, reason: 'the ride down must stay one lift');
+      s.run(1, vH: 7, dh: -1.7);
+      expect(s.state, isNot(SegmentKind.lift), reason: 'the moment the signature goes, vz10 ends it');
+    });
   });
 }
