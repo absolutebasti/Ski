@@ -30,12 +30,11 @@ import '../share/share_strings.dart';
 /// the 3-up hero numbers, the altitude profile (scrub moves the map marker),
 /// the time bar, the 2×4 stat grid, the run table and the dock.
 class DayDetailScreen extends ConsumerStatefulWidget {
-  const DayDetailScreen({super.key, required this.dayId, this.tilesEnabled = true, this.mapHeight = heroHeight});
+  const DayDetailScreen({super.key, required this.dayId, this.mapHeight = heroHeight});
 
   final String dayId;
 
   /// `false` in widget tests: the map draws the track without any tile layer.
-  final bool tilesEnabled;
 
   /// Expanded height of the map hero.
   final double mapHeight;
@@ -182,7 +181,6 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                 pinned: true,
                 delegate: MapHeroHeader(
                   detail: d,
-                  tilesEnabled: widget.tilesEnabled,
                   scrubTs: _scrubTs,
                   expandedHeight: widget.mapHeight,
                   topInset: MediaQuery.paddingOf(context).top,
@@ -269,7 +267,6 @@ class _Hero extends StatelessWidget {
 class MapHeroHeader extends SliverPersistentHeaderDelegate {
   const MapHeroHeader({
     required this.detail,
-    required this.tilesEnabled,
     required this.scrubTs,
     required this.expandedHeight,
     required this.topInset,
@@ -281,7 +278,6 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
   });
 
   final DayDetail detail;
-  final bool tilesEnabled;
   final int? scrubTs;
   final double expandedHeight;
   final double topInset;
@@ -307,7 +303,6 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(MapHeroHeader old) =>
       !identical(old.detail, detail) ||
       old.scrubTs != scrubTs ||
-      old.tilesEnabled != tilesEnabled ||
       old.expandedHeight != expandedHeight ||
       old.topInset != topInset ||
       old.restore != restore ||
@@ -342,7 +337,7 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
                   child: Hero(
                     tag: heroTag,
                     flightShuttleBuilder: _shuttle,
-                    child: _Route(detail: detail, tilesEnabled: tilesEnabled, scrubTs: scrubTs, restore: restore, onRestore: onRestore),
+                    child: _Route(detail: detail, scrubTs: scrubTs, restore: restore, onRestore: onRestore),
                   ),
                 ),
                 Positioned.fill(
@@ -352,8 +347,10 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [c.ink.withValues(alpha: 0.55), Colors.transparent, c.ink.withValues(alpha: 0.80)],
-                          stops: const [0, 0.34, 1],
+                          // Top only: the bottom fade lives in SatelliteRoute,
+                          // which keeps the Apple wordmark uncovered.
+                          colors: [c.ink.withValues(alpha: 0.55), Colors.transparent],
+                          stops: const [0, 0.34],
                         ),
                       ),
                     ),
@@ -363,7 +360,8 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
                   Positioned(
                     left: Tokens.pad,
                     right: Tokens.pad,
-                    bottom: 18,
+                    // Above the Apple wordmark strip of the satellite image.
+                    bottom: AppleWordmark.clearance + 4,
                     child: Opacity(opacity: plate, child: _DatePlate(day: detail.day, date: date, onChangeResort: onChangeResort)),
                   ),
               ],
@@ -429,9 +427,8 @@ class MapHeroHeader extends SliverPersistentHeaderDelegate {
 /// The hero surface itself: the live map, or the contour fallback with a
 /// typeset line — never a pictogram.
 class _Route extends StatelessWidget {
-  const _Route({required this.detail, required this.tilesEnabled, required this.scrubTs, this.restore = TrackRestoreState.none, this.onRestore});
+  const _Route({required this.detail, required this.scrubTs, this.restore = TrackRestoreState.none, this.onRestore});
   final DayDetail detail;
-  final bool tilesEnabled;
   final int? scrubTs;
   final TrackRestoreState restore;
   final VoidCallback? onRestore;
@@ -463,14 +460,7 @@ class _Route extends StatelessWidget {
         ],
       );
     }
-    return TrackMap(
-      points: detail.points,
-      segments: detail.segments,
-      scrubTs: scrubTs,
-      tilesEnabled: tilesEnabled,
-      // The hero sits inside a scroll view: panning it would fight the list.
-      interactive: false,
-    );
+    return SatelliteRoute(detail: detail, scrubTs: scrubTs);
   }
 }
 

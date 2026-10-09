@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:slopetrack/app/widgets/widgets.dart';
@@ -14,7 +13,7 @@ import 'package:slopetrack/features/days/track_restore.dart';
 import 'package:slopetrack/features/days/run_list.dart';
 import 'package:slopetrack/features/days/stats_grid.dart';
 import 'package:slopetrack/features/map/thumbnail_renderer.dart';
-import 'package:slopetrack/features/map/track_map.dart';
+import 'package:slopetrack/features/map/satellite_route.dart';
 import 'package:slopetrack/features/profile/altitude_profile.dart';
 
 import '../../support/pump.dart';
@@ -47,7 +46,7 @@ void main() {
     final detail = syntheticDayDetail();
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: overrides(detail),
     );
     await tester.pump();
@@ -57,8 +56,8 @@ void main() {
     expect(find.text('Kitzbühel'), findsOneWidget);
     expect(find.text(Fmt.dateLong(detail.day.startedAt, locale: 'de')), findsOneWidget);
 
-    expect(find.byType(FlutterMap), findsOneWidget);
-    expect(find.byType(TileLayer), findsNothing);
+    // No tile map any more: the route on the satellite image (or on ink).
+    expect(find.byType(SatelliteRoute), findsOneWidget);
     expect(find.byType(AltitudeProfile), findsOneWidget);
     expect(find.text('HÖHENPROFIL'), findsOneWidget);
 
@@ -121,7 +120,7 @@ void main() {
       segments: base.segments,
       points: base.points,
     );
-    await pumpApp(tester, const DayDetailScreen(dayId: _dayId, tilesEnabled: false), overrides: overrides(detail));
+    await pumpApp(tester, const DayDetailScreen(dayId: _dayId), overrides: overrides(detail));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -141,7 +140,7 @@ void main() {
     final detail = syntheticDayDetail();
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: overrides(detail),
     );
     await tester.pump();
@@ -183,7 +182,7 @@ void main() {
     await tester.pump();
 
     unawaited(nav.currentState!.push(MaterialPageRoute<void>(
-      builder: (_) => const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      builder: (_) => const DayDetailScreen(dayId: _dayId),
     )));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
@@ -195,7 +194,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.byType(TrackMap), findsOneWidget);
+    expect(find.byType(SatelliteRoute), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -205,13 +204,13 @@ void main() {
     final detail = DayDetail(day: full.day, segments: full.segments, points: const []);
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: overrides(detail),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.byType(FlutterMap), findsNothing);
+    expect(find.byType(SatelliteRoute), findsNothing);
     expect(find.text('OHNE TRACK'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -221,28 +220,28 @@ void main() {
     final detail = syntheticDayDetail();
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: overrides(detail),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(tester.widget<TrackMap>(find.byType(TrackMap)).scrubTs, isNull);
+    expect(tester.widget<SatelliteRoute>(find.byType(SatelliteRoute)).scrubTs, isNull);
     final ts = detail.points[detail.points.length ~/ 2].ts;
     tester.widget<AltitudeProfile>(find.byType(AltitudeProfile)).onScrub!(ts);
     await tester.pump();
-    expect(tester.widget<TrackMap>(find.byType(TrackMap)).scrubTs, ts);
+    expect(tester.widget<SatelliteRoute>(find.byType(SatelliteRoute)).scrubTs, ts);
 
     tester.widget<AltitudeProfile>(find.byType(AltitudeProfile)).onScrub!(null);
     await tester.pump();
-    expect(tester.widget<TrackMap>(find.byType(TrackMap)).scrubTs, isNull);
+    expect(tester.widget<SatelliteRoute>(find.byType(SatelliteRoute)).scrubTs, isNull);
   });
 
   testWidgets('Teilen offers the card and the GPX', (tester) async {
     useTallSurface(tester);
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: overrides(syntheticDayDetail()),
     );
     await tester.pump();
@@ -261,7 +260,7 @@ void main() {
     addTearDown(() async => repo.db.close());
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: overrides(syntheticDayDetail(), repo: repo),
     );
     await tester.pump();
@@ -282,7 +281,7 @@ void main() {
     final detail = syntheticDayDetail(weatherJson: '{"fetchedAt":1,"tempSummitC":-4.0,"wmoCode":71}');
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: overrides(detail),
     );
     await tester.pump();
@@ -296,7 +295,7 @@ void main() {
     final detail = syntheticDayDetail(weatherJson: 'not json');
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: overrides(detail),
     );
     await tester.pump();
@@ -310,7 +309,7 @@ void main() {
     final gate = Completer<DayDetail>();
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: [dayDetailProvider.overrideWith((ref, id) => gate.future)],
     );
     await tester.pump();
@@ -321,7 +320,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(DayDetailSkeleton), findsNothing);
-    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.byType(SatelliteRoute), findsOneWidget);
   });
 
   testWidgets('Skigebiet ändern: the picker is nearest-first and updates the day via the repository', (tester) async {
@@ -331,7 +330,7 @@ void main() {
     final detail = syntheticDayDetail();
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: [
         ...overrides(detail, repo: repo),
         resortRepositoryProvider.overrideWith((ref) async => ResortRepository(fixtureResorts)),
@@ -360,7 +359,7 @@ void main() {
     addTearDown(() async => repo.db.close());
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: [
         ...overrides(syntheticDayDetail(), repo: repo),
         resortRepositoryProvider.overrideWith((ref) async => ResortRepository(fixtureResorts)),
@@ -384,7 +383,7 @@ void main() {
     final gate = Completer<void>();
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: [
         dayDetailProvider.overrideWith((ref, id) => restored ? full : empty),
         dayTrackRestoreProvider.overrideWithValue(DayTrackRestore(
@@ -400,7 +399,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.byType(FlutterMap), findsNothing);
+    expect(find.byType(SatelliteRoute), findsNothing);
     expect(find.text('OHNE TRACK'), findsOneWidget);
     expect(find.text('Spur laden'), findsOneWidget);
 
@@ -414,7 +413,7 @@ void main() {
     gate.complete();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.byType(SatelliteRoute), findsOneWidget);
     expect(find.text('SPUR WIRD GELADEN'), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -423,7 +422,7 @@ void main() {
     useTallSurface(tester);
     final full = syntheticDayDetail();
     final empty = DayDetail(day: full.day, segments: full.segments, points: const []);
-    await pumpApp(tester, const DayDetailScreen(dayId: _dayId, tilesEnabled: false), overrides: overrides(empty));
+    await pumpApp(tester, const DayDetailScreen(dayId: _dayId), overrides: overrides(empty));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Spur laden'), findsNothing);
@@ -436,7 +435,7 @@ void main() {
     final empty = DayDetail(day: full.day, segments: full.segments, points: const []);
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: [
         ...overrides(empty),
         dayTrackRestoreProvider.overrideWithValue(DayTrackRestore(hasRemoteTrack: (_) async => false, restore: (_) async {})),
@@ -454,7 +453,7 @@ void main() {
     final empty = DayDetail(day: full.day, segments: full.segments, points: const []);
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: _dayId, tilesEnabled: false),
+      const DayDetailScreen(dayId: _dayId),
       overrides: [
         ...overrides(empty),
         dayTrackRestoreProvider.overrideWithValue(DayTrackRestore(hasRemoteTrack: (_) async => true, restore: (_) async => throw StateError('offline'))),
@@ -473,7 +472,7 @@ void main() {
   testWidgets('an unknown day shows the error line instead of crashing', (tester) async {
     await pumpApp(
       tester,
-      const DayDetailScreen(dayId: 'nope', tilesEnabled: false),
+      const DayDetailScreen(dayId: 'nope'),
       overrides: [dayDetailProvider.overrideWith((ref, id) => throw StateError('day nope not found'))],
     );
     await tester.pump();

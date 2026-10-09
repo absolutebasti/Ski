@@ -239,7 +239,7 @@ void main() {
     expect(find.byType(SpeedBar), findsOneWidget); // 0 -> day max
     expect(find.text('1.830'), findsOneWidget); // Höhe
     expect(find.text('4:37:00'), findsOneWidget); // Zeit
-    expect(mapButton, findsOneWidget);
+    expect(mapButton, findsNothing, reason: 'no live map in v1: numbers + End only');
     expect(find.byType(HoldToConfirmButton), findsOneWidget);
     // Glare theme: pure black under the numbers.
     expect(AppColors.of(tester.element(find.byType(SpeedBar))).bg, const Color(0xFF000000));

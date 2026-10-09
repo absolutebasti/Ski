@@ -609,7 +609,7 @@ class ReadyPage extends StatelessWidget {
     required this.granted,
     required this.grantedAlways,
     required this.onOpenSettings,
-    this.optIn = true,
+    this.optIn = false,
     this.onOptIn,
   });
   final AuthUser? user;

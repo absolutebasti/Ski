@@ -73,7 +73,7 @@ EN: First release – one-tap recording, leaderboards, duels, challenges, levels
 | Name (from Apple, optional) | yes (signed in) | yes | no | App Functionality |
 | Email (Apple relay, optional) | yes (signed in) | yes | no | App Functionality |
 | User Content (display name, country, home resort, profile photo) | yes (signed in) | yes | no | App Functionality |
-| Other: none. No advertising, no analytics SDKs, no ATT prompt. Third parties: Supabase (processor, EU), Open-Meteo/OpenTopoMap/OpenSnowMap (tile/weather servers see IP only). |
+| Other: none. No advertising, no analytics SDKs, no ATT prompt. Third parties: Supabase (processor, EU), Apple Maps (satellite image of the day: map area + IP), Open-Meteo (weather, resort coordinates + IP). |
 
 ## Age rating questionnaire
 None of the mature categories. **Unrestricted web access: No. Gambling/contests: No (no prizes). User-generated content: display names in leaderboards → answer the "User Generated Content" questions truthfully:** users can report via support e-mail and the in-app "Melden" action (in the build: SOC-MODERATION — Melden/Blockieren on every rider profile), names are filtered client-side. Expected rating 4+.

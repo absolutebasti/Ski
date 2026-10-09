@@ -8,7 +8,6 @@ import '../../app/theme/tokens.dart';
 import '../../app/theme/typography.dart';
 import '../../app/widgets/widgets.dart';
 import '../../core/core.dart';
-import '../map/map_sheet.dart';
 import '../recording/live_state_provider.dart';
 import 'duel_line.dart';
 import 'today_strings.dart';
@@ -163,26 +162,9 @@ class _LiveBody extends ConsumerWidget {
             ],
           ),
         ),
-        BottomDock(
-          child: Row(
-            children: [
-              Semantics(
-                button: true,
-                label: s.map,
-                // Same 64 pt as the hold capsule beside it (a 56 circle next to
-                // a 64 capsule read as two different controls).
-                child: SecondaryButton(
-                  label: '',
-                  glyph: Glyph.map,
-                  height: Tokens.holdButton,
-                  onPressed: () => MapSheet.show(context),
-                ),
-              ),
-              const SizedBox(width: Tokens.cardGap),
-              Expanded(child: HoldToConfirmButton(label: s.end, onConfirmed: busy ? () {} : onEnd)),
-            ],
-          ),
-        ),
+        // The numbers are the live screen; the route is shown after the day
+        // (satellite image), so End is the only control here.
+        BottomDock(child: HoldToConfirmButton(label: s.end, onConfirmed: busy ? () {} : onEnd)),
       ],
     );
   }

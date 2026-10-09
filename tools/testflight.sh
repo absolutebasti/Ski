@@ -13,7 +13,7 @@
 # (b) alone only works once Xcode has an account of the team (or use (a)).
 # After a change to the PERMISSION_* exports below, clear DerivedData once.
 #
-# Env: BUILD_NUMBER (default: git commit count), MAP_TILE_URL (optional dart-define),
+# Env: BUILD_NUMBER (default: git commit count),
 #      SLOPETRACK_ARCHIVE (dry-run: skip the flutter build and verify/export this archive instead).
 set -euo pipefail
 cd "$(dirname "$0")/../app"
@@ -36,8 +36,7 @@ if [[ -z "${SLOPETRACK_ARCHIVE:-}" ]]; then
   rm -rf "$ARCHIVE"
   echo "▶ archive (build $BUILD_NUMBER)"
   # flutter build ipa also exports; the archive is what we need, the export/upload is done below with xcodebuild.
-  flutter build ipa --release --build-number="$BUILD_NUMBER" --export-options-plist="$OPTS" \
-    ${MAP_TILE_URL:+--dart-define=MAP_TILE_URL="$MAP_TILE_URL"}
+  flutter build ipa --release --build-number="$BUILD_NUMBER" --export-options-plist="$OPTS"
 fi
 [[ -d "$ARCHIVE" ]] || { echo "✗ no archive at $ARCHIVE"; exit 1; }
 

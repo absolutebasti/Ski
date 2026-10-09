@@ -14,7 +14,7 @@ Stand 9. Oktober 2026 · last updated 9 October 2026
 
 **3. Ranglisten, Duelle, Challenges.** Nur wenn du „In Ranglisten erscheinen“ einschaltest, sehen andere Nutzer deinen Anzeigenamen, dein Land und deine Kennzahlen in Ranglisten. Die Top 10 einer Rangliste (Anzeigename, Profilbild, Punkte) sind zusätzlich öffentlich sichtbar, auch ohne Konto. In einem Tagesduell sehen die bis zu drei Mitglieder gegenseitig Namen und Tageswerte. Punkte, Level, Streak und Medaillen werden auf deinem Gerät berechnet. Du kannst die Rangliste jederzeit in Konto ausschalten; deine Daten verschwinden dann sofort aus den Listen.
 
-**4. Karten und Wetter.** Kartenkacheln kommen von OpenTopoMap und OpenSnowMap (OpenStreetMap-Daten), das Wetter von Open-Meteo mit den Koordinaten des Skigebiets, nicht mit deiner genauen Position. Diese Server sehen deine IP-Adresse und die angefragten Ausschnitte. Für das Satellitenbild eines Skitags fragt die App den Kartenausschnitt rund um deine Spur bei Apple Maps an (Apple Distribution International Ltd., Irland); Apple erhält dabei den Ausschnitt und deine IP-Adresse, die Spur selbst wird auf dem Gerät eingezeichnet.
+**4. Karten und Wetter.** Für das Satellitenbild eines Skitags fragt die App den Kartenausschnitt rund um deine Spur bei Apple Maps an (Apple Distribution International Ltd., Irland); Apple erhält dabei den Ausschnitt und deine IP-Adresse, die Spur selbst wird auf dem Gerät eingezeichnet. Das Wetter kommt von Open-Meteo mit den Koordinaten des Skigebiets, nicht mit deiner genauen Position; Open-Meteo sieht dabei deine IP-Adresse.
 
 **5. Teilen.** Teilst du eine Tagesbilanz, eine Medaille oder eine GPX-Datei, entscheidest du selbst, wohin sie geht.
 
@@ -44,7 +44,7 @@ Stand 9. Oktober 2026 · last updated 9 October 2026
 
 **3. Leaderboards, duels, challenges.** Only if you enable “Appear in leaderboards” do other users see your display name, country and figures. The top 10 of a leaderboard (display name, profile photo, points) are also publicly visible, even without an account. In a day duel the up to three members see each other's names and day figures. Points, levels, streak and medals are computed on your device. You can switch leaderboards off in Account at any time; your data disappears from the lists immediately.
 
-**4. Maps and weather.** Map tiles come from OpenTopoMap and OpenSnowMap (OpenStreetMap data), weather from Open-Meteo using the resort's coordinates, not your exact position. Those servers see your IP address and the requested areas. For the satellite image of a ski day the app requests the map area around your track from Apple Maps (Apple Distribution International Ltd., Ireland); Apple receives that area and your IP address, the track itself is drawn on the device.
+**4. Maps and weather.** For the satellite image of a ski day the app requests the map area around your track from Apple Maps (Apple Distribution International Ltd., Ireland); Apple receives that area and your IP address, the track itself is drawn on the device. Weather comes from Open-Meteo using the resort's coordinates, not your exact position; Open-Meteo sees your IP address.
 
 **5. Sharing.** When you share a day card, a medal or a GPX file, you decide where it goes.
 

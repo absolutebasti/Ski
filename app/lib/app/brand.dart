@@ -23,6 +23,3 @@ const String kWebsiteUrl = kCustomDomainLive ? 'https://slopetrack.app' : 'https
 /// App Store once live, the landing page until then.
 const String kGetAppUrl = kAppStoreUrl == '' ? kWebsiteUrl : kAppStoreUrl;
 
-/// Map tiles: override with --dart-define=MAP_TILE_URL=... (e.g. Mapbox static tiles).
-/// Empty → OpenTopoMap base + OpenSnowMap piste overlay (no key, dev/TestFlight only).
-const String kMapTileUrl = String.fromEnvironment('MAP_TILE_URL');

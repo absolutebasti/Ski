@@ -28,7 +28,7 @@ interpretation. Everything below already exists and compiles.
 
 | Symbol | File | Notes |
 |---|---|---|
-| `kAppName`, `kBundleId`, `kSupportEmail`, `kPrivacyUrl`, `kMascotName`, `kMapTileUrl` | app/brand.dart | |
+| `kAppName`, `kBundleId`, `kSupportEmail`, `kPrivacyUrl`, `kMascotName`, `kAppStoreUrl`, `kGetAppUrl`, `kTermsUrl` | app/brand.dart | |
 | `AppColors.of(context)`, `Tokens` | app/theme/tokens.dart | semantic colours; never hard-code hex in features |
 | `AppText.hero/stat/headline/title/bodyText/label/unit/button` | app/theme/typography.dart | |
 | `AppLocale.of(context).pick(de:, en:)` | app/l10n/app_locale.dart | keep strings in `<feature>_strings.dart` |

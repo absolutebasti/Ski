@@ -42,7 +42,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // page 3
   AuthUser? _user;
   bool _skipped = false;
-  bool _optIn = true;
+  /// Off until the rider switches it on: name and photo become public, which
+  /// needs an active choice (GDPR consent, App Review 1.2 terms line).
+  bool _optIn = false;
   bool _signingIn = false;
   bool _signInFailed = false;
   bool _asking = false;

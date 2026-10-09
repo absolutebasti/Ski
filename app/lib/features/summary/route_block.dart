@@ -297,6 +297,16 @@ class RouteGeometry {
     return _build(detail, pts, norm);
   }
 
+  /// Where the rider was at [ts] (first position at or after it), in the same
+  /// unit coordinates as [fromDetail] — the altitude-profile scrub marker.
+  static Offset? positionAt(DayDetail detail, int ts, {Offset Function(double lat, double lon)? project}) {
+    final pts = [for (final p in detail.points) if (p.hasPosition) p];
+    if (pts.length < 2) return null;
+    final norm = project != null ? (TrackPoint p) => project(p.lat!, p.lon!) : _unitSquare(pts);
+    if (norm == null) return null;
+    return norm(pts.firstWhere((p) => p.ts >= ts, orElse: () => pts.last));
+  }
+
   static Offset Function(TrackPoint)? _unitSquare(List<TrackPoint> pts) {
     var minLat = pts.first.lat!, maxLat = minLat, minLon = pts.first.lon!, maxLon = minLon;
     for (final p in pts) {
@@ -369,6 +379,7 @@ class RoutePainter extends CustomPainter {
     this.inset = defaultInset,
     this.strokeWidth = 4,
     this.imageSize,
+    this.marker,
   });
 
   /// Default inset: the bottom clears the date plate.
@@ -382,6 +393,8 @@ class RoutePainter extends CustomPainter {
   final double strokeWidth;
   /// Size (pt) of the map image the geometry was projected onto; null = unit square.
   final Size? imageSize;
+  /// Optional position marker (unit coordinates, see RouteGeometry.positionAt).
+  final Offset? marker;
 
   /// The square the unit route is mapped into for a canvas of [size]: the
   /// inset rectangle, shrunk to a centred square so the aspect stays intact.
@@ -459,6 +472,13 @@ class RoutePainter extends CustomPainter {
     if (t >= 1) {
       canvas.drawCircle(map(geometry.end), 3, Paint()..color = run.withValues(alpha: 0.7));
     }
+    final m = marker;
+    if (m != null) {
+      final at = map(m);
+      canvas.drawCircle(at, 9, Paint()..color = run.withValues(alpha: 0.25));
+      canvas.drawCircle(at, 6, Paint()..color = const Color(0xFFFFFFFF));
+      canvas.drawCircle(at, 4, Paint()..color = run);
+    }
   }
 
   /// Centre of the drawn strokes' bounding box in canvas coordinates.
@@ -507,5 +527,5 @@ class RoutePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant RoutePainter old) =>
-      old.t != t || old.geometry != geometry || old.run != run || old.lift != lift || old.inset != inset || old.imageSize != imageSize;
+      old.t != t || old.geometry != geometry || old.run != run || old.lift != lift || old.inset != inset || old.imageSize != imageSize || old.marker != marker;
 }
