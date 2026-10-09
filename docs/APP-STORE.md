@@ -12,12 +12,14 @@
 | Imprint (DE law) | https://absolutebasti.github.io/Ski/imprint.html — **founder must fill in the address before submission** |
 
 ## Names
+Limits checked 2026-10-09: name and subtitle ≤ 30 characters, keywords ≤ 100 and without words already in name or subtitle (Apple indexes those anyway).
+
 | Field | DE | EN |
 |---|---|---|
-| Name (30) | SlopeTrack – Ski-Tracker & Duelle | SlopeTrack – Ski Tracker & Duels |
-| Subtitle (30) | Abfahrten, Höhenmeter, Rangliste | Runs, vertical, leaderboards |
+| Name (30) | SlopeTrack – Ski-Tracker | SlopeTrack – Ski Tracker |
+| Subtitle (30) | Duelle, Rangliste, Höhenmeter | Duels, leaderboards, vertical |
 | Promotional text (170) | Ein Tipp startet den Skitag. Abfahrten, Höhenmeter und Tempo automatisch – dazu Ranglisten pro Land und Skigebiet, Duelle mit Freunden, Level und Medaillen. | One tap starts the ski day. Runs, vertical and speed automatically – plus leaderboards per country and resort, duels with friends, levels and medals. |
-| Keywords (100) | ski,skifahren,tracker,abfahrten,höhenmeter,rangliste,duell,piste,snowboard,skitag,gps | ski,skiing,tracker,runs,vertical,leaderboard,duel,slope,snowboard,ski day,gps |
+| Keywords (100) | skifahren,abfahrten,piste,snowboard,skitag,gps,skigebiet,speed,freunde,wettkampf,lift,winter,alpen | skiing,runs,slope,snowboard,ski day,gps,resort,speed,friends,competition,lift,winter,alps |
 
 ## Description (DE)
 SlopeTrack zeichnet deinen ganzen Skitag mit einem Tipp auf. iPhone in die Jacke, Sperre an – die Aufnahme läuft weiter. Am Abend siehst du, was zählt: Abfahrten, Höhenmeter, Top-Speed, deine beste Abfahrt und wie viel Zeit du auf der Piste, im Lift und in der Pause warst.
@@ -104,7 +106,7 @@ Captured on the iPhone 17 Pro Max simulator with demo data via `OUT=.context/sho
 - Am Abend "Diagnosepaket teilen" an hello@torchtechnology.de.
 
 ## Founder to-do before submission
-1. Create the App Store Connect app record "SlopeTrack – Ski-Tracker & Duelle" with bundle id `de.torchtechnology.slopetrack`; paste this sheet.
+1. Create the App Store Connect app record "SlopeTrack – Ski-Tracker" with bundle id `de.torchtechnology.slopetrack`; paste this sheet.
 2. `tools/testflight.sh --upload` with the signed-in Xcode account of team 5GDU97KSQU (Apple Distribution certificate is present on this Mac) **or** an App Store Connect API key (`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH`). The script refuses stale archives (CFBundleVersion must equal `BUILD_NUMBER`).
 3. Fill in `docs/imprint.html` (address, legal form, VAT id) — mandatory in DE.
 4. Optional: custom domain for the pages (e.g. slopetrack.app → GitHub Pages CNAME).
